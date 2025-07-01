@@ -1,0 +1,60 @@
+# ========================
+# 服务器配置
+# ========================
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+# ========================
+# 数据源配置
+# ========================
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/postgres
+    username: postgres
+    password: 123456
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-timeout: 30000
+      maximum-pool-size: 10
+
+  # ========================
+  # JPA 配置
+  # ========================
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    defer-datasource-initialization: true
+  
+  # ========================
+  # SQL 初始化配置
+  # ========================
+  sql:
+    init:
+      mode: always
+      data-locations: classpath:data.sql
+      encoding: UTF-8
+
+# ========================
+# 日志配置
+# ========================
+logging:
+  level:
+    root: INFO
+    org.springframework.web: DEBUG
+    com.myweb: DEBUG
+  pattern:
+    console: '%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n'
+
+# ========================
+# 自定义配置
+# ========================
+app:
+  blog:
+    default-author: "作者"
