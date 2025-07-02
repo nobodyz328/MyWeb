@@ -40,7 +40,6 @@ public class BlogController {
         blogService.deletePost(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
-    // BlogController.java
     @GetMapping
     public List<BlogPost> getAllPosts() {
         return blogService.getAllPosts();

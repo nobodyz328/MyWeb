@@ -6,5 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface BlogPostRepository extends JpaRepository<BlogPost, Long> {
-    //PA会自动提供CRUD操作
+    //自动提供CRUD操作
 }

@@ -14,13 +14,5 @@ public class App {
         SpringApplication.run(App.class, args);
     }
 
-    // 初始化一些测试数据
-    @Bean
-    public CommandLineRunner initData(BlogPostRepository repository) {
-        return args -> {
-            repository.save(new BlogPost("Spring Boot入门", "Spring Boot让Java开发变得简单...", "张三"));
-            repository.save(new BlogPost("RESTful API设计", "如何设计良好的REST API...", "李四"));
-            System.out.println("初始化了2篇测试博客文章");
-        };
-    }
+
 }

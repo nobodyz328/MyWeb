@@ -6,8 +6,10 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
 
 @Controller
+@RequestMapping("/view") // 添加基础路径
 public class WebController {
 
     @Autowired
@@ -19,9 +21,14 @@ public class WebController {
         return "index";
     }
 
-    @GetMapping("/posts/{id}")
+    @GetMapping("/{id}")
     public String postDetail(@PathVariable Long id, Model model) {
         blogService.getPostById(id).ifPresent(post -> model.addAttribute("post", post));
         return "post-detail";
+    }
+
+    @GetMapping("/test")
+    public String test() {
+        return "test";
     }
 }
