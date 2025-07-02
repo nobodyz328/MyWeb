@@ -262,7 +262,7 @@
 </head>
 <body>
     <div class="container">
-        <a href="/api/" class="back-btn">返回首页</a>
+        <a href="/blog/view/" class="back-btn">返回首页</a>
 
         <header class="header">
             <h1>文章详情</h1>
@@ -314,7 +314,7 @@
         
         function deletePost() {
             if (confirm('确定要删除这篇文章吗？此操作不可撤销。')) {
-                fetch(`/api/posts/${postId}`, {
+                fetch(`/blog/posts/${postId}`, {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json'
@@ -323,9 +323,11 @@
                 .then(response => {
                     if (response.ok) {
                         alert('文章删除成功！');
-                        window.location.href = '/api/';
+                        window.location.href = '/blog/view/';
                     } else {
-                        alert('删除失败，请重试。');
+                        response.text().then(msg => {
+                            alert('删除失败，请重试。\n' + msg);
+                        });
                     }
                 })
                 .catch(error => {

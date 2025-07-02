@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @Controller
-@RequestMapping("/view") // 添加基础路径
+@RequestMapping("/view") // 基础路径
 public class WebController {
 
     @Autowired

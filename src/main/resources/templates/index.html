@@ -232,7 +232,7 @@
             <div class="blog-grid" th:if="${posts != null}">
                 <article class="blog-card" th:each="post : ${posts}">
                     <h2 class="blog-title">
-                        <a th:href="@{'/api/posts/' + ${post.id}}" th:text="${post.title}" style="color: inherit; text-decoration: none;">文章标题</a>
+                        <a th:href="@{'/view/' + ${post.id}}" th:text="${post.title}" style="color: inherit; text-decoration: none;">文章标题</a>
                     </h2>
                     <p class="blog-content" th:text="${#strings.abbreviate(post.content, 150)}">文章内容预览...</p>
                     <div class="blog-meta">

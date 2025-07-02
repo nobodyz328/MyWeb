@@ -4,7 +4,7 @@
 server:
   port: 8080
   servlet:
-    context-path: /api
+    context-path: /blog
     address: 0.0.0.0
 
 # ========================
@@ -36,11 +36,11 @@ spring:
   # ========================
   # SQL 初始化配置
   # ========================
-  sql:
-    init:
-      mode: always
-      data-locations: classpath:data.sql
-      encoding: UTF-8
+#  sql:
+#    init:
+#      mode: always
+#      data-locations: classpath:data.sql
+#      encoding: UTF-8
 
 # ========================
 # 日志配置

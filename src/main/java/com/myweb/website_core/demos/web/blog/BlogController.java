@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/posts") // 基础路径
+@RequestMapping("/posts") // 基础路径
 public class BlogController {
     private final BlogService blogService;
     @Autowired
