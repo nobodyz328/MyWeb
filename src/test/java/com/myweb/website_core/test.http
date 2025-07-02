@@ -1,0 +1,2 @@
+### 获取所有文章
+GET http://localhost:8080/api/posts
