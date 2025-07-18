@@ -1,5 +1,6 @@
-package com.myweb.website_core.demos.web.templates;
+package com.myweb.website_core.demos.web.web;
 
+import com.myweb.website_core.demos.web.user.UserService;
 import com.myweb.website_core.demos.web.blog.BlogService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -14,6 +15,8 @@ public class WebController {
 
     @Autowired
     private BlogService blogService;
+    @Autowired
+    private UserService userService;
 
     @GetMapping("/")
     public String index(Model model) {

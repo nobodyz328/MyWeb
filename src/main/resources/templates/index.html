@@ -219,6 +219,16 @@
         <header class="header">
             <h1>我的博客</h1>
             <p>分享技术，记录生活</p>
+            <div style="margin-top: 20px;">
+                <span th:if="${session.user != null}">
+                    欢迎，<b th:text="${session.user.username}"></b>！
+                    <a th:href="@{/user/logout}" style="color:#fff;text-decoration:underline;margin-left:10px;">退出登录</a>
+                </span>
+                <span th:if="${session.user == null}">
+                    <a th:href="@{/user/login}" style="color:#fff;text-decoration:underline;">登录</a> |
+                    <a th:href="@{/user/register}" style="color:#fff;text-decoration:underline;">注册</a>
+                </span>
+            </div>
         </header>
 
         <main>
@@ -243,7 +253,7 @@
             </div>
 
             <!-- 空状态 -->
-            <div class="empty-state" th:if="${posts != null}">
+            <div class="empty-state" th:if="${posts == null and #lists.isEmpty(posts)}">
                 <h3>暂无文章</h3>
                 <p>还没有发布任何文章，快来写第一篇吧！</p>
             </div>
@@ -254,16 +264,13 @@
         </footer>
     </div>
 
-    <!-- 创建文章按钮 -->
-    <button class="create-post-btn" onclick="createNewPost()">
+    <button class="create-post-btn" th:if="${session.user != null}"
+            th:onclick="|window.location.href='@{/posts/new}'|">
         写文章
     </button>
 
+
     <script>
-        function createNewPost() {
-            // 这里可以添加创建新文章的功能
-            alert('创建新文章功能即将上线！');
-        }
 
         // 添加页面加载动画
         document.addEventListener('DOMContentLoaded', function() {

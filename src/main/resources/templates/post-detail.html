@@ -21,9 +21,12 @@
 
         .container {
             max-width: 900px;
-            margin: 0 auto;
-            padding: 20px;
-        }
+            margin: 100px auto 60px auto;
+            background: white;
+             border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            padding: 40px 30px 30px 30px;
+         }
 
         .header {
             text-align: center;
@@ -284,11 +287,11 @@
                 </div>
             </div>
 
-            <div class="post-content" th:utext="${#strings.replace(#strings.replace(post.content, '\n', '<br>'), '  ', '&nbsp;&nbsp;')}">
-                文章内容...
-            </div>
+            <pre class="post-content" th:utext="${#strings.replace(post.content, '\\n', '<br/>')}">
+            文章内容...
+            </pre>
 
-            <div class="actions">
+            <div class="actions" th:if="${session.user != null and session.user.username == post.author}">
                 <button class="btn btn-edit" onclick="editPost()">
                     ✏️ 编辑文章
                 </button>
@@ -305,10 +308,10 @@
 
     <script th:inline="javascript">
         const postId = [[${post.id}]];
-        
+
         function editPost() {
-            // 跳转到编辑页面
-            window.location.href = `/api/posts/${postId}/edit`;
+            const path = /*[[@{/posts/edit/}]]*/ "";
+            window.location.href = `${path}${encodeURIComponent(String(postId))}`;
         }
     
         
