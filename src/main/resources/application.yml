@@ -27,6 +27,18 @@ spring:
       connection-timeout: 30000
       maximum-pool-size: 10
 
+  mail:
+    host: smtp.qq.com           # 你的邮箱SMTP服务器（如QQ邮箱、163邮箱、Gmail等）
+    port: 465                   # 通常SSL用465，非SSL用25
+    username: 3281314509@qq.com
+    password: qztzywsepofodabj      # 不是邮箱登录密码，是邮箱服务生成的“授权码”
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+
   # ========================
   # JPA 配置
   # ========================
@@ -40,6 +52,48 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
     defer-datasource-initialization: true
   
+  # ========================
+  # RabbitMQ 配置
+  # ========================
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    virtual-host: /
+    listener:
+      simple:
+        concurrency: 5
+        max-concurrency: 10
+        prefetch: 1
+        default-requeue-rejected: false
+    
+  # ========================
+  # Redis 配置
+  # ========================
+  redis:
+    host: localhost
+    port: 6379
+    password: 
+    database: 0
+    timeout: 2000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-wait: -1ms
+        max-idle: 8
+        min-idle: 0
+
+  # ========================
+  # MyBatis 配置
+  # ========================
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.myweb.website_core.demos.web
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
   # ========================
   # SQL 初始化配置
   # ========================

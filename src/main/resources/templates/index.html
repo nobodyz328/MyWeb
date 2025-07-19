@@ -1,290 +1,121 @@
 <!DOCTYPE html>
-<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的博客 - 首页</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 40px;
-            color: white;
-        }
-
-        .header h1 {
-            font-size: 3rem;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        }
-
-        .header p {
-            font-size: 1.2rem;
-            opacity: 0.9;
-        }
-
-        .blog-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 30px;
-            margin-bottom: 40px;
-        }
-
-        .blog-card {
-            background: white;
-            border-radius: 15px;
-            padding: 25px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .blog-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, #667eea, #764ba2);
-        }
-
-        .blog-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
-        }
-
-        .blog-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: #2c3e50;
-            margin-bottom: 15px;
-            line-height: 1.3;
-        }
-
-        .blog-content {
-            color: #666;
-            margin-bottom: 20px;
-            line-height: 1.6;
-            display: -webkit-box;
-            -webkit-line-clamp: 3;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-
-        .blog-meta {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.9rem;
-            color: #888;
-        }
-
-        .author {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .author::before {
-            content: '👤';
-        }
-
-        .date {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .date::before {
-            content: '📅';
-        }
-
-        .empty-state {
-            text-align: center;
-            background: white;
-            border-radius: 15px;
-            padding: 60px 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        }
-
-        .empty-state h3 {
-            font-size: 1.8rem;
-            color: #666;
-            margin-bottom: 15px;
-        }
-
-        .empty-state p {
-            color: #888;
-            font-size: 1.1rem;
-        }
-
-        .loading {
-            text-align: center;
-            color: white;
-            font-size: 1.2rem;
-            padding: 40px;
-        }
-
-        .spinner {
-            border: 4px solid rgba(255,255,255,0.3);
-            border-top: 4px solid white;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .footer {
-            text-align: center;
-            color: white;
-            margin-top: 40px;
-            padding: 20px;
-            opacity: 0.8;
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                padding: 15px;
-            }
-
-            .header h1 {
-                font-size: 2rem;
-            }
-
-            .blog-grid {
-                grid-template-columns: 1fr;
-                gap: 20px;
-            }
-
-            .blog-card {
-                padding: 20px;
-            }
-        }
-
-        .create-post-btn {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            border-radius: 50px;
-            padding: 15px 25px;
-            font-size: 1rem;
-            cursor: pointer;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            transition: transform 0.3s ease;
-            z-index: 1000;
-        }
-
-        .create-post-btn:hover {
-            transform: scale(1.05);
-        }
-
-        .create-post-btn::before {
-            content: '✏️';
-            margin-right: 8px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MySteam社区 - 首页</title>
+  <style>
+    body { background: linear-gradient(135deg, #171a21 0%, #1b2838 100%); color: #c7d5e0; font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif; margin: 0; min-height: 100vh; }
+    .steam-navbar { background: rgba(23,26,33,0.95); color: #66c0f4; box-shadow: 0 2px 8px #000a; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; height: 64px; }
+    .steam-navbar .logo { font-size: 1.6rem; font-weight: bold; color: #66c0f4; }
+    .steam-navbar ul { list-style: none; display: flex; gap: 32px; margin: 0; padding: 0; }
+    .steam-navbar li a { color: #c7d5e0; text-decoration: none; font-size: 1.1rem; transition: color 0.2s; }
+    .steam-navbar li a:hover { color: #66c0f4; }
+    .main-content { display: flex; max-width: 1200px; margin: 40px auto 0 auto; gap: 32px; }
+    .announcement-bar { background: #23262e; color: #fff; border-radius: 8px; padding: 16px 24px; margin-bottom: 24px; font-size: 1.1rem; box-shadow: 0 2px 8px #0006; width: 100%; }
+    .post-list { flex: 2; display: flex; flex-direction: column; gap: 24px; }
+    .post-card { background: #23262e; border-radius: 12px; box-shadow: 0 4px 24px #0006; padding: 24px; transition: box-shadow 0.2s; color: #fff; }
+    .post-card:hover { box-shadow: 0 8px 32px #00bfff88; }
+    .sidebar { flex: 1; display: flex; flex-direction: column; gap: 24px; }
+    .top-liked, .hot-tags { background: #23262e; border-radius: 8px; padding: 16px 20px; color: #fff; box-shadow: 0 2px 8px #0006; }
+    footer { text-align: center; color: #66c0f4; margin-top: 60px; padding: 24px 0; background: none; font-size: 1rem; opacity: 0.8; }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <header class="header">
-            <h1>我的博客</h1>
-            <p>分享技术，记录生活</p>
-            <div style="margin-top: 20px;">
-                <span th:if="${session.user != null}">
-                    欢迎，<b th:text="${session.user.username}"></b>！
-                    <a th:href="@{/user/logout}" style="color:#fff;text-decoration:underline;margin-left:10px;">退出登录</a>
-                </span>
-                <span th:if="${session.user == null}">
-                    <a th:href="@{/user/login}" style="color:#fff;text-decoration:underline;">登录</a> |
-                    <a th:href="@{/user/register}" style="color:#fff;text-decoration:underline;">注册</a>
-                </span>
-            </div>
-        </header>
-
-        <main>
-            <!-- 加载状态 -->
-            <div class="loading" th:if="${posts == null}">
-                <div class="spinner"></div>
-                <p>正在加载文章...</p>
-            </div>
-
-            <!-- 文章列表 -->
-            <div class="blog-grid" th:if="${posts != null}">
-                <article class="blog-card" th:each="post : ${posts}">
-                    <h2 class="blog-title">
-                        <a th:href="@{'/view/' + ${post.id}}" th:text="${post.title}" style="color: inherit; text-decoration: none;">文章标题</a>
-                    </h2>
-                    <p class="blog-content" th:text="${#strings.abbreviate(post.content, 150)}">文章内容预览...</p>
-                    <div class="blog-meta">
-                        <span class="author" th:text="${post.author}">作者</span>
-                        <span class="date" th:text="${#temporals.format(post.createdAt, 'yyyy-MM-dd HH:mm')}">2025-07-01</span>
-                    </div>
-                </article>
-            </div>
-
-            <!-- 空状态 -->
-            <div class="empty-state" th:if="${posts == null and #lists.isEmpty(posts)}">
-                <h3>暂无文章</h3>
-                <p>还没有发布任何文章，快来写第一篇吧！</p>
-            </div>
-        </main>
-
-        <footer class="footer">
-            <p>&copy; 2025 我的博客. 用 ❤️ 和 Spring Boot 构建</p>
-        </footer>
+  <nav class="steam-navbar">
+    <div class="logo">MySteam社区</div>
+    <ul id="navUser">
+      <li><a href="/blog/view">首页</a></li>
+      <li><a href="/blog/community">社区</a></li>
+      <li><a href="/blog/announcements">公告</a></li>
+      <li><a href="/blog/profile">个人中心</a></li>
+      <li id="loginNav"><a href="/blog/login">登录/注册</a></li>
+    </ul>
+  </nav>
+  <div id="userCard" style="display:none;position:fixed;top:80px;right:40px;z-index:9999;background:#23262e;border-radius:16px;box-shadow:0 4px 24px #000a;padding:32px 40px;min-width:320px;color:#fff;">
+    <div style="display:flex;align-items:center;gap:24px;">
+      <img id="userCardAvatar" src="https://static.hdslb.com/images/member/noface.gif" style="width:72px;height:72px;border-radius:50%;background:#1b2838;border:3px solid #66c0f4;">
+      <div>
+        <div id="userCardName" style="font-size:1.4rem;font-weight:bold;">用户名</div>
+      </div>
     </div>
-
-    <button class="create-post-btn" th:if="${session.user != null}"
-            th:onclick="|window.location.href='@{/posts/new}'|">
-        写文章
-    </button>
-
-
-    <script>
-
-        // 添加页面加载动画
-        document.addEventListener('DOMContentLoaded', function() {
-            const cards = document.querySelectorAll('.blog-card');
-            cards.forEach((card, index) => {
-                card.style.opacity = '0';
-                card.style.transform = 'translateY(20px)';
-                setTimeout(() => {
-                    card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-                    card.style.opacity = '1';
-                    card.style.transform = 'translateY(0)';
-                }, index * 100);
-            });
+    <div style="margin:18px 0 8px 0;display:flex;align-items:center;gap:12px;">
+      <div id="userCardFollow" style="text-align:center;"><div style="font-size:1.2rem;font-weight:bold;">0</div><div style="font-size:0.95rem;">关注</div></div>
+      <div id="userCardFans" style="text-align:center;"><div style="font-size:1.2rem;font-weight:bold;">0</div><div style="font-size:0.95rem;">粉丝</div></div>
+      <div id="userCardLike" style="text-align:center;"><div style="font-size:1.2rem;font-weight:bold;">0</div><div style="font-size:0.95rem;">获赞</div></div>
+    </div>
+    <button id="logoutBtn" class="steam-btn" style="margin-top:12px;width:100%;">退出登录</button>
+  </div>
+  <main class="main-content">
+    <section class="announcement-bar">公告栏（示例）</section>
+    <section class="post-list" id="allPostsList">
+      <!-- 帖子卡片骨架 -->
+    </section>
+    <aside class="sidebar">
+      <div class="top-liked">获赞前20</div>
+      <div class="hot-tags">热门标签</div>
+    </aside>
+  </main>
+  <script>
+    // 异步加载所有帖子列表
+    function loadAllPosts() {
+      fetch('/blog/posts')
+        .then(res => res.json())
+        .then(posts => {
+          const list = document.getElementById('allPostsList');
+          if (!posts || posts.length === 0) {
+            list.innerHTML = '<div style="color:#c7d5e0;">暂无帖子</div>';
+            return;
+          }
+          list.innerHTML = posts.map(post => `
+            <div class="post-card">
+              <div class="post-title"><a href="/blog/posts/${post.id}" style="color:#66c0f4;">${post.title}</a></div>
+              <div class="post-meta">${post.author && post.author.username ? post.author.username : ''} | ${post.createdAt ? post.createdAt.replace('T',' ').slice(0,16) : ''} | ${post.likeCount || 0} 赞 | ${post.collectCount || 0} 收藏</div>
+              <div class="post-summary">${post.content ? post.content.slice(0, 80) + (post.content.length > 80 ? '...' : '') : ''}</div>
+            </div>
+          `).join('');
         });
-    </script>
+    }
+    loadAllPosts();
+    // 登录后右上角显示用户名，点击弹出卡片
+    const userId = localStorage.getItem('userId');
+    if (userId) {
+      fetch('/blog/users/' + userId + '/profile')
+        .then(res => res.json())
+        .then(data => {
+          const navUser = document.getElementById('navUser');
+          let userLi = document.createElement('li');
+          userLi.innerHTML = `<a href="javascript:void(0);" id="navUsername">${data.username}</a>`;
+          const loginNav = document.getElementById('loginNav');
+          if (loginNav) navUser.removeChild(loginNav);
+          navUser.appendChild(userLi);
+          // 用户卡片数据
+          document.getElementById('userCardName').innerText = data.username;
+          document.getElementById('userCardFollow').children[0].innerText = data.followingCount;
+          document.getElementById('userCardFans').children[0].innerText = data.followersCount;
+          document.getElementById('userCardLike').children[0].innerText = data.likedCount;
+          // 头像（如有）
+          if(data.avatarUrl) document.getElementById('userCardAvatar').src = data.avatarUrl;
+          // 点击用户名弹出卡片
+          document.getElementById('navUsername').onclick = function(e) {
+            const card = document.getElementById('userCard');
+            card.style.display = card.style.display === 'none' ? 'block' : 'none';
+          };
+          // 点击退出登录
+          document.getElementById('logoutBtn').onclick = function() {
+            localStorage.removeItem('userId');
+            window.location.reload();
+          };
+          // 点击页面其他地方关闭卡片
+          document.addEventListener('click', function(e) {
+            const card = document.getElementById('userCard');
+            if (card.style.display === 'block' && !card.contains(e.target) && e.target.id !== 'navUsername') {
+              card.style.display = 'none';
+            }
+          });
+        });
+    }
+  </script>
+  <footer>© 2025 MySteam社区</footer>
 </body>
 </html> 

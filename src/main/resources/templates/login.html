@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>登录 / 注册 - MySteam社区</title>
+  <style>
+    .auth-container { max-width: 400px; margin: 100px auto; background: #23262e; border-radius: 16px; box-shadow: 0 4px 24px rgba(35, 27, 27, 0.78); padding: 40px 32px; }
+    .auth-tabs { display: flex; justify-content: center; gap: 32px; margin-bottom: 32px; }
+    .auth-tabs button { background: none; border: none; color: #66c0f4; font-size: 1.2rem; cursor: pointer; padding: 8px 24px; border-bottom: 2px solid transparent; transition: border 0.2s; }
+    .auth-tabs .active { border-bottom: 2px solid #66c0f4; font-weight: bold; }
+    .auth-form { display: flex; flex-direction: column; gap: 20px; }
+    .auth-form input { background: #1b2838; border: 1px solid #66c0f4; border-radius: 8px; color: #fff; padding: 12px; font-size: 1rem; }
+    .auth-form .steam-btn { width: 100%; }
+    .captcha-row { display: flex; gap: 12px; align-items: center; }
+    .captcha-img { width: 100px; height: 36px; background: #333; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #66c0f4; font-weight: bold; }
+  </style>
+</head>
+<body class="steam-bg">
+  <div class="auth-container">
+    <div class="auth-tabs">
+      <button class="active" id="loginTab">登录</button>
+      <button id="registerTab">注册</button>
+    </div>
+    <form class="auth-form" id="loginForm">
+      <input type="text" placeholder="用户名" required>
+      <input type="password" placeholder="密码" required>
+      <div class="captcha-row" style="display:none;" id="loginCaptchaRow">
+        <input type="text" placeholder="验证码">
+        <div class="captcha-img">1234</div>
+      </div>
+      <button type="submit" class="steam-btn">登录</button>
+    </form>
+    <form class="auth-form" id="registerForm" style="display:none;">
+      <input type="text" placeholder="用户名" required>
+      <input type="password" placeholder="密码" required>
+      <button type="submit" class="steam-btn">注册</button>
+    </form>
+  </div>
+  <script>
+    // 登录表单异步提交
+    document.getElementById('loginForm').onsubmit = function(e) {
+      e.preventDefault();
+      const username = this.querySelector('input[placeholder="用户名"]').value;
+      const password = this.querySelector('input[placeholder="密码"]').value;
+      // 如果有验证码输入框
+      const codeInput = this.querySelector('input[placeholder="验证码"]');
+      const code = "";
+      fetch('/blog/users/login', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({username,password,code})
+      }).then(res => res.json()).then(data => {
+        if (data && data.id) {
+          localStorage.setItem('userId', data.id);
+          window.location.href = '/blog/view';
+        } else {
+          alert('登录失败');
+        }
+      });
+    };
+    // 注册表单异步提交
+    document.getElementById('registerForm').onsubmit = function(e) {
+      e.preventDefault();
+      const username = this.querySelector('input[placeholder="用户名"]').value;
+      const password = this.querySelector('input[placeholder="密码"]').value;
+      fetch('/blog/users/register', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({username, password})
+      }).then(res => res.json()).then(data => {
+        if (data && data.id) {
+          alert('注册成功，请登录');
+          document.getElementById('loginTab').click();
+        } else {
+          alert('注册失败');
+        }
+      });
+    };
+    // Tab切换逻辑保留
+    const loginTab = document.getElementById('loginTab');
+    const registerTab = document.getElementById('registerTab');
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    loginTab.onclick = () => {
+      loginTab.classList.add('active');
+      registerTab.classList.remove('active');
+      loginForm.style.display = '';
+      registerForm.style.display = 'none';
+    };
+    registerTab.onclick = () => {
+      registerTab.classList.add('active');
+      loginTab.classList.remove('active');
+      loginForm.style.display = 'none';
+      registerForm.style.display = '';
+    };
+  </script>
+</body>
+</html> 

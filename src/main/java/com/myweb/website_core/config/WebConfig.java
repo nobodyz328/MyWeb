@@ -48,23 +48,6 @@ public class WebConfig implements WebMvcConfigurer {
         connector.setRedirectPort(8443);  // 重定向到HTTPS端口
         return connector;
     }
-//    private void configureVirtualHost(Context context) {
-//        // 创建一个新的虚拟主机
-//        StandardHost host = new StandardHost();
-//        host.setName("www.myblog.com"); // 设置虚拟主机的域名
-//        host.setAutoDeploy(false);
-//        host.setAppBase("webapps");
-//
-//        // 创建一个新的上下文
-//        Context appContext = new StandardContext();
-//        appContext.setPath("/");
-//        appContext.setDocBase("path/to/your/webapp"); // 设置Web应用的路径
-//
-//        // 将上下文添加到虚拟主机中
-//        host.addChild(appContext);
-//
-//        // 将虚拟主机添加到Tomcat服务器中
-//
-//    }
+
 
 } 

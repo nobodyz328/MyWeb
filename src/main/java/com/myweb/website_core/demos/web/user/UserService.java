@@ -13,16 +13,23 @@ import java.util.Optional;
 import java.util.Set;
 
 import java.util.Collections;
+import com.myweb.website_core.demos.web.blog.Post;
+import com.myweb.website_core.demos.web.blog.PostRepository;
+import java.util.stream.Collectors;
 
 @Service
 public class UserService {
     private final UserRepository userRepository;
     private final EmailService emailService;
+    private final PostRepository postRepository;
     private final ConcurrentHashMap<String, String> emailCodeMap = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Integer> loginFailCount = new ConcurrentHashMap<>();
 
-    public UserService(UserRepository userRepository, EmailService emailService) {
+    @Autowired
+    public UserService(UserRepository userRepository, EmailService emailService, PostRepository postRepository) {
         this.userRepository = userRepository;
         this.emailService = emailService;
+        this.postRepository = postRepository;
     }
 
     @Async
@@ -34,46 +41,101 @@ public class UserService {
     }
 
     @Async
-    public CompletableFuture<User> register(String username, String email, String password, String code) {
-        if (!code.equals(emailCodeMap.get(email))) {
-            throw new RuntimeException("验证码错误");
-        }
+    public CompletableFuture<User> register(String username, String password) {
         if (userRepository.findByUsername(username) != null) {
             throw new RuntimeException("用户名已存在");
         }
-        if (userRepository.findByEmail(email).isPresent()) {
-            throw new RuntimeException("邮箱已注册");
-        }
         User user = new User();
         user.setUsername(username);
-        user.setEmail(email);
         user.setPassword(password); // 实际应加密
+        user.setEmail("");
+        user.setAvatarUrl(""); // 如果avatarUrl是NOT NULL
+        user.setBio("");       // 如果bio是NOT NULL
+        user.setLikedCount(0);
         userRepository.save(user);
-        emailCodeMap.remove(email);
         return CompletableFuture.completedFuture(user);
     }
 
     @Async
-    public CompletableFuture<User> login(String usernameOrEmail, String password, String code) {
-        // 校验验证码、密码、返回用户
-        return CompletableFuture.completedFuture(null);
+    public CompletableFuture<User> login(String username, String password, String code) {
+        int failCount = loginFailCount.getOrDefault(username, 0);
+        if (failCount >= 3 && (code == null || code.isEmpty())) {
+            throw new RuntimeException("需要验证码");
+        }
+        User user = userRepository.findByUsername(username);
+        if (user == null) {
+            loginFailCount.put(username, failCount + 1);
+            throw new RuntimeException("用户不存在");
+        }
+        if (!user.getPassword().equals(password)) {
+            loginFailCount.put(username, failCount + 1);
+            throw new RuntimeException("密码错误");
+        }
+        loginFailCount.remove(username);
+        return CompletableFuture.completedFuture(user);
     }
 
     @Async
     public CompletableFuture<Void> follow(Long userId, Long targetId) {
-        // 关注逻辑
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("用户不存在"));
+        User target = userRepository.findById(targetId).orElseThrow(() -> new RuntimeException("目标用户不存在"));
+        user.getFollowing().add(target);
+        target.getFollowers().add(user);
+        userRepository.save(user);
+        userRepository.save(target);
         return CompletableFuture.completedFuture(null);
     }
 
     @Async
     public CompletableFuture<Void> unfollow(Long userId, Long targetId) {
-        // 取关逻辑
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("用户不存在"));
+        User target = userRepository.findById(targetId).orElseThrow(() -> new RuntimeException("目标用户不存在"));
+        user.getFollowing().remove(target);
+        target.getFollowers().remove(user);
+        userRepository.save(user);
+        userRepository.save(target);
         return CompletableFuture.completedFuture(null);
     }
 
     @Async
-    public CompletableFuture<User> getProfile(Long userId) {
-        // 查询个人主页信息
-        return CompletableFuture.completedFuture(null);
+    public CompletableFuture<UserProfileDTO> getProfile(Long userId) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("用户不存在"));
+        UserProfileDTO dto = new UserProfileDTO();
+        dto.setId(user.getId());
+        dto.setUsername(user.getUsername());
+        dto.setAvatarUrl(user.getAvatarUrl());
+        dto.setBio(user.getBio());
+        dto.setFollowersCount(user.getFollowers() != null ? user.getFollowers().size() : 0);
+        dto.setFollowingCount(user.getFollowing() != null ? user.getFollowing().size() : 0);
+        dto.setLikedCount(user.getLikedCount());
+        dto.setPosts(postRepository.findAll().stream().filter(p -> p.getAuthor().getId().equals(userId)).collect(Collectors.toList()));
+        return CompletableFuture.completedFuture(dto);
     }
+}
+
+class UserProfileDTO {
+    private Long id;
+    private String username;
+    private String avatarUrl;
+    private String bio;
+    private int followersCount;
+    private int followingCount;
+    private int likedCount;
+    private java.util.List<Post> posts;
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getUsername() { return username; }
+    public void setUsername(String username) { this.username = username; }
+    public String getAvatarUrl() { return avatarUrl; }
+    public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
+    public String getBio() { return bio; }
+    public void setBio(String bio) { this.bio = bio; }
+    public int getFollowersCount() { return followersCount; }
+    public void setFollowersCount(int followersCount) { this.followersCount = followersCount; }
+    public int getFollowingCount() { return followingCount; }
+    public void setFollowingCount(int followingCount) { this.followingCount = followingCount; }
+    public int getLikedCount() { return likedCount; }
+    public void setLikedCount(int likedCount) { this.likedCount = likedCount; }
+    public java.util.List<Post> getPosts() { return posts; }
+    public void setPosts(java.util.List<Post> posts) { this.posts = posts; }
 }

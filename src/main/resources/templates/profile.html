@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>个人主页 - MySteam社区</title>
+  <style>
+    .profile-banner { background: linear-gradient(90deg,#23262e 60%,#66c0f4 100%); border-radius: 16px; padding: 32px 40px; color: #fff; display: flex; align-items: center; gap: 32px; margin: 40px auto 32px auto; max-width: 900px; }
+    .profile-avatar { width: 96px; height: 96px; border-radius: 50%; background: #1b2838; border: 3px solid #66c0f4; }
+    .profile-info { flex: 1; }
+    .profile-tabs { display: flex; gap: 32px; margin: 0 auto 24px auto; max-width: 900px; }
+    .profile-tabs button { background: none; border: none; color: #66c0f4; font-size: 1.1rem; cursor: pointer; padding: 8px 24px; border-bottom: 2px solid transparent; transition: border 0.2s; }
+    .profile-tabs .active { border-bottom: 2px solid #66c0f4; font-weight: bold; }
+    .profile-content { background: #23262e; border-radius: 12px; box-shadow: 0 4px 24px rgba(63, 53, 53, 0.4); padding: 32px; max-width: 900px; margin: 0 auto; color: #fff; }
+  </style>
+</head>
+<body class="steam-bg" style="background: linear-gradient(135deg, #1b2838 0%, #30415d 100%) fixed; min-height:100vh;">
+  <div style="position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:-1;background:linear-gradient(135deg,#22304a 0%,#1b2838 100%);opacity:0.85;"></div>
+  <button onclick="window.location.href='/blog/view'" style="position:fixed;top:24px;left:24px;z-index:1000;background:#23262e;color:#66c0f4;border:none;border-radius:8px;padding:10px 18px;font-size:1rem;cursor:pointer;box-shadow:0 2px 8px rgba(56,49,49,0.4);">🔙</button>
+  <div class="profile-banner" id="profileBanner">
+    <img id="profileAvatar" src="https://static.hdslb.com/images/member/noface.gif" class="profile-avatar">
+    <div class="profile-info">
+      <h2 id="profileUsername">用户名</h2>
+      <div id="profileBio">简介：</div>
+      <div>
+        关注 <b id="profileFollowing">0</b> | 粉丝 <b id="profileFollowers">0</b> | 获赞 <b id="profileLiked">0</b>
+      </div>
+    </div>
+    <button class="steam-btn" id="logoutBtn" style="margin-left:auto;">退出登录</button>
+  </div>
+  <div class="profile-tabs">
+    <button class="active" id="tabPosts">我的帖子</button>
+    <button id="tabCollects">收藏</button>
+    <button id="tabFollows">关注</button>
+    <button id="tabSettings">设置</button>
+  </div>
+  <div class="profile-content" id="profileContent">
+    <!-- 我的帖子tab内容 -->
+    <div id="postsTabContent">
+      <button class="steam-btn" style="margin-bottom:18px;" onclick="window.location.href='/blog/posts/new'">+ 创建帖子</button>
+      <div id="myPostsList">这里显示我的帖子</div>
+    </div>
+    <!-- 收藏tab内容 -->
+    <div id="collectsTabContent" style="display:none;">这里显示收藏的帖子</div>
+    <!-- 关注tab内容 -->
+    <div id="followsTabContent" style="display:none;">这里显示关注的用户</div>
+    <!-- 设置tab内容 -->
+    <div id="settingsTabContent" style="display:none;">
+      <div id="emailBindSection" style="background:#23262e; border-radius:8px; padding:24px; box-shadow:0 2px 8px #0006;max-width:400px;">
+        <h3>绑定邮箱</h3>
+        <div id="emailBindStatus"></div>
+        <form id="emailBindForm" style="display:flex;gap:12px;align-items:center;">
+          <input type="email" id="bindEmailInput" placeholder="输入邮箱" style="flex:1;padding:8px;border-radius:6px;border:1px solid #66c0f4;background:#1b2838;color:#fff;">
+          <input type="text" id="bindEmailCode" placeholder="验证码" style="width:100px;padding:8px;border-radius:6px;border:1px solid #66c0f4;background:#1b2838;color:#fff;">
+          <button type="button" id="getBindCodeBtn" class="steam-btn" style="padding:8px 12px;">获取验证码</button>
+          <button type="submit" class="steam-btn" style="padding:8px 12px;">绑定邮箱</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <script>
+    // 获取当前登录用户ID
+    const userId = localStorage.getItem('userId');
+    if (userId) {
+      fetch('/blog/users/' + userId + '/profile')
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById('profileUsername').innerText = data.username;
+          document.getElementById('profileBio').innerText = '简介：' + (data.bio || '');
+          document.getElementById('profileFollowing').innerText = data.followingCount;
+          document.getElementById('profileFollowers').innerText = data.followersCount;
+          document.getElementById('profileLiked').innerText = data.likedCount;
+          if(data.avatarUrl) document.getElementById('profileAvatar').src = data.avatarUrl;
+        });
+    }
+    // 退出登录
+    document.getElementById('logoutBtn').onclick = function() {
+      localStorage.removeItem('userId');
+      window.location.href = '/blog/login';
+    };
+    // Tab切换逻辑
+    const tabPosts = document.getElementById('tabPosts');
+    const tabCollects = document.getElementById('tabCollects');
+    const tabFollows = document.getElementById('tabFollows');
+    const tabSettings = document.getElementById('tabSettings');
+    const postsTabContent = document.getElementById('postsTabContent');
+    const collectsTabContent = document.getElementById('collectsTabContent');
+    const followsTabContent = document.getElementById('followsTabContent');
+    const settingsTabContent = document.getElementById('settingsTabContent');
+    const profileContent = document.getElementById('profileContent');
+    tabPosts.onclick = () => {
+      setActive(tabPosts);
+      postsTabContent.style.display = '';
+      collectsTabContent.style.display = 'none';
+      followsTabContent.style.display = 'none';
+      settingsTabContent.style.display = 'none';
+      loadMyPosts();
+    };
+    tabCollects.onclick = () => {
+      setActive(tabCollects);
+      postsTabContent.style.display = 'none';
+      collectsTabContent.style.display = '';
+      followsTabContent.style.display = 'none';
+      settingsTabContent.style.display = 'none';
+    };
+    tabFollows.onclick = () => {
+      setActive(tabFollows);
+      postsTabContent.style.display = 'none';
+      collectsTabContent.style.display = 'none';
+      followsTabContent.style.display = '';
+      settingsTabContent.style.display = 'none';
+    };
+    tabSettings.onclick = () => {
+      setActive(tabSettings);
+      postsTabContent.style.display = 'none';
+      collectsTabContent.style.display = 'none';
+      followsTabContent.style.display = 'none';
+      settingsTabContent.style.display = '';
+    };
+    function setActive(tab) {
+      [tabPosts, tabCollects, tabFollows, tabSettings].forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+    }
+    // 邮箱绑定功能
+    const emailBindForm = document.getElementById('emailBindForm');
+    const getBindCodeBtn = document.getElementById('getBindCodeBtn');
+    const bindEmailInput = document.getElementById('bindEmailInput');
+    const bindEmailCode = document.getElementById('bindEmailCode');
+    const emailBindStatus = document.getElementById('emailBindStatus');
+    getBindCodeBtn.onclick = function() {
+      const email = bindEmailInput.value;
+      const userId = localStorage.getItem('userId');
+      if (!email) { emailBindStatus.innerText = '请输入邮箱'; return; }
+      fetch(`/users/${userId}/bind-email/code?email=` + encodeURIComponent(email), {method: 'POST'})
+        .then(res => { if(res.ok) emailBindStatus.innerText = '验证码已发送到邮箱'; });
+    };
+    emailBindForm.onsubmit = function(e) {
+      e.preventDefault();
+      const email = bindEmailInput.value;
+      const code = bindEmailCode.value;
+      const userId = localStorage.getItem('userId');
+      fetch(`/users/${userId}/bind-email`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({email, code})
+      }).then(res => {
+        if(res.ok) emailBindStatus.innerText = '邮箱绑定成功';
+        else emailBindStatus.innerText = '绑定失败，请检查验证码';
+      });
+    };
+    // 我的帖子tab内容异步加载
+    function loadMyPosts() {
+      const userId = localStorage.getItem('userId');
+      if (!userId) return;
+      fetch('/blog/posts/mine?userId=' + userId)
+        .then(res => res.json())
+        .then(posts => {
+          const list = document.getElementById('myPostsList');
+          if (!posts || posts.length === 0) {
+            list.innerHTML = '<div style="color:#c7d5e0;">暂无帖子</div>';
+            return;
+          }
+          list.innerHTML = posts.map(post => `
+            <div class="post-card">
+              <div class="post-title">${post.title}</div>
+              <div class="post-meta">${post.createdAt ? post.createdAt.replace('T',' ').slice(0,16) : ''} | ${post.likeCount || 0} 赞 | ${post.collectCount || 0} 收藏</div>
+              <div class="post-actions">
+                <button onclick="editPost(${post.id})">编辑</button>
+                <button onclick="deletePost(${post.id})">删除</button>
+              </div>
+            </div>
+          `).join('');
+        });
+    }
+    function editPost(id) {
+      window.location.href = `/blog/posts/edit/${id}`;
+    }
+    function deletePost(id) {
+      if (confirm('确定要删除该帖子吗？')) {
+        fetch(`/blog/api/posts/${id}`, { method: 'DELETE' })
+          .then(res => {
+            if (res.ok) loadMyPosts();
+            else alert('删除失败');
+          });
+      }
+    }
+    // 页面加载时自动加载我的帖子
+    loadMyPosts();
+  </script>
+</body>
+</html> 
