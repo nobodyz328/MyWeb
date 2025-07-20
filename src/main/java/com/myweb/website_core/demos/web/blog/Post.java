@@ -3,7 +3,7 @@ package com.myweb.website_core.demos.web.blog;
 
 
 import com.myweb.website_core.demos.web.user.User;
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.List;
 

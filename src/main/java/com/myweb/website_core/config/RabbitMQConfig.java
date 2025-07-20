@@ -16,16 +16,33 @@ public class RabbitMQConfig {
     public static final String EMAIL_NOTIFICATION_QUEUE = "email.notification.queue";
     public static final String AUDIT_LOG_QUEUE = "audit.log.queue";
     
+    // 新增交互相关队列常量
+    public static final String INTERACTION_LIKE_QUEUE = "interaction.like.queue";
+    public static final String INTERACTION_BOOKMARK_QUEUE = "interaction.bookmark.queue";
+    public static final String INTERACTION_COMMENT_QUEUE = "interaction.comment.queue";
+    public static final String INTERACTION_STATS_UPDATE_QUEUE = "interaction.stats.update.queue";
+    
+    // 死信队列常量
+    public static final String INTERACTION_DLQ = "interaction.dlq";
+    public static final String INTERACTION_DLX = "interaction.dlx";
+    
     // 交换机名称常量
     public static final String POST_EXCHANGE = "post.exchange";
     public static final String NOTIFICATION_EXCHANGE = "notification.exchange";
     public static final String AUDIT_EXCHANGE = "audit.exchange";
+    public static final String INTERACTION_EXCHANGE = "interaction.exchange";
 
     // 路由键常量
     public static final String POST_CREATED_ROUTING_KEY = "post.created";
     public static final String POST_LIKED_ROUTING_KEY = "post.liked";
     public static final String EMAIL_NOTIFICATION_ROUTING_KEY = "email.notification";
     public static final String AUDIT_LOG_ROUTING_KEY = "audit.log";
+    
+    // 新增交互相关路由键常量
+    public static final String INTERACTION_LIKE_ROUTING_KEY = "interaction.like";
+    public static final String INTERACTION_BOOKMARK_ROUTING_KEY = "interaction.bookmark";
+    public static final String INTERACTION_COMMENT_ROUTING_KEY = "interaction.comment";
+    public static final String INTERACTION_STATS_UPDATE_ROUTING_KEY = "interaction.stats.update";
 
     // 帖子相关队列
     @Bean
@@ -50,6 +67,49 @@ public class RabbitMQConfig {
         return new Queue(AUDIT_LOG_QUEUE, true);
     }
 
+    // 交互相关队列（带死信队列配置）
+    @Bean
+    public Queue interactionLikeQueue() {
+        return QueueBuilder.durable(INTERACTION_LIKE_QUEUE)
+                .withArgument("x-dead-letter-exchange", INTERACTION_DLX)
+                .withArgument("x-dead-letter-routing-key", "like.failed")
+                .withArgument("x-message-ttl", 300000) // 5分钟TTL
+                .build();
+    }
+
+    @Bean
+    public Queue interactionBookmarkQueue() {
+        return QueueBuilder.durable(INTERACTION_BOOKMARK_QUEUE)
+                .withArgument("x-dead-letter-exchange", INTERACTION_DLX)
+                .withArgument("x-dead-letter-routing-key", "bookmark.failed")
+                .withArgument("x-message-ttl", 300000) // 5分钟TTL
+                .build();
+    }
+
+    @Bean
+    public Queue interactionCommentQueue() {
+        return QueueBuilder.durable(INTERACTION_COMMENT_QUEUE)
+                .withArgument("x-dead-letter-exchange", INTERACTION_DLX)
+                .withArgument("x-dead-letter-routing-key", "comment.failed")
+                .withArgument("x-message-ttl", 300000) // 5分钟TTL
+                .build();
+    }
+
+    @Bean
+    public Queue interactionStatsUpdateQueue() {
+        return QueueBuilder.durable(INTERACTION_STATS_UPDATE_QUEUE)
+                .withArgument("x-dead-letter-exchange", INTERACTION_DLX)
+                .withArgument("x-dead-letter-routing-key", "stats.failed")
+                .withArgument("x-message-ttl", 300000) // 5分钟TTL
+                .build();
+    }
+
+    // 死信队列
+    @Bean
+    public Queue interactionDeadLetterQueue() {
+        return QueueBuilder.durable(INTERACTION_DLQ).build();
+    }
+
     // 交换机
     @Bean
     public TopicExchange postExchange() {
@@ -64,6 +124,17 @@ public class RabbitMQConfig {
     @Bean
     public TopicExchange auditExchange() {
         return new TopicExchange(AUDIT_EXCHANGE);
+    }
+
+    @Bean
+    public TopicExchange interactionExchange() {
+        return new TopicExchange(INTERACTION_EXCHANGE);
+    }
+
+    // 死信交换机
+    @Bean
+    public DirectExchange interactionDeadLetterExchange() {
+        return new DirectExchange(INTERACTION_DLX);
     }
 
     // 绑定关系
@@ -93,6 +164,43 @@ public class RabbitMQConfig {
         return BindingBuilder.bind(auditLogQueue())
                 .to(auditExchange())
                 .with(AUDIT_LOG_ROUTING_KEY);
+    }
+
+    // 交互相关绑定
+    @Bean
+    public Binding interactionLikeBinding() {
+        return BindingBuilder.bind(interactionLikeQueue())
+                .to(interactionExchange())
+                .with(INTERACTION_LIKE_ROUTING_KEY);
+    }
+
+    @Bean
+    public Binding interactionBookmarkBinding() {
+        return BindingBuilder.bind(interactionBookmarkQueue())
+                .to(interactionExchange())
+                .with(INTERACTION_BOOKMARK_ROUTING_KEY);
+    }
+
+    @Bean
+    public Binding interactionCommentBinding() {
+        return BindingBuilder.bind(interactionCommentQueue())
+                .to(interactionExchange())
+                .with(INTERACTION_COMMENT_ROUTING_KEY);
+    }
+
+    @Bean
+    public Binding interactionStatsUpdateBinding() {
+        return BindingBuilder.bind(interactionStatsUpdateQueue())
+                .to(interactionExchange())
+                .with(INTERACTION_STATS_UPDATE_ROUTING_KEY);
+    }
+
+    // 死信队列绑定
+    @Bean
+    public Binding interactionDeadLetterBinding() {
+        return BindingBuilder.bind(interactionDeadLetterQueue())
+                .to(interactionDeadLetterExchange())
+                .with("*.failed");
     }
 
     // 消息转换器

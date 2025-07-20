@@ -16,7 +16,7 @@
 
 package com.myweb.website_core.demos.web.user;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.Set;
 
 @Entity

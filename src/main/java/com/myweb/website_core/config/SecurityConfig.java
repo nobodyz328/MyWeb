@@ -7,6 +7,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.config.Customizer;
 
 @Configuration
 @EnableWebSecurity
@@ -14,19 +15,19 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .authorizeRequests()
-                .antMatchers("/login", "/profile","/register", "/static/**", "/css/**", "/js/**", "/images/**", "/", "/view/**",
+            .authorizeHttpRequests(authz -> authz
+                .requestMatchers("/login", "/profile","/register", "/static/**", "/css/**", "/js/**", "/images/**", "/", "/view/**",
                         "/users/register", "/users/login", "/users/register/code", "/users/*/bind-email/**","/posts",
                         "/users/**/profile", "/posts/top-liked", "/posts/search", "/announcements", "/posts/*/comments").permitAll()
-                        .antMatchers("/posts/new", "/posts/edit/**", "/posts/**/delete", "/posts", "/posts/**").authenticated()
+                .requestMatchers("/posts/new", "/posts/edit/**", "/posts/**/delete", "/posts", "/posts/**").authenticated()
                 .anyRequest().authenticated()
-            .and()
-            .logout()
+            )
+            .logout(logout -> logout
                 .logoutUrl("/user/logout")
                 .logoutSuccessUrl("/view")
                 .permitAll()
-            .and()
-            .csrf().disable();
+            )
+            .csrf(csrf -> csrf.disable());
         return http.build();
     }
 

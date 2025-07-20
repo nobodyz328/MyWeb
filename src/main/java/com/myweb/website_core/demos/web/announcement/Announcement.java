@@ -1,7 +1,7 @@
 package com.myweb.website_core.demos.web.announcement;
 
 import com.myweb.website_core.demos.web.user.User;
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
