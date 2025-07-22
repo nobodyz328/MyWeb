@@ -11,7 +11,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.Optional;
 import java.util.Set;
-
 import java.util.Collections;
 import com.myweb.website_core.demos.web.blog.Post;
 import com.myweb.website_core.demos.web.blog.PostRepository;
@@ -47,10 +46,11 @@ public class UserService {
         }
         User user = new User();
         user.setUsername(username);
-        user.setPassword(password); // 实际应加密
+        // For now, store password as plain text for testing - should be encrypted in production
+        user.setPassword(password);
         user.setEmail("");
-        user.setAvatarUrl(""); // 如果avatarUrl是NOT NULL
-        user.setBio("");       // 如果bio是NOT NULL
+        user.setAvatarUrl("https://static.hdslb.com/images/member/noface.gif"); 
+        user.setBio("这个人很懒，什么都没有留下");       
         user.setLikedCount(0);
         userRepository.save(user);
         return CompletableFuture.completedFuture(user);
@@ -99,17 +99,52 @@ public class UserService {
 
     @Async
     public CompletableFuture<UserProfileDTO> getProfile(Long userId) {
-        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("用户不存在"));
-        UserProfileDTO dto = new UserProfileDTO();
-        dto.setId(user.getId());
-        dto.setUsername(user.getUsername());
-        dto.setAvatarUrl(user.getAvatarUrl());
-        dto.setBio(user.getBio());
-        dto.setFollowersCount(user.getFollowers() != null ? user.getFollowers().size() : 0);
-        dto.setFollowingCount(user.getFollowing() != null ? user.getFollowing().size() : 0);
-        dto.setLikedCount(user.getLikedCount());
-        dto.setPosts(postRepository.findAll().stream().filter(p -> p.getAuthor().getId().equals(userId)).collect(Collectors.toList()));
-        return CompletableFuture.completedFuture(dto);
+        try {
+            System.out.println("UserService: Getting profile for user ID: " + userId);
+            User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("用户不存在"));
+            System.out.println("UserService: Found user: " + user.getUsername());
+            
+            UserProfileDTO dto = new UserProfileDTO();
+            dto.setId(user.getId());
+            dto.setUsername(user.getUsername() != null ? user.getUsername() : "用户");
+            dto.setAvatarUrl(user.getAvatarUrl() != null && !user.getAvatarUrl().isEmpty() ? 
+                             user.getAvatarUrl() : "https://static.hdslb.com/images/member/noface.gif");
+            dto.setBio(user.getBio() != null && !user.getBio().isEmpty() ? 
+                      user.getBio() : "这个人很懒，什么都没有留下");
+            
+            // Safely handle potentially null collections
+            if (user.getFollowers() != null) {
+                dto.setFollowersCount(user.getFollowers().size());
+            } else {
+                dto.setFollowersCount(0);
+            }
+            
+            if (user.getFollowing() != null) {
+                dto.setFollowingCount(user.getFollowing().size());
+            } else {
+                dto.setFollowingCount(0);
+            }
+            
+            dto.setLikedCount(user.getLikedCount() != null ? user.getLikedCount() : 0);
+            
+            // Safely handle posts
+            try {
+                dto.setPosts(postRepository.findAll().stream()
+                        .filter(p -> p != null && p.getAuthor() != null && p.getAuthor().getId() != null && p.getAuthor().getId().equals(userId))
+                        .collect(Collectors.toList()));
+            } catch (Exception e) {
+                System.err.println("Error retrieving posts: " + e.getMessage());
+                dto.setPosts(Collections.emptyList());
+            }
+            
+            System.out.println("UserService: Profile DTO created - Username: " + dto.getUsername() + 
+                              ", Bio: " + dto.getBio() + ", Followers: " + dto.getFollowersCount());
+            return CompletableFuture.completedFuture(dto);
+        } catch (Exception e) {
+            System.err.println("Error in getProfile: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("获取用户资料失败: " + e.getMessage());
+        }
     }
 }
 

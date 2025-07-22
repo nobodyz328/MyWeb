@@ -18,6 +18,7 @@ package com.myweb.website_core.demos.web.user;
 
 import jakarta.persistence.*;
 import java.util.Set;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "users")
@@ -35,16 +36,18 @@ public class User {
     @Column(nullable = true, unique = false, name = "email")
     private String email;
 
-    private String avatarUrl;
-    private String bio;
+    private String avatarUrl = "https://static.hdslb.com/images/member/noface.gif";
+    private String bio = "这个人很懒，什么都没有留下";
 
-    @ManyToMany
+    @JsonIgnore
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "user_followers",
         joinColumns = @JoinColumn(name = "user_id"),
         inverseJoinColumns = @JoinColumn(name = "follower_id"))
     private Set<User> followers;
 
-    @ManyToMany
+    @JsonIgnore
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "user_following",
         joinColumns = @JoinColumn(name = "user_id"),
         inverseJoinColumns = @JoinColumn(name = "following_id"))

@@ -386,7 +386,7 @@
 }
 
 /* High contrast mode support */
-@media (prefers-contrast: high) {
+@media (prefers-contrast: no-preference) {
     .interaction-btn {
         border-width: 2px;
     }

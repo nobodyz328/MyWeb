@@ -83,29 +83,42 @@
       fetch('/blog/users/' + userId + '/profile')
         .then(res => res.json())
         .then(data => {
+          // 检查数据是否有效，防止undefined值
+          const username = data && data.username ? data.username : '用户';
+          const followingCount = data && data.followingCount !== undefined ? data.followingCount : 0;
+          const followersCount = data && data.followersCount !== undefined ? data.followersCount : 0;
+          const likedCount = data && data.likedCount !== undefined ? data.likedCount : 0;
+          const avatarUrl = data && data.avatarUrl ? data.avatarUrl : 'https://static.hdslb.com/images/member/noface.gif';
+          
+          // 更新导航栏
           const navUser = document.getElementById('navUser');
           let userLi = document.createElement('li');
-          userLi.innerHTML = `<a href="javascript:void(0);" id="navUsername">${data.username}</a>`;
+          userLi.innerHTML = `<a href="javascript:void(0);" id="navUsername">${username}</a>`;
           const loginNav = document.getElementById('loginNav');
           if (loginNav) navUser.removeChild(loginNav);
           navUser.appendChild(userLi);
+          
           // 用户卡片数据
-          document.getElementById('userCardName').innerText = data.username;
-          document.getElementById('userCardFollow').children[0].innerText = data.followingCount;
-          document.getElementById('userCardFans').children[0].innerText = data.followersCount;
-          document.getElementById('userCardLike').children[0].innerText = data.likedCount;
-          // 头像（如有）
-          if(data.avatarUrl) document.getElementById('userCardAvatar').src = data.avatarUrl;
+          document.getElementById('userCardName').innerText = username;
+          document.getElementById('userCardFollow').children[0].innerText = followingCount;
+          document.getElementById('userCardFans').children[0].innerText = followersCount;
+          document.getElementById('userCardLike').children[0].innerText = likedCount;
+          
+          // 头像
+          document.getElementById('userCardAvatar').src = avatarUrl;
+          
           // 点击用户名弹出卡片
           document.getElementById('navUsername').onclick = function(e) {
             const card = document.getElementById('userCard');
             card.style.display = card.style.display === 'none' ? 'block' : 'none';
           };
+          
           // 点击退出登录
           document.getElementById('logoutBtn').onclick = function() {
             localStorage.removeItem('userId');
             window.location.reload();
           };
+          
           // 点击页面其他地方关闭卡片
           document.addEventListener('click', function(e) {
             const card = document.getElementById('userCard');
@@ -113,6 +126,16 @@
               card.style.display = 'none';
             }
           });
+        })
+        .catch(error => {
+          console.error('获取用户信息失败:', error);
+          // 处理错误情况，显示默认值
+          const navUser = document.getElementById('navUser');
+          let userLi = document.createElement('li');
+          userLi.innerHTML = `<a href="javascript:void(0);" id="navUsername">用户</a>`;
+          const loginNav = document.getElementById('loginNav');
+          if (loginNav) navUser.removeChild(loginNav);
+          navUser.appendChild(userLi);
         });
     }
   </script>

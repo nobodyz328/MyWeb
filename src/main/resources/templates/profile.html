@@ -62,21 +62,41 @@
     // 获取当前登录用户ID
     const userId = localStorage.getItem('userId');
     if (userId) {
+      console.log('Fetching profile for user ID:', userId);
       fetch('/blog/users/' + userId + '/profile')
-        .then(res => res.json())
+        .then(res => {
+          console.log('Response status:', res.status);
+          if (!res.ok) {
+            throw new Error('Network response was not ok: ' + res.status);
+          }
+          return res.json();
+        })
         .then(data => {
-          document.getElementById('profileUsername').innerText = data.username;
-          document.getElementById('profileBio').innerText = '简介：' + (data.bio || '');
-          document.getElementById('profileFollowing').innerText = data.followingCount;
-          document.getElementById('profileFollowers').innerText = data.followersCount;
-          document.getElementById('profileLiked').innerText = data.likedCount;
-          if(data.avatarUrl) document.getElementById('profileAvatar').src = data.avatarUrl;
-        });
+          console.log('Profile data received:', data);
+          const username = data ? data.username : '用户';
+          const bio = data ? data.bio : '暂无简介';
+          const followingCount = data ? data.followingCount : 0;
+          const followersCount = data ? data.followersCount : 0;
+          const likedCount = data  ? data.likedCount : 0;
+          const avatarUrl = data ? data.avatarUrl : 'https://static.hdslb.com/images/member/noface.gif';
+          
+          // 更新个人资料页面
+          document.getElementById('profileUsername').innerText = username;
+          document.getElementById('profileBio').innerText = '简介：' + bio;
+          document.getElementById('profileFollowing').innerText = followingCount;
+          document.getElementById('profileFollowers').innerText = followersCount;
+          document.getElementById('profileLiked').innerText = likedCount;
+          document.getElementById('profileAvatar').src = avatarUrl;
+        })
+    } else {
+      console.error('No user ID found in localStorage');
+      // 如果没有用户ID，重定向到登录页面
+      window.location.href = '/blog/view';
     }
     // 退出登录
     document.getElementById('logoutBtn').onclick = function() {
       localStorage.removeItem('userId');
-      window.location.href = '/blog/login';
+      window.location.href = '/blog/view';
     };
     // Tab切换逻辑
     const tabPosts = document.getElementById('tabPosts');

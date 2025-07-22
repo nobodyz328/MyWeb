@@ -18,8 +18,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/login", "/profile","/register", "/static/**", "/css/**", "/js/**", "/images/**", "/", "/view/**",
                         "/users/register", "/users/login", "/users/register/code", "/users/*/bind-email/**","/posts",
-                        "/users/**/profile", "/posts/top-liked", "/posts/search", "/announcements", "/posts/*/comments").permitAll()
-                .requestMatchers("/posts/new", "/posts/edit/**", "/posts/**/delete", "/posts", "/posts/**").authenticated()
+                        "/users/*/profile", "/posts/top-liked", "/posts/search", "/announcements", "/posts/*/comments").permitAll()
+                .requestMatchers("/posts/new", "/posts/edit/**", "/posts/*/delete", "/posts/create").authenticated()
                 .anyRequest().authenticated()
             )
             .logout(logout -> logout

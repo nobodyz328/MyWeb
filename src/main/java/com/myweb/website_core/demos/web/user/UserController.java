@@ -41,12 +41,16 @@ public class UserController {
 
     @PostMapping("/login")
     public CompletableFuture<User> login(@RequestBody LoginRequest req, HttpServletRequest request) {
-        User user = userService.login(req.getUsername(), req.getPassword(), req.getCode()).join();
-        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-            user.getUsername(), null, Collections.emptyList());
-        SecurityContextHolder.getContext().setAuthentication(auth);
-        request.getSession().setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
-        return CompletableFuture.completedFuture(user);
+        try {
+            User user = userService.login(req.getUsername(), req.getPassword(), req.getCode()).join();
+            UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+                user.getUsername(), null, Collections.emptyList());
+            SecurityContextHolder.getContext().setAuthentication(auth);
+            request.getSession().setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
+            return CompletableFuture.completedFuture(user);
+        } catch (Exception e) {
+            throw new RuntimeException("登录失败: " + e.getMessage());
+        }
     }
 
     @PostMapping("/{id}/follow")
@@ -61,7 +65,14 @@ public class UserController {
 
     @GetMapping("/{id}/profile")
     public CompletableFuture<UserProfileDTO> getProfile(@PathVariable Long id) {
-        return userService.getProfile(id);
+        System.out.println("Getting profile for user ID: " + id);
+        return userService.getProfile(id).whenComplete((result, throwable) -> {
+            if (throwable != null) {
+                System.err.println("Error getting profile: " + throwable.getMessage());
+            } else {
+                System.out.println("Profile retrieved successfully for user: " + (result != null ? result.getUsername() : "null"));
+            }
+        });
     }
 }
 

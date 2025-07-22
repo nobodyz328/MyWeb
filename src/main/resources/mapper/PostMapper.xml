@@ -11,7 +11,7 @@
         <result column="like_count" property="likeCount" jdbcType="INTEGER"/>
         <result column="collect_count" property="collectCount" jdbcType="INTEGER"/>
         <result column="comment_count" property="commentCount" jdbcType="INTEGER"/>
-        <result column="images" property="images" jdbcType="VARCHAR"/>
+        <!-- Images are handled via @ElementCollection in the entity -->
         <!-- 关联用户信息 -->
         <association property="author" javaType="com.myweb.website_core.demos.web.user.User">
             <id column="author_id" property="id" jdbcType="BIGINT"/>
@@ -21,32 +21,14 @@
     </resultMap>
     <!-- 基础字段 -->
     <sql id="Base_Column_List">
-        id, title, content, created_at, like_count, collect_count, comment_count, images,
-    author_id, author_username, author_avatar_url
+        p.id, p.title, p.content, p.created_at, p.like_count, p.collect_count, p.comment_count,
+        p.author_id as author_id, u.username as author_username, u.avatar_url as author_avatar_url
     </sql>
-
-    <select id="selectPostById" resultMap="PostResultMap">
-        SELECT
-            p.id,
-            p.title,
-            p.content,
-            p.created_at,
-            p.like_count,
-            p.collect_count,
-            p.comment_count,
-            p.images,
-            u.id AS author_id,
-            u.username AS author_username,
-            u.avatar_url AS author_avatar_url
-        FROM posts p
-                 LEFT JOIN users u ON p.author_id = u.id
-        WHERE p.id = #{id}
-    </select>
 
     <!-- 插入帖子 -->
     <insert id="insertPost" parameterType="com.myweb.website_core.demos.web.blog.Post" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO posts (title, content, author_id, created_at, like_count, collect_count, comment_count, images)
-        VALUES (#{title}, #{content}, #{author.id}, #{createdAt}, #{likeCount}, #{collectCount}, #{commentCount}, #{images})
+        INSERT INTO posts (title, content, author_id, created_at, like_count, collect_count, comment_count)
+        VALUES (#{title}, #{content}, #{author.id}, #{createdAt}, #{likeCount}, #{collectCount}, #{commentCount})
     </insert>
 
     <!-- 根据ID查询帖子 -->
@@ -78,8 +60,7 @@
     <update id="updatePost" parameterType="com.myweb.website_core.demos.web.blog.Post">
         UPDATE posts
         SET title = #{title},
-            content = #{content},
-            images = #{images}
+            content = #{content}
         WHERE id = #{id}
     </update>
 
@@ -108,12 +89,12 @@
         LIMIT #{limit}
     </select>
 
-    <!-- 更新帖子点赞数 -->
+    <!-- 更新帖子点赞�?-->
     <update id="updateLikeCount">
         UPDATE posts SET like_count = #{likeCount} WHERE id = #{id}
     </update>
 
-    <!-- 更新帖子收藏数 -->
+    <!-- 更新帖子收藏�?-->
     <update id="updateCollectCount">
         UPDATE posts SET collect_count = #{collectCount} WHERE id = #{id}
     </update>
