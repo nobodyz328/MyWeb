@@ -6,7 +6,7 @@
     <resultMap id="PostResultMap" type="com.myweb.website_core.demos.web.blog.Post">
         <id column="id" property="id" jdbcType="BIGINT"/>
         <result column="title" property="title" jdbcType="VARCHAR"/>
-        <result column="content" property="content" jdbcType="TEXT"/>
+        <result column="content" property="content" jdbcType="VARCHAR"/>
         <result column="created_at" property="createdAt" jdbcType="TIMESTAMP"/>
         <result column="like_count" property="likeCount" jdbcType="INTEGER"/>
         <result column="collect_count" property="collectCount" jdbcType="INTEGER"/>
@@ -19,12 +19,29 @@
             <result column="author_avatar_url" property="avatarUrl" jdbcType="VARCHAR"/>
         </association>
     </resultMap>
-
     <!-- 基础字段 -->
     <sql id="Base_Column_List">
-        p.id, p.title, p.content, p.created_at, p.like_count, p.collect_count, p.comment_count, p.images,
-        u.id as author_id, u.username as author_username, u.avatar_url as author_avatar_url
+        id, title, content, created_at, like_count, collect_count, comment_count, images,
+    author_id, author_username, author_avatar_url
     </sql>
+
+    <select id="selectPostById" resultMap="PostResultMap">
+        SELECT
+            p.id,
+            p.title,
+            p.content,
+            p.created_at,
+            p.like_count,
+            p.collect_count,
+            p.comment_count,
+            p.images,
+            u.id AS author_id,
+            u.username AS author_username,
+            u.avatar_url AS author_avatar_url
+        FROM posts p
+                 LEFT JOIN users u ON p.author_id = u.id
+        WHERE p.id = #{id}
+    </select>
 
     <!-- 插入帖子 -->
     <insert id="insertPost" parameterType="com.myweb.website_core.demos.web.blog.Post" useGeneratedKeys="true" keyProperty="id">
@@ -101,4 +118,4 @@
         UPDATE posts SET collect_count = #{collectCount} WHERE id = #{id}
     </update>
 
-</mapper> 
+</mapper>

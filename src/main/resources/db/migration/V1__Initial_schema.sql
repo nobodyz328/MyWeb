@@ -1,65 +1,65 @@
--- Initial schema creation for existing tables
--- This migration creates the baseline schema for users, posts, and comments tables
-
--- Users table
-CREATE TABLE IF NOT EXISTS users (
-    id BIGSERIAL PRIMARY KEY,
-    username VARCHAR(255) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL,
-    email VARCHAR(255) UNIQUE,
-    avatar_url VARCHAR(500),
-    bio TEXT,
-    liked_count INTEGER DEFAULT 0
-);
-
--- Posts table
-CREATE TABLE IF NOT EXISTS posts (
-    id BIGSERIAL PRIMARY KEY,
-    title VARCHAR(500),
-    content TEXT,
-    author_id BIGINT REFERENCES users(id),
-    created_at TIMESTAMP,
-    like_count INTEGER DEFAULT 0,
-    comment_count INTEGER DEFAULT 0,
-    collect_count INTEGER DEFAULT 0
-);
-
--- Comments table
-CREATE TABLE IF NOT EXISTS comments (
-    id BIGSERIAL PRIMARY KEY,
-    content TEXT NOT NULL,
-    author_id BIGINT NOT NULL REFERENCES users(id),
-    post_id BIGINT NOT NULL REFERENCES posts(id),
-    parent_comment_id BIGINT REFERENCES comments(id),
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP,
-    is_deleted BOOLEAN NOT NULL DEFAULT FALSE
-);
-
--- User followers relationship table
-CREATE TABLE IF NOT EXISTS user_followers (
-    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    follower_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    PRIMARY KEY (user_id, follower_id)
-);
-
--- User following relationship table
-CREATE TABLE IF NOT EXISTS user_following (
-    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    following_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    PRIMARY KEY (user_id, following_id)
-);
-
--- Post images table (for ElementCollection)
-CREATE TABLE IF NOT EXISTS posts_images (
-    post_id BIGINT NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
-    images VARCHAR(500)
-);
-
--- Basic indexes for existing tables
-CREATE INDEX IF NOT EXISTS idx_posts_author_id ON posts(author_id);
-CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts(created_at);
-CREATE INDEX IF NOT EXISTS idx_comments_post_id ON comments(post_id);
-CREATE INDEX IF NOT EXISTS idx_comments_author_id ON comments(author_id);
-CREATE INDEX IF NOT EXISTS idx_comments_parent_comment_id ON comments(parent_comment_id);
-CREATE INDEX IF NOT EXISTS idx_comments_created_at ON comments(created_at);
+-- -- Initial schema creation for existing tables
+-- -- This migration creates the baseline schema for users, posts, and comments tables
+--
+-- -- Users table
+-- CREATE TABLE IF NOT EXISTS users (
+--     id BIGSERIAL PRIMARY KEY,
+--     username VARCHAR(255) NOT NULL UNIQUE,
+--     password VARCHAR(255) NOT NULL,
+--     email VARCHAR(255) UNIQUE,
+--     avatar_url VARCHAR(500),
+--     bio TEXT,
+--     liked_count INTEGER DEFAULT 0
+-- );
+--
+-- -- Posts table
+-- CREATE TABLE IF NOT EXISTS posts (
+--     id BIGSERIAL PRIMARY KEY,
+--     title VARCHAR(500),
+--     content TEXT,
+--     author_id BIGINT REFERENCES users(id),
+--     created_at TIMESTAMP,
+--     like_count INTEGER DEFAULT 0,
+--     comment_count INTEGER DEFAULT 0,
+--     collect_count INTEGER DEFAULT 0
+-- );
+--
+-- -- Comments table
+-- CREATE TABLE IF NOT EXISTS comments (
+--     id BIGSERIAL PRIMARY KEY,
+--     content TEXT NOT NULL,
+--     author_id BIGINT NOT NULL REFERENCES users(id),
+--     post_id BIGINT NOT NULL REFERENCES posts(id),
+--     parent_comment_id BIGINT REFERENCES comments(id),
+--     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+--     updated_at TIMESTAMP,
+--     is_deleted BOOLEAN NOT NULL DEFAULT FALSE
+-- );
+--
+-- -- User followers relationship table
+-- CREATE TABLE IF NOT EXISTS user_followers (
+--     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+--     follower_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+--     PRIMARY KEY (user_id, follower_id)
+-- );
+--
+-- -- User following relationship table
+-- CREATE TABLE IF NOT EXISTS user_following (
+--     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+--     following_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+--     PRIMARY KEY (user_id, following_id)
+-- );
+--
+-- -- Post images table (for ElementCollection)
+-- CREATE TABLE IF NOT EXISTS posts_images (
+--     post_id BIGINT NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+--     images VARCHAR(500)
+-- );
+--
+-- -- Basic indexes for existing tables
+-- CREATE INDEX IF NOT EXISTS idx_posts_author_id ON posts(author_id);
+-- CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts(created_at);
+-- CREATE INDEX IF NOT EXISTS idx_comments_post_id ON comments(post_id);
+-- CREATE INDEX IF NOT EXISTS idx_comments_author_id ON comments(author_id);
+-- CREATE INDEX IF NOT EXISTS idx_comments_parent_comment_id ON comments(parent_comment_id);
+-- CREATE INDEX IF NOT EXISTS idx_comments_created_at ON comments(created_at);

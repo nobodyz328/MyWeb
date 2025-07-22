@@ -124,7 +124,6 @@
                 <version>${spring-boot.version}</version>
                 <configuration>
                     <mainClass>com.myweb.website_core.App</mainClass>
-                    <skip>true</skip>
                 </configuration>
                 <executions>
                     <execution>

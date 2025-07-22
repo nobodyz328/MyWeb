@@ -10,7 +10,7 @@ server:
     key-alias: myweb
   servlet:
     context-path: /blog
-    address: 0.0.0.0
+#    address: 0.0.0.0
 
 
 
@@ -88,12 +88,12 @@ spring:
       database: 0
       password:
       timeout: 2000ms
-    lettuce:
-      pool:
-        max-active: 8
-        max-wait: -1ms
-        max-idle: 8
-        min-idle: 0
+#    lettuce:
+#      pool:
+#        max-active: 8
+#        max-wait: -1ms
+#        max-idle: 8
+#        min-idle: 0
   # ========================
   # MyBatis 配置
   # ========================
@@ -127,6 +127,6 @@ logging:
 # ========================
 # 自定义配置
 # ========================
-app:
-  blog:
-    default-author: "作者"
+#app:
+#  blog:
+#    default-author: "作者"
