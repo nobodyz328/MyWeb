@@ -1,6 +1,9 @@
 package com.myweb.website_core.demos.web.blog;
 
+import org.springframework.cache.annotation.CachePut;
 import org.springframework.scheduling.annotation.Async;
+
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -21,17 +24,18 @@ public class PostService {
     private final MessageProducerService messageProducerService;
     private final PostMapper postMapper;
     private final RedisTemplate<String, Object> redisTemplate;
-    
+
     @Autowired
-    public PostService(PostRepository postRepository, UserRepository userRepository, 
-                      MessageProducerService messageProducerService, PostMapper postMapper,
-                      RedisTemplate<String, Object> redisTemplate) {
+    public PostService(PostRepository postRepository, UserRepository userRepository,
+            MessageProducerService messageProducerService, PostMapper postMapper,
+            RedisTemplate<String, Object> redisTemplate) {
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.messageProducerService = messageProducerService;
         this.postMapper = postMapper;
         this.redisTemplate = redisTemplate;
     }
+
     @Async
     @CacheEvict(value = "posts", allEntries = true)
     public CompletableFuture<Post> createPost(Post post) {
@@ -40,30 +44,33 @@ public class PostService {
             throw new RuntimeException("未指定作者");
         }
         User author = userRepository.findById(post.getAuthor().getId())
-            .orElseThrow(() -> new RuntimeException("用户不存在"));
+                .orElseThrow(() -> new RuntimeException("用户不存在"));
         post.setAuthor(author);
         post.setCreatedAt(java.time.LocalDateTime.now());
-        
+
         // 使用MyBatis插入
         postMapper.insertPost(post);
-        
+
+        // 清除Redis缓存
+        redisTemplate.delete("posts:all");
+
         // 发送消息到RabbitMQ
         messageProducerService.sendPostCreatedMessage(post);
-        
+
         // 发送审计日志
         messageProducerService.sendAuditLogMessage(
-            author.getId().toString(), 
-            author.getUsername(), 
-            "CREATE_POST", 
-            "创建帖子: " + post.getTitle()
-        );
-        
+                author.getId().toString(),
+                author.getUsername(),
+                "CREATE_POST",
+                "创建帖子: " + post.getTitle());
+
         return CompletableFuture.completedFuture(post);
     }
-    @Async
-    public CompletableFuture<Post> editPost(Long id, Post updatedPost) {
+
+    //@Async
+    public Post editPost(Long id, Post updatedPost) {
         Post post = postRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("帖子不存在"));
+                .orElseThrow(() -> new RuntimeException("帖子不存在"));
         // 只允许作者本人编辑
         if (updatedPost.getAuthor() == null || !post.getAuthor().getId().equals(updatedPost.getAuthor().getId())) {
             throw new RuntimeException("无权限编辑");
@@ -71,77 +78,134 @@ public class PostService {
         post.setTitle(updatedPost.getTitle());
         post.setContent(updatedPost.getContent());
         post.setImages(updatedPost.getImages());
-        Post saved = postRepository.save(post);
-        return CompletableFuture.completedFuture(saved);
+        return postRepository.save(post);
     }
+
     @Async
-    public CompletableFuture<Void> likePost(Long postId, Long userId) {
+    public CompletableFuture<LikeResponse> likePost(Long postId, Long userId) {
         Post post = postRepository.findById(postId)
-            .orElseThrow(() -> new RuntimeException("帖子不存在"));
-        
+                .orElseThrow(() -> new RuntimeException("帖子不存在"));
+
         // 检查用户是否已点赞
         String likeKey = "user:like:" + userId + ":" + postId;
-        if (redisTemplate.hasKey(likeKey)) {
-            throw new RuntimeException("已经点赞过了");
+        boolean alreadyLiked = Boolean.TRUE.equals(redisTemplate.hasKey(likeKey));
+        
+        if (alreadyLiked) {
+            // 用户已点赞，返回当前状态
+            int currentLikeCount = post.getLikeCount() == null ? 0 : post.getLikeCount();
+            return CompletableFuture.completedFuture(new LikeResponse(true, currentLikeCount));
         }
-        
+
         // 更新点赞数
-        Integer newLikeCount = post.getLikeCount() == null ? 1 : post.getLikeCount() + 1;
+        int newLikeCount = post.getLikeCount() == null ? 1 : post.getLikeCount() + 1;
         postMapper.updateLikeCount(postId, newLikeCount);
-        
+
         // 记录用户点赞行为到Redis
         redisTemplate.opsForValue().set(likeKey, java.time.LocalDateTime.now(), 30, TimeUnit.DAYS);
-        
+
         // 发送点赞消息到RabbitMQ
-        User user = userRepository.findById(userId).orElse(null);
-        if (user != null) {
-            messageProducerService.sendPostLikedMessage(postId, userId, user.getUsername());
+        userRepository.findById(userId).ifPresent(user -> messageProducerService.sendPostLikedMessage(postId, userId, user.getUsername()));
+
+        return CompletableFuture.completedFuture(new LikeResponse(true, newLikeCount));
+    }
+
+    @Async
+    public CompletableFuture<CollectResponse> collectPost(Long postId, Long userId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("帖子不存在"));
+        
+        // 检查用户是否已收藏
+        String collectKey = "user:collect:" + userId + ":" + postId;
+        boolean alreadyCollected = Boolean.TRUE.equals(redisTemplate.hasKey(collectKey));
+        
+        if (alreadyCollected) {
+            // 用户已收藏，返回当前状态
+            int currentCollectCount = post.getCollectCount() == null ? 0 : post.getCollectCount();
+            return CompletableFuture.completedFuture(new CollectResponse(true, currentCollectCount));
         }
         
-        return CompletableFuture.completedFuture(null);
-    }
-    @Async
-    public CompletableFuture<Void> collectPost(Long postId, Long userId) {
-        Post post = postRepository.findById(postId)
-            .orElseThrow(() -> new RuntimeException("帖子不存在"));
-        // 简单计数，实际可用Set<Long>存已收藏用户避免重复
-        post.setCollectCount(post.getCollectCount() == null ? 1 : post.getCollectCount() + 1);
+        // 更新收藏数
+        int newCollectCount = post.getCollectCount() == null ? 1 : post.getCollectCount() + 1;
+        post.setCollectCount(newCollectCount);
         postRepository.save(post);
-        return CompletableFuture.completedFuture(null);
+        
+        // 记录用户收藏行为到Redis
+        redisTemplate.opsForValue().set(collectKey, java.time.LocalDateTime.now(), 30, TimeUnit.DAYS);
+        
+        return CompletableFuture.completedFuture(new CollectResponse(true, newCollectCount));
     }
+
     @Async
     public CompletableFuture<List<Post>> getTopLikedPosts() {
         // 获赞前20逻辑
         return CompletableFuture.completedFuture(null);
     }
+
     @Async
     public CompletableFuture<List<Post>> searchPosts(String keyword) {
         // 搜索逻辑
         return CompletableFuture.completedFuture(null);
     }
-    @Async
-    @Cacheable(value = "posts", key = "'all'")
-    public CompletableFuture<List<Post>> getAllPosts() {
-        // 优先从Redis缓存获取
-        String cacheKey = "posts:all";
-        List<Post> cachedPosts = (List<Post>) redisTemplate.opsForValue().get(cacheKey);
-        if (cachedPosts != null) {
-            return CompletableFuture.completedFuture(cachedPosts);
+
+    //@Async
+    @CachePut(value = "posts", key = "'posts:all'")
+    public List<Post> getAllPosts() {
+        try {
+            // 优先从Redis缓存获取
+            // String cacheKey = "posts:all";
+            // List<Post> cachedPosts = (List<Post>)
+            // redisTemplate.opsForValue().get(cacheKey);
+            // if (cachedPosts != null) {
+            // return CompletableFuture.completedFuture(cachedPosts);
+            // }
+            return postRepository.findAll();
+        } catch (Exception e) {
+            // Log the exception for debugging
+            System.err.println("Error in getAllPosts: " + e.getMessage());
+            e.printStackTrace();
+            return java.util.Collections.emptyList();
         }
-        
-        // 缓存未命中，从数据库查询
-        List<Post> posts = postMapper.selectAllPosts();
-        
-        // 存入Redis缓存
-        redisTemplate.opsForValue().set(cacheKey, posts, 1, TimeUnit.HOURS);
-        
-        return CompletableFuture.completedFuture(posts);
     }
-    @Async
-    public CompletableFuture<java.util.Optional<Post>> getPostById(Long id) {
-        return CompletableFuture.completedFuture(postRepository.findById(id));
+
+    //@Async
+    public Optional<Post> getPostById(Long id) {
+        return postRepository.findById(id);
     }
+
     public List<Post> findPostsByUserId(Long userId) {
         return postRepository.findByAuthorId(userId);
+    }
+
+    @Async
+    @CacheEvict(value = "posts", allEntries = true)
+    public CompletableFuture<Void> deletePost(Long id, Long userId) {
+        return CompletableFuture.runAsync(() -> {
+            try {
+                Post post = postRepository.findById(id)
+                        .orElseThrow(() -> new RuntimeException("帖子不存在"));
+
+                // 只允许作者本人删除
+                if (!post.getAuthor().getId().equals(userId)) {
+                    throw new RuntimeException("无权限删除");
+                }
+
+                // 删除帖子
+                postRepository.deleteById(id);
+
+                // 发送审计日志
+                userRepository.findById(userId).ifPresent(user -> messageProducerService.sendAuditLogMessage(
+                        userId.toString(),
+                        user.getUsername(),
+                        "DELETE_POST",
+                        "删除帖子: " + post.getTitle()));
+            } catch (Exception ex) {
+                System.err.println("Error in deletePost: " + ex.getMessage());
+                throw new RuntimeException("删除帖子过程中发生异常", ex);
+            }
+        }).exceptionally(ex -> {
+            // 记录异常并返回null作为Void类型
+            System.err.println("Error in deletePost: " + ex.getMessage());
+            return null;
+        });
     }
 }

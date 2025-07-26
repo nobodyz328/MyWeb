@@ -1,65 +1,530 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MySteam社区 - 首页</title>
   <style>
-    body { background: linear-gradient(135deg, #171a21 0%, #1b2838 100%); color: #c7d5e0; font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif; margin: 0; min-height: 100vh; }
-    .steam-navbar { background: rgba(23,26,33,0.95); color: #66c0f4; box-shadow: 0 2px 8px #000a; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; height: 64px; }
-    .steam-navbar .logo { font-size: 1.6rem; font-weight: bold; color: #66c0f4; }
-    .steam-navbar ul { list-style: none; display: flex; gap: 32px; margin: 0; padding: 0; }
-    .steam-navbar li a { color: #c7d5e0; text-decoration: none; font-size: 1.1rem; transition: color 0.2s; }
-    .steam-navbar li a:hover { color: #66c0f4; }
-    .main-content { display: flex; max-width: 1200px; margin: 40px auto 0 auto; gap: 32px; }
-    .announcement-bar { background: #23262e; color: #fff; border-radius: 8px; padding: 16px 24px; margin-bottom: 24px; font-size: 1.1rem; box-shadow: 0 2px 8px #0006; width: 100%; }
-    .post-list { flex: 2; display: flex; flex-direction: column; gap: 24px; }
-    .post-card { background: #23262e; border-radius: 12px; box-shadow: 0 4px 24px #0006; padding: 24px; transition: box-shadow 0.2s; color: #fff; }
-    .post-card:hover { box-shadow: 0 8px 32px #00bfff88; }
-    .sidebar { flex: 1; display: flex; flex-direction: column; gap: 24px; }
-    .top-liked, .hot-tags { background: #23262e; border-radius: 8px; padding: 16px 20px; color: #fff; box-shadow: 0 2px 8px #0006; }
-    footer { text-align: center; color: #66c0f4; margin-top: 60px; padding: 24px 0; background: none; font-size: 1rem; opacity: 0.8; }
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      background: linear-gradient(135deg, #171a21 0%, #1b2838 50%, #2a475e 100%);
+      color: #c7d5e0;
+      font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at 20% 80%, rgba(102, 192, 244, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(102, 192, 244, 0.05) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .steam-navbar {
+      background: rgba(23, 26, 33, 0.95);
+      backdrop-filter: blur(10px);
+      color: #66c0f4;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 40px;
+      height: 70px;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      border-bottom: 1px solid rgba(102, 192, 244, 0.2);
+    }
+
+    .steam-navbar .logo {
+      font-size: 1.8rem;
+      font-weight: bold;
+      color: #66c0f4;
+      text-shadow: 0 0 10px rgba(102, 192, 244, 0.5);
+    }
+
+    .steam-navbar ul {
+      list-style: none;
+      display: flex;
+      gap: 40px;
+      margin: 0;
+      padding: 0;
+    }
+
+    .steam-navbar li a {
+      color: #c7d5e0;
+      text-decoration: none;
+      font-size: 1.1rem;
+      transition: all 0.3s ease;
+      padding: 8px 16px;
+      border-radius: 6px;
+      position: relative;
+    }
+
+    .steam-navbar li a:hover {
+      color: #66c0f4;
+      background: rgba(102, 192, 244, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    .hero-section {
+      background: linear-gradient(135deg, rgba(35, 38, 46, 0.9) 0%, rgba(27, 40, 56, 0.9) 100%);
+      border-radius: 16px;
+      padding: 40px;
+      margin: 30px 0;
+      text-align: center;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(102, 192, 244, 0.2);
+    }
+
+    .hero-title {
+      font-size: 2.5rem;
+      color: #66c0f4;
+      margin-bottom: 16px;
+      text-shadow: 0 0 20px rgba(102, 192, 244, 0.3);
+    }
+
+    .hero-subtitle {
+      font-size: 1.2rem;
+      color: #c7d5e0;
+      opacity: 0.9;
+    }
+
+    .main-content {
+      display: grid;
+      grid-template-columns: 1fr 350px;
+      gap: 40px;
+      margin: 40px 0;
+    }
+
+    .content-area {
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+    }
+
+    .announcement-bar {
+      background: linear-gradient(135deg, #66c0f4 0%, #4a9eff 100%);
+      color: #fff;
+      border-radius: 12px;
+      padding: 20px 30px;
+      font-size: 1.1rem;
+      box-shadow: 0 6px 25px rgba(102, 192, 244, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .announcement-bar::before {
+      content: '📢';
+      font-size: 1.5rem;
+      margin-right: 12px;
+    }
+
+    .announcement-bar::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 100px;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1));
+    }
+
+    .post-list {
+      display: flex;
+      flex-direction: column;
+      gap: 25px;
+    }
+
+    .post-card {
+      background: linear-gradient(135deg, rgba(35, 38, 46, 0.95) 0%, rgba(27, 40, 56, 0.95) 100%);
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+      padding: 30px;
+      transition: all 0.3s ease;
+      color: #fff;
+      border: 1px solid rgba(102, 192, 244, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .post-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg, #66c0f4, #4a9eff);
+      transform: scaleX(0);
+      transition: transform 0.3s ease;
+    }
+
+    .post-card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .post-card:hover {
+      box-shadow: 0 12px 40px rgba(102, 192, 244, 0.2);
+      transform: translateY(-5px);
+      border-color: rgba(102, 192, 244, 0.3);
+    }
+
+    .post-title {
+      font-size: 1.4rem;
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+
+    .post-title a {
+      color: #66c0f4;
+      text-decoration: none;
+      transition: color 0.3s ease;
+    }
+
+    .post-title a:hover {
+      color: #4a9eff;
+    }
+
+    .post-meta {
+      color: #a0a0a0;
+      font-size: 0.95rem;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .post-meta span {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .post-stats {
+      display: flex;
+      gap: 15px;
+    }
+
+    .post-stat {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .stat-icon.active {
+      color: #66c0f4;
+    }
+
+    .post-summary {
+      color: #c7d5e0;
+      line-height: 1.6;
+      font-size: 1rem;
+      margin-bottom: 16px;
+    }
+
+    .post-interaction-preview {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .interaction-preview-btn {
+      background: rgba(102, 192, 244, 0.1);
+      border: 1px solid rgba(102, 192, 244, 0.3);
+      color: #c7d5e0;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+    }
+
+    .interaction-preview-btn:hover {
+      background: rgba(102, 192, 244, 0.2);
+      border-color: rgba(102, 192, 244, 0.5);
+    }
+
+    .interaction-preview-btn.active {
+      background: rgba(102, 192, 244, 0.3);
+      border-color: #66c0f4;
+      color: #fff;
+    }
+
+    .interaction-preview-link {
+      background: rgba(102, 192, 244, 0.1);
+      border: 1px solid rgba(102, 192, 244, 0.3);
+      color: #c7d5e0;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      display: inline-block;
+    }
+
+    .interaction-preview-link:hover {
+      background: rgba(102, 192, 244, 0.2);
+      border-color: rgba(102, 192, 244, 0.5);
+      color: #fff;
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 25px;
+    }
+
+    .sidebar-card {
+      background: linear-gradient(135deg, rgba(35, 38, 46, 0.95) 0%, rgba(27, 40, 56, 0.95) 100%);
+      border-radius: 16px;
+      padding: 25px;
+      color: #fff;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(102, 192, 244, 0.1);
+      transition: all 0.3s ease;
+    }
+
+    .sidebar-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .sidebar-card h3 {
+      color: #66c0f4;
+      margin: 0 0 20px 0;
+      font-size: 1.3rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .sidebar-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .sidebar-list li {
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(102, 192, 244, 0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .sidebar-list li:last-child {
+      border-bottom: none;
+    }
+
+    .sidebar-list a {
+      color: #c7d5e0;
+      text-decoration: none;
+      transition: color 0.3s ease;
+    }
+
+    .sidebar-list a:hover {
+      color: #66c0f4;
+    }
+
+    .tag-cloud {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tag {
+      background: rgba(102, 192, 244, 0.2);
+      color: #66c0f4;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      border: 1px solid rgba(102, 192, 244, 0.3);
+    }
+
+    .tag:hover {
+      background: rgba(102, 192, 244, 0.3);
+      transform: scale(1.05);
+    }
+
+    footer {
+      text-align: center;
+      color: #66c0f4;
+      margin-top: 80px;
+      padding: 40px 0;
+      background: rgba(23, 26, 33, 0.8);
+      font-size: 1rem;
+      border-top: 1px solid rgba(102, 192, 244, 0.2);
+    }
+
+    @media (max-width: 1024px) {
+      .main-content {
+        grid-template-columns: 1fr;
+        gap: 30px;
+      }
+
+      .steam-navbar {
+        padding: 0 20px;
+      }
+
+      .steam-navbar ul {
+        gap: 20px;
+      }
+
+      .hero-section {
+        padding: 30px 20px;
+      }
+
+      .hero-title {
+        font-size: 2rem;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .steam-navbar ul {
+        display: none;
+      }
+
+      .hero-title {
+        font-size: 1.8rem;
+      }
+
+      .post-card {
+        padding: 20px;
+      }
+    }
   </style>
 </head>
+
 <body>
   <nav class="steam-navbar">
-    <div class="logo">MySteam社区</div>
+    <div class="logo"><a href="/blog/view">MySteam社区</a></div>
     <ul id="navUser">
-      <li><a href="/blog/view">首页</a></li>
       <li><a href="/blog/community">社区</a></li>
+      <li><a href="/blog/posts/new">发帖</a></li>
       <li><a href="/blog/announcements">公告</a></li>
       <li><a href="/blog/profile">个人中心</a></li>
       <li id="loginNav"><a href="/blog/login">登录/注册</a></li>
     </ul>
   </nav>
-  <div id="userCard" style="display:none;position:fixed;top:80px;right:40px;z-index:9999;background:#23262e;border-radius:16px;box-shadow:0 4px 24px #000a;padding:32px 40px;min-width:320px;color:#fff;">
+  <div id="userCard"
+    style="display:none;position:fixed;top:80px;right:40px;z-index:9999;background:#23262e;border-radius:16px;box-shadow:0 4px 24px #000a;padding:32px 40px;min-width:320px;color:#fff;">
     <div style="display:flex;align-items:center;gap:24px;">
-      <img id="userCardAvatar" src="https://static.hdslb.com/images/member/noface.gif" style="width:72px;height:72px;border-radius:50%;background:#1b2838;border:3px solid #66c0f4;">
+      <img id="userCardAvatar" src="/image/noface.gif" alt="用户头像"
+        style="width:72px;height:72px;border-radius:50%;background:#1b2838;border:3px solid #66c0f4;">
       <div>
         <div id="userCardName" style="font-size:1.4rem;font-weight:bold;">用户名</div>
       </div>
     </div>
     <div style="margin:18px 0 8px 0;display:flex;align-items:center;gap:12px;">
-      <div id="userCardFollow" style="text-align:center;"><div style="font-size:1.2rem;font-weight:bold;">0</div><div style="font-size:0.95rem;">关注</div></div>
-      <div id="userCardFans" style="text-align:center;"><div style="font-size:1.2rem;font-weight:bold;">0</div><div style="font-size:0.95rem;">粉丝</div></div>
-      <div id="userCardLike" style="text-align:center;"><div style="font-size:1.2rem;font-weight:bold;">0</div><div style="font-size:0.95rem;">获赞</div></div>
+      <div id="userCardFollow" style="text-align:center;">
+        <div style="font-size:1.2rem;font-weight:bold;">0</div>
+        <div style="font-size:0.95rem;">关注</div>
+      </div>
+      <div id="userCardFans" style="text-align:center;">
+        <div style="font-size:1.2rem;font-weight:bold;">0</div>
+        <div style="font-size:0.95rem;">粉丝</div>
+      </div>
+      <div id="userCardLike" style="text-align:center;">
+        <div style="font-size:1.2rem;font-weight:bold;">0</div>
+        <div style="font-size:0.95rem;">获赞</div>
+      </div>
     </div>
-    <button id="logoutBtn" class="steam-btn" style="margin-top:12px;width:100%;">退出登录</button>
+    <button id="logoutBtn" class="steam-btn" style="margin-top:12px;width:100%;background:none;border:none;">
+      退出登录</button>
   </div>
-  <main class="main-content">
-    <section class="announcement-bar">公告栏（示例）</section>
-    <section class="post-list" id="allPostsList">
-      <!-- 帖子卡片骨架 -->
+  <div class="container">
+    <section class="hero-section">
+      <h1 class="hero-title">欢迎来到MySteam社区</h1>
+      <p class="hero-subtitle">分享游戏心得，交流游戏体验，发现更多精彩内容</p>
     </section>
-    <aside class="sidebar">
-      <div class="top-liked">获赞前20</div>
-      <div class="hot-tags">热门标签</div>
-    </aside>
-  </main>
+
+    <div class="main-content">
+      <div class="content-area">
+        <div class="announcement-bar">
+          欢迎来到MySteam社区！在这里分享你的游戏体验和心得
+        </div>
+
+        <section class="post-list" id="allPostsList">
+          <!-- 帖子卡片将在这里动态加载 -->
+          <div style="color:#c7d5e0; text-align: center; padding: 40px;">
+            正在加载帖子...
+          </div>
+        </section>
+      </div>
+
+      <aside class="sidebar">
+        <div class="sidebar-card">
+          <h3>🏆 获赞前5</h3>
+          <ul class="sidebar-list">
+            <li><a href="#">热门帖子标题示例</a> <span>128赞</span></li>
+            <li><a href="#">游戏攻略分享</a> <span>95赞</span></li>
+            <li><a href="#">新手指南</a> <span>87赞</span></li>
+            <li><a href="#">装备推荐</a> <span>76赞</span></li>
+            <li><a href="#">技巧分享</a> <span>65赞</span></li>
+          </ul>
+        </div>
+
+        <div class="sidebar-card">
+          <h3>热门标签</h3>
+          <div class="tag-cloud">
+            <a href="#" class="tag">Steam</a>
+            <a href="#" class="tag">游戏攻略</a>
+            <a href="#" class="tag">新手指南</a>
+            <a href="#" class="tag">装备推荐</a>
+            <a href="#" class="tag">技巧分享</a>
+            <a href="#" class="tag">游戏评测</a>
+            <a href="#" class="tag">社区活动</a>
+            <a href="#" class="tag">经验分享</a>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
   <script>
+    console.log('Script loaded');
+
+    // 获取用户ID
+    const userId = localStorage.getItem('userId');
+    console.log('User ID:', userId);
+
+    // 页面加载完成后初始化
+    document.addEventListener('DOMContentLoaded', function () {
+      console.log('DOMContentLoaded event fired');
+      loadAllPosts();
+    });
+
     // 异步加载所有帖子列表
     function loadAllPosts() {
-      fetch('/blog/posts')
+      console.log('loadAllPosts function called');
+      // 添加用户ID参数，以便后端返回用户的交互状态
+      //userId ? `/blog/api/posts?userId=${userId}` :
+      const url = '/blog/api/posts';
+      console.log('Fetching URL:', url);
+      fetch(url)
         .then(res => res.json())
         .then(posts => {
           const list = document.getElementById('allPostsList');
@@ -69,27 +534,238 @@
           }
           list.innerHTML = posts.map(post => `
             <div class="post-card">
-              <div class="post-title"><a href="/blog/posts/${post.id}" style="color:#66c0f4;">${post.title}</a></div>
-              <div class="post-meta">${post.author && post.author.username ? post.author.username : ''} | ${post.createdAt ? post.createdAt.replace('T',' ').slice(0,16) : ''} | ${post.likeCount || 0} 赞 | ${post.collectCount || 0} 收藏</div>
+              <div class="post-title"><a href="/blog/post/${post.id}" style="color:#66c0f4;">${post.title}</a></div>
+              <div class="post-meta">
+                <span class="post-author">${post.author && post.author.username ? post.author.username : '未知作者'}</span> |
+                <span class="post-time">${post.createdAt ? post.createdAt.replace('T', ' ').slice(0, 16) : ''}</span>
+                <div class="post-stats">
+                  <span class="post-stat"><i class="stat-icon">👁️</i> ${post.viewCount || 0}</span>
+                  <span class="post-stat"><i class="stat-icon">❤️</i> ${post.likeCount || 0}</span>
+                  <span class="post-stat"><i class="stat-icon">⭐</i> ${post.collectCount || 0}</span>
+                  <span class="post-stat"><i class="stat-icon">💬</i> ${post.commentCount || 0}</span>
+                </div>
+              </div>
               <div class="post-summary">${post.content ? post.content.slice(0, 80) + (post.content.length > 80 ? '...' : '') : ''}</div>
+              <div class="post-interaction-preview">
+                <button class="interaction-preview-btn"  data-action="like" data-post-id="${post.id}">
+                  ${post.userLiked ? '❤️ ' : '🤍 '}
+                </button>
+                <button class="interaction-preview-btn"  data-action="bookmark" data-post-id="${post.id}">
+                  ${post.userBookmarked ? '⭐ ' : '☆ '}
+                </button>
+                <a href="/blog/post/${post.id}#comments" class="interaction-preview-link">💬 评论 (${post.commentCount || 0})</a>
+              </div>
             </div>
           `).join('');
+
+          // 设置交互按钮事件处理
+          setupInteractionButtons();
+        })
+        .catch(error => {
+          console.error('加载帖子失败:', error);
+          const list = document.getElementById('allPostsList');
+          list.innerHTML = '<div style="color:#c7d5e0;">加载失败，请刷新重试</div>';
         });
     }
+
+    // 设置交互按钮事件处理
+    function setupInteractionButtons() {
+      // 如果用户未登录，不需要设置事件处理
+      if (!userId) return;
+
+      // 点赞按钮
+      document.querySelectorAll('.interaction-preview-btn[data-action="like"]').forEach(btn => {
+        btn.addEventListener('click', async function () {
+          const postId = this.dataset.postId;
+          if (!postId) return;
+
+          // 立即更新UI状态
+          const wasLiked = this.classList.contains('active');
+          updateLikeButtonState(this, !wasLiked);
+
+          try {
+            // 发送请求
+            const response = await fetch(`/blog/api/posts/${postId}/like?userId=${userId}`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+              // 更新按钮状态
+              updateLikeButtonState(this, data.data.liked);
+
+              // 更新统计数
+              const statElement = this.closest('.post-card').querySelector('.post-stat:nth-child(2)');
+              if (statElement) {
+                const countElement = statElement.childNodes[1];
+                if (countElement) {
+                  countElement.textContent = ` ${data.data.likeCount || 0}`;
+                }
+
+                // 更新图标状态
+                const iconElement = statElement.querySelector('.stat-icon');
+                if (iconElement) {
+                  if (data.data.liked) {
+                    iconElement.classList.add('active');
+                  } else {
+                    iconElement.classList.remove('active');
+                  }
+                }
+              }
+            } else {
+              // 恢复原始状态
+              updateLikeButtonState(this, wasLiked);
+              showNotification('点赞操作失败，请重试', 'error');
+            }
+          } catch (error) {
+            console.error('点赞操作失败:', error);
+            // 恢复原始状态
+            updateLikeButtonState(this, wasLiked);
+            showNotification('网络错误，请检查连接', 'error');
+          }
+        });
+      });
+
+      // 收藏按钮
+      document.querySelectorAll('.interaction-preview-btn[data-action="bookmark"]').forEach(btn => {
+        btn.addEventListener('click', async function () {
+          const postId = this.dataset.postId;
+          if (!postId) return;
+
+          // 立即更新UI状态
+          const wasBookmarked = this.classList.contains('active');
+          updateBookmarkButtonState(this, !wasBookmarked);
+
+          try {
+            // 发送请求
+            const response = await fetch(`/blog/api/posts/${postId}/collect?userId=${userId}`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+              // 更新按钮状态
+              updateBookmarkButtonState(this, data.data.bookmarked);
+
+              // 更新统计数
+              const statElement = this.closest('.post-card').querySelector('.post-stat:nth-child(3)');
+              if (statElement) {
+                const countElement = statElement.childNodes[1];
+                if (countElement) {
+                  countElement.textContent = ` ${data.data.bookmarkCount || 0}`;
+                }
+
+                // 更新图标状态
+                const iconElement = statElement.querySelector('.stat-icon');
+                if (iconElement) {
+                  if (data.data.bookmarked) {
+                    iconElement.classList.add('active');
+                  } else {
+                    iconElement.classList.remove('active');
+                  }
+                }
+              }
+            } else {
+              // 恢复原始状态
+              updateBookmarkButtonState(this, wasBookmarked);
+              showNotification('收藏操作失败，请重试', 'error');
+            }
+          } catch (error) {
+            console.error('收藏操作失败:', error);
+            // 恢复原始状态
+            updateBookmarkButtonState(this, wasBookmarked);
+            showNotification('网络错误，请检查连接', 'error');
+          }
+        });
+      });
+    }
+
+    // 更新点赞按钮状态
+    function updateLikeButtonState(button, isLiked) {
+      if (isLiked) {
+        button.classList.add('active');
+        button.innerHTML = '❤️ 已点赞';
+      } else {
+        button.classList.remove('active');
+        button.innerHTML = '🤍 点赞';
+      }
+    }
+
+    // 更新收藏按钮状态
+    function updateBookmarkButtonState(button, isBookmarked) {
+      if (isBookmarked) {
+        button.classList.add('active');
+        button.innerHTML = '⭐ 已收藏';
+      } else {
+        button.classList.remove('active');
+        button.innerHTML = '☆ 收藏';
+      }
+    }
+
+    // 显示通知
+    function showNotification(message, type = 'info') {
+      // 移除现有通知
+      document.querySelectorAll('.notification').forEach(n => n.remove());
+
+      const notification = document.createElement('div');
+      notification.className = `notification notification-${type}`;
+      notification.textContent = message;
+      notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 12px 20px;
+        border-radius: 6px;
+        color: white;
+        font-size: 14px;
+        z-index: 1000;
+        max-width: 300px;
+        word-wrap: break-word;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      `;
+
+      if (type === 'success') {
+        notification.style.background = '#4caf50';
+        notification.style.border = '1px solid #45a049';
+      } else if (type === 'error') {
+        notification.style.background = '#f44336';
+        notification.style.border = '1px solid #da190b';
+      } else {
+        notification.style.background = '#2196f3';
+        notification.style.border = '1px solid #1976d2';
+      }
+
+      document.body.appendChild(notification);
+
+      // 3秒后自动移除
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.remove();
+        }
+      }, 3000);
+    }
+
+    // 加载帖子列表
     loadAllPosts();
     // 登录后右上角显示用户名，点击弹出卡片
-    const userId = localStorage.getItem('userId');
     if (userId) {
       fetch('/blog/users/' + userId + '/profile')
         .then(res => res.json())
         .then(data => {
-          // 检查数据是否有效，防止undefined值
           const username = data && data.username ? data.username : '用户';
-          const followingCount = data && data.followingCount !== undefined ? data.followingCount : 0;
-          const followersCount = data && data.followersCount !== undefined ? data.followersCount : 0;
-          const likedCount = data && data.likedCount !== undefined ? data.likedCount : 0;
-          const avatarUrl = data && data.avatarUrl ? data.avatarUrl : 'https://static.hdslb.com/images/member/noface.gif';
-          
+          const followingCount = data && data.followingCount? data.followingCount : 0;
+          const followersCount = data && data.followersCount? data.followersCount : 0;
+          const likedCount = data && data.likedCount? data.likedCount : 0;
+          const avatarUrl = data && data.avatarUrl ? data.avatarUrl : '/static/image/noface.gif';
+
           // 更新导航栏
           const navUser = document.getElementById('navUser');
           let userLi = document.createElement('li');
@@ -97,30 +773,28 @@
           const loginNav = document.getElementById('loginNav');
           if (loginNav) navUser.removeChild(loginNav);
           navUser.appendChild(userLi);
-          
+
           // 用户卡片数据
           document.getElementById('userCardName').innerText = username;
           document.getElementById('userCardFollow').children[0].innerText = followingCount;
           document.getElementById('userCardFans').children[0].innerText = followersCount;
           document.getElementById('userCardLike').children[0].innerText = likedCount;
-          
           // 头像
           document.getElementById('userCardAvatar').src = avatarUrl;
-          
           // 点击用户名弹出卡片
-          document.getElementById('navUsername').onclick = function(e) {
+          document.getElementById('navUsername').onclick = function (e) {
             const card = document.getElementById('userCard');
             card.style.display = card.style.display === 'none' ? 'block' : 'none';
           };
-          
+
           // 点击退出登录
-          document.getElementById('logoutBtn').onclick = function() {
+          document.getElementById('logoutBtn').onclick = function () {
             localStorage.removeItem('userId');
             window.location.reload();
           };
-          
+
           // 点击页面其他地方关闭卡片
-          document.addEventListener('click', function(e) {
+          document.addEventListener('click', function (e) {
             const card = document.getElementById('userCard');
             if (card.style.display === 'block' && !card.contains(e.target) && e.target.id !== 'navUsername') {
               card.style.display = 'none';
@@ -141,4 +815,5 @@
   </script>
   <footer>© 2025 MySteam社区</footer>
 </body>
-</html> 
+
+</html>
