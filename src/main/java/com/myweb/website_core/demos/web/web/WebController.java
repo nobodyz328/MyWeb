@@ -31,7 +31,7 @@ public class WebController {
     public String postEditWithId(@PathVariable Long id) {
         return "post-edit";
     }
-    @GetMapping("/posts/{id}")
+    @GetMapping("/post/{id}")
     public String postDetail(@PathVariable Long id) {
         return "post-detail";
     }

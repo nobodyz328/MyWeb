@@ -4,62 +4,84 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>发帖 - MySteam社区</title>
-  <style>
-    .post-edit-container { max-width: 700px; margin: 60px auto; background: #23262e; border-radius: 16px; box-shadow: 0 4px 24px #0006; padding: 40px 32px; color: #fff; }
-    .post-edit-form { display: flex; flex-direction: column; gap: 24px; }
-    .post-edit-form input, .post-edit-form textarea { background: #1b2838; border: 1px solid #66c0f4; border-radius: 8px; color: #fff; padding: 12px; font-size: 1rem; }
-    .post-edit-form textarea { min-height: 160px; resize: vertical; }
-    .image-upload-row { display: flex; gap: 16px; align-items: center; }
-    .image-preview { width: 80px; height: 80px; border-radius: 8px; background: #1b2838; border: 1px solid #66c0f4; object-fit: cover; }
-    .back-btn {
-      position: absolute;
-      top: 24px;
-      left: 24px;
-      background: #23262e;
-      color: #c7d5e0;
-      border: none;
-      border-radius: 6px;
-      padding: 8px 16px;
-      font-size: 16px;
-      cursor: pointer;
-      transition: background 0.2s;
-      z-index: 1000;
-    }
-    .back-btn:hover {
-      background: #1b2838;
-    }
-  </style>
+  <link rel="stylesheet" href="/blog/static/css/post-edit.css">
 </head>
-<body class="steam-bg" style="background: linear-gradient(135deg, #1b2838 0%, #30415d 100%) fixed; min-height:100vh;">
-<div style="position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:-1;background:linear-gradient(135deg,#22304a 0%,#1b2838 100%);opacity:0.85;"></div>
-<button class="back-btn" onclick="window.history.back()">← 返回</button>
-  <div class="post-edit-container">
-    <h2>发帖 / 编辑帖子</h2>
-    <form class="post-edit-form">
-      <input type="text" placeholder="标题" required>
-      <textarea placeholder="正文" required></textarea>
-      <div class="image-upload-row">
-        <input type="file" multiple accept="image/*">
-        <div class="image-preview"></div>
-        <div class="image-preview"></div>
-      </div>
-      <button type="submit" class="steam-btn">发布</button>
-    </form>
+<body>
+  <nav class="steam-navbar">
+    <a href="/blog/view" class="back-btn">🔙 返回</a>
+    <a href="/blog/view" class="logo">MySteam社区</a>
+    <div></div>
+  </nav>
+
+  <div class="container">
+    <div class="page-header">
+      <h1 class="page-title">发布新帖</h1>
+      <p class="page-subtitle">分享你的游戏心得和精彩内容</p>
+    </div>
+
+    <div class="post-edit-container">
+      <form class="post-edit-form" id="postEditForm">
+        <div class="form-group">
+          <label class="form-label" for="titleInput">标题</label>
+          <input 
+            type="text" 
+            id="titleInput" 
+            class="form-input" 
+            placeholder="输入一个吸引人的标题..." 
+            maxlength="100"
+            required
+          >
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="contentTextarea">内容</label>
+          <textarea 
+            id="contentTextarea" 
+            class="form-textarea" 
+            placeholder="分享你的想法、经验或故事..."
+            required
+          ></textarea>
+          <div style="text-align: right; margin-top: 4px;">
+            <span id="charCount" style="font-size: 0.9rem; color: #8f98a0;">0/2000</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">图片上传</label>
+          <div class="image-upload-section" id="imageUploadSection">
+            <div class="upload-icon">📷</div>
+            <div class="upload-text">点击或拖拽图片到此处上传</div>
+            <div class="upload-hint">支持 JPG、PNG、GIF 格式，单张图片不超过 5MB</div>
+            <button type="button" class="upload-btn" id="uploadBtn">选择图片</button>
+            <input 
+              type="file" 
+              id="imageFileInput" 
+              class="file-input" 
+              multiple 
+              accept="image/*"
+            >
+          </div>
+          <div class="image-preview-container" id="imagePreviewContainer">
+            <!-- 图片预览将在这里动态添加 -->
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="steam-btn steam-btn-secondary" onclick="cancelEdit()">
+            取消
+          </button>
+          <button type="submit" class="steam-btn" id="submitBtn">
+            发布帖子
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
-  <script>
-    document.querySelector('.post-edit-form').onsubmit = function(e) {
-      e.preventDefault();
-      const title = this.querySelector('input[placeholder="标题"]').value;
-      const content = this.querySelector('textarea').value;
-      const userId = localStorage.getItem('userId');
-      fetch('/blog/posts', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({title, content, author: {id: userId}})
-      }).then(res => {
-        if (res.ok) alert('发帖成功');
-      });
-    };
-  </script>
+
+  <footer>
+    © 2025 MySteam社区
+  </footer>
+
+  <script src="/blog/static/js/post-edit.js"></script>
 </body>
-</html> 
+</html>

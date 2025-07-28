@@ -1,16 +1,24 @@
 package com.myweb.website_core.dto;
 
+import lombok.Getter;
+
 /**
  * 帖子交互状态DTO
  */
 public class PostInteractionStatus {
-    
+
+    // Getters and Setters
+    @Getter
     private Long postId;
+    @Getter
     private Long userId;
     private boolean isLiked;
     private boolean isBookmarked;
+    @Getter
     private long likeCount;
+    @Getter
     private long bookmarkCount;
+    @Getter
     private long commentCount;
 
     public PostInteractionStatus() {}
@@ -26,17 +34,8 @@ public class PostInteractionStatus {
         this.commentCount = commentCount;
     }
 
-    // Getters and Setters
-    public Long getPostId() {
-        return postId;
-    }
-
     public void setPostId(Long postId) {
         this.postId = postId;
-    }
-
-    public Long getUserId() {
-        return userId;
     }
 
     public void setUserId(Long userId) {
@@ -47,40 +46,8 @@ public class PostInteractionStatus {
         return isLiked;
     }
 
-    public void setLiked(boolean liked) {
-        isLiked = liked;
-    }
-
     public boolean isBookmarked() {
         return isBookmarked;
-    }
-
-    public void setBookmarked(boolean bookmarked) {
-        isBookmarked = bookmarked;
-    }
-
-    public long getLikeCount() {
-        return likeCount;
-    }
-
-    public void setLikeCount(long likeCount) {
-        this.likeCount = likeCount;
-    }
-
-    public long getBookmarkCount() {
-        return bookmarkCount;
-    }
-
-    public void setBookmarkCount(long bookmarkCount) {
-        this.bookmarkCount = bookmarkCount;
-    }
-
-    public long getCommentCount() {
-        return commentCount;
-    }
-
-    public void setCommentCount(long commentCount) {
-        this.commentCount = commentCount;
     }
 
     @Override

@@ -4,90 +4,108 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>帖子详情 - MySteam社区</title>
-  <link rel="stylesheet" href="/css/post-interactions.css">
-  <style>
-    .post-detail-container { max-width: 800px; margin: 60px auto; background: #23262e; border-radius: 16px; box-shadow: 0 4px 24px #0006; padding: 40px 32px; color: #fff; }
-    .post-title { font-size: 2rem; color: #66c0f4; margin-bottom: 12px; }
-    .post-meta { color: #aaa; margin-bottom: 24px; }
-    .post-content { margin-bottom: 24px; line-height: 1.8; }
-    .post-images { display: flex; gap: 16px; margin-bottom: 24px; }
-    .post-images img { width: 120px; height: 120px; border-radius: 8px; object-fit: cover; border: 1px solid #66c0f4; }
-    .steam-btn { padding: 8px 16px; background: #1b2838; color: #c7d5e0; border: 1px solid #66c0f4; border-radius: 6px; cursor: pointer; transition: all 0.2s ease; font-size: 14px; }
-    .steam-btn:hover { background: #66c0f4; color: #1b2838; }
-  </style>
+  <link rel="stylesheet" href="/blog/static/css/post-detail.css">
 </head>
-<body class="steam-bg" style="background: linear-gradient(135deg, #1b2838 0%, #30415d 100%) fixed; min-height:100vh;">
-<div style="position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:-1;background:linear-gradient(135deg,#22304a 0%,#1b2838 100%);opacity:0.85;"></div>
-<div class="post-detail-container" data-post-id="1"></div>
-    <div class="post-title">帖子标题</div>
-    <div class="post-meta">作者 | 2025-07-01 12:00</div>
-    <div class="post-content">这里是帖子正文内容，支持换行和图片。</div>
-    <div class="post-images">
-      <img src="/static/demo1.jpg" alt="图片1">
-      <img src="/static/demo2.jpg" alt="图片2">
-    </div>
-    <div class="post-actions">
-      <button class="interaction-btn" data-action="like">
-        🤍 <span class="count">0</span>
-      </button>
-      <button class="interaction-btn" data-action="bookmark">
-        ☆ 收藏
-      </button>
-      <button class="steam-btn">💬 评论</button>
-      <button class="steam-btn">编辑</button>
-      <button class="steam-btn">删除</button>
-    </div>
-    <div class="comment-section">
-      <h3>评论区</h3>
-      
-      <!-- Comment Form -->
-      <form id="comment-form">
-        <textarea placeholder="写下你的评论..." required></textarea>
-        <div class="comment-form-actions">
-          <button type="submit" class="steam-btn steam-btn-primary">发表评论</button>
-        </div>
-      </form>
-      
-      <!-- Comments List -->
-      <div class="comments-list">
-        <div class="comment-card" data-comment-id="1">
-          <div class="comment-header">
-            <span class="comment-author">用户A</span>
-            <span class="comment-time">2小时前</span>
-          </div>
-          <div class="comment-content">这是一个示例评论内容，展示评论的基本结构。</div>
-          <div class="comment-actions">
-            <button data-action="reply" data-comment-id="1" class="reply-btn">回复</button>
-          </div>
-          <div class="replies-container">
-            <div class="comment-card reply-card" data-comment-id="2">
-              <div class="comment-header">
-                <span class="comment-author">用户B</span>
-                <span class="comment-time">1小时前</span>
-              </div>
-              <div class="comment-content">这是对用户A的回复。</div>
+<body>
+  <nav class="steam-navbar">
+    <a href="/blog/view" class="back-btn">🔙</a>
+    <a href="/blog/view" class="logo">MySteam社区</a>
+    <div></div>
+  </nav>
+
+  <div class="container">
+    <div class="post-detail-container">
+      <!-- 加载状态 -->
+      <div class="loading-state" id="loadingState">
+        <div class="loading-spinner"></div>
+        <div>正在加载帖子详情...</div>
+      </div>
+
+      <!-- 帖子内容 -->
+      <div class="post-content-wrapper" id="postContentWrapper">
+        <div class="post-title" id="postTitle"></div>
+        
+        <div class="post-meta">
+          <div class="post-author-info">
+            <img id="postAuthorAvatar" src="/blog/static/images/noface.gif" alt="作者头像" class="post-author-avatar">
+            <div class="post-author-details">
+              <div class="post-author-name" id="postAuthorName">未知作者</div>
+              <div class="post-time" id="postTime"></div>
             </div>
+          </div>
+          <div class="post-stats">
+            <span class="post-stat">
+              <i class="stat-icon">👁️</i>
+              <span id="postViewCount">0</span>
+            </span>
+            <span class="post-stat">
+              <i class="stat-icon">❤️</i>
+              <span id="postLikeCount">0</span>
+            </span>
+            <span class="post-stat">
+              <i class="stat-icon">⭐</i>
+              <span id="postCollectCount">0</span>
+            </span>
+            <span class="post-stat">
+              <i class="stat-icon">💬</i>
+              <span id="postCommentCount">0</span>
+            </span>
           </div>
         </div>
         
-        <div class="comment-card" data-comment-id="3">
-          <div class="comment-header">
-            <span class="comment-author">用户C</span>
-            <span class="comment-time">30分钟前</span>
+        <div class="post-content" id="postContent"></div>
+        
+        <div class="post-images" id="postImages" style="display: none;"></div>
+        
+        <div class="post-actions">
+          <button class="interaction-btn" id="likeBtn" data-action="like">
+            🤍 <span class="count">0</span>
+          </button>
+          <button class="interaction-btn" id="bookmarkBtn" data-action="bookmark">
+            ☆ <span class="text">收藏</span>
+          </button>
+          <button class="steam-btn" onclick="scrollToComments()">
+            💬 评论 (<span id="commentCountBtn">0</span>)
+          </button>
+          <div id="authorActions" style="display: none;">
+            <button class="steam-btn" id="editBtn">✏️ 编辑</button>
+            <button class="steam-btn steam-btn-danger" id="deleteBtn">🗑️ 删除</button>
           </div>
-          <div class="comment-content">另一个评论示例，没有回复。</div>
-          <div class="comment-actions">
-            <button data-action="reply" data-comment-id="3" class="reply-btn">回复</button>
+        </div>
+        
+        <div class="comment-section" id="commentSection">
+          <h3>💬 评论区</h3>
+          
+          <!-- 评论表单 -->
+          <div id="commentFormContainer">
+            <form class="comment-form" id="commentForm" style="display: none;">
+              <textarea placeholder="写下你的评论..." required></textarea>
+              <div class="comment-form-actions">
+                <button type="submit" class="steam-btn">发表评论</button>
+              </div>
+            </form>
+            
+            <div class="login-prompt" id="loginPrompt" style="display: none;">
+              <a href="/blog/login" class="steam-btn">登录后参与评论</a>
+            </div>
+          </div>
+          
+          <!-- 评论列表 -->
+          <div class="comments-list" id="commentsList">
+            <div class="loading-state">
+              <div class="loading-spinner"></div>
+              <div>正在加载评论...</div>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
-  <script>
-    // Set global variables for the interaction manager
-    window.postId = location.pathname.match(/\d+/) ? location.pathname.match(/\d+/)[0] : '1'; // Default to 1 for demo
-    window.userId = localStorage.getItem('userId') || '1'; // Default to 1 for demo
-  </script>
-  <script src="/js/post-interactions.js"></script>
+
+  <footer style="text-align: center; color: #66c0f4; margin-top: 80px; padding: 40px 0; background: rgba(23, 26, 33, 0.8); font-size: 1rem; border-top: 1px solid rgba(102, 192, 244, 0.2);">
+    © 2025 MySteam社区
+  </footer>
+
+  <script src="/blog/static/js/post-detail.js"></script>
 </body>
-</html> 
+</html>

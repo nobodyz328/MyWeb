@@ -3,10 +3,12 @@ package com.myweb.website_core.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import lombok.Getter;
 
 /**
  * Request DTO for creating a new comment
  */
+@Getter
 public class CommentCreateRequest {
     
     @NotBlank(message = "Comment content cannot be empty")
@@ -27,24 +29,12 @@ public class CommentCreateRequest {
         this.authorId = authorId;
     }
 
-    public String getContent() {
-        return content;
-    }
-
     public void setContent(String content) {
         this.content = content;
     }
 
-    public Long getPostId() {
-        return postId;
-    }
-
     public void setPostId(Long postId) {
         this.postId = postId;
-    }
-
-    public Long getAuthorId() {
-        return authorId;
     }
 
     public void setAuthorId(Long authorId) {

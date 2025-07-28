@@ -1,30 +1,36 @@
-package com.myweb.website_core.demos.web.blog;
+package com.myweb.website_core.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 
 @Getter
 public class ApiResponse<T> {
+    @JsonProperty("success")
     private boolean success;
+    
+    @JsonProperty("data")
     private T data;
+    
+    @JsonProperty("message")
     private String message;
-
+    
     public ApiResponse() {}
-
+    
     public ApiResponse(boolean success, T data) {
         this.success = success;
         this.data = data;
     }
-
+    
     public ApiResponse(boolean success, T data, String message) {
         this.success = success;
         this.data = data;
         this.message = message;
     }
-
+    
     public static <T> ApiResponse<T> success(T data) {
         return new ApiResponse<>(true, data);
     }
-
+    
     public static <T> ApiResponse<T> error(String message) {
         return new ApiResponse<>(false, null, message);
     }
@@ -39,5 +45,14 @@ public class ApiResponse<T> {
 
     public void setMessage(String message) {
         this.message = message;
+    }
+    
+    @Override
+    public String toString() {
+        return "ApiResponse{" +
+                "success=" + success +
+                ", data=" + data +
+                ", message='" + message + '\'' +
+                '}';
     }
 }

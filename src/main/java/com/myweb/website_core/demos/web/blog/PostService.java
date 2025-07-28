@@ -1,7 +1,14 @@
 package com.myweb.website_core.demos.web.blog;
 
+import com.myweb.website_core.dto.CollectResponse;
+import com.myweb.website_core.dto.LikeResponse;
+import com.myweb.website_core.demos.web.collect.PostCollect;
+import com.myweb.website_core.demos.web.collect.PostCollectRepository;
+import com.myweb.website_core.demos.web.like.PostLikeRepository;
+import com.myweb.website_core.demos.web.like.PostLikeService;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -12,7 +19,6 @@ import com.myweb.website_core.demos.web.user.UserRepository;
 import com.myweb.website_core.service.MessageProducerService;
 import com.myweb.website_core.mapper.PostMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.redis.core.RedisTemplate;
 import java.util.concurrent.TimeUnit;
@@ -24,16 +30,22 @@ public class PostService {
     private final MessageProducerService messageProducerService;
     private final PostMapper postMapper;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final PostCollectRepository postCollectRepository;
+
+    private final PostLikeService postLikeService;
 
     @Autowired
     public PostService(PostRepository postRepository, UserRepository userRepository,
             MessageProducerService messageProducerService, PostMapper postMapper,
-            RedisTemplate<String, Object> redisTemplate) {
+            RedisTemplate<String, Object> redisTemplate, PostCollectRepository postCollectRepository,
+            PostLikeRepository postLikeRepository, PostLikeService postLikeService) {
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.messageProducerService = messageProducerService;
         this.postMapper = postMapper;
         this.redisTemplate = redisTemplate;
+        this.postCollectRepository = postCollectRepository;
+        this.postLikeService = postLikeService;
     }
 
     @Async
@@ -81,58 +93,53 @@ public class PostService {
         return postRepository.save(post);
     }
 
-    @Async
-    public CompletableFuture<LikeResponse> likePost(Long postId, Long userId) {
-        Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new RuntimeException("帖子不存在"));
-
-        // 检查用户是否已点赞
-        String likeKey = "user:like:" + userId + ":" + postId;
-        boolean alreadyLiked = Boolean.TRUE.equals(redisTemplate.hasKey(likeKey));
-        
-        if (alreadyLiked) {
-            // 用户已点赞，返回当前状态
-            int currentLikeCount = post.getLikeCount() == null ? 0 : post.getLikeCount();
-            return CompletableFuture.completedFuture(new LikeResponse(true, currentLikeCount));
-        }
-
-        // 更新点赞数
-        int newLikeCount = post.getLikeCount() == null ? 1 : post.getLikeCount() + 1;
-        postMapper.updateLikeCount(postId, newLikeCount);
-
-        // 记录用户点赞行为到Redis
-        redisTemplate.opsForValue().set(likeKey, java.time.LocalDateTime.now(), 30, TimeUnit.DAYS);
-
-        // 发送点赞消息到RabbitMQ
-        userRepository.findById(userId).ifPresent(user -> messageProducerService.sendPostLikedMessage(postId, userId, user.getUsername()));
-
-        return CompletableFuture.completedFuture(new LikeResponse(true, newLikeCount));
+    //@Async
+    public LikeResponse likePost(Long postId, Long userId) {
+        return postLikeService.toggleLike(postId, userId);
     }
 
-    @Async
-    public CompletableFuture<CollectResponse> collectPost(Long postId, Long userId) {
+    //@Async
+    @Transactional
+    public CollectResponse collectPost(Long postId, Long userId) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new RuntimeException("帖子不存在"));
         
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("用户不存在"));
+        
         // 检查用户是否已收藏
-        String collectKey = "user:collect:" + userId + ":" + postId;
-        boolean alreadyCollected = Boolean.TRUE.equals(redisTemplate.hasKey(collectKey));
+        Optional<PostCollect> existingCollect = postCollectRepository.findByUserIdAndPostId(userId, postId);
         
-        if (alreadyCollected) {
-            // 用户已收藏，返回当前状态
-            int currentCollectCount = post.getCollectCount() == null ? 0 : post.getCollectCount();
-            return CompletableFuture.completedFuture(new CollectResponse(true, currentCollectCount));
+        if (existingCollect.isPresent()) {
+            // 用户已收藏，取消收藏
+            postCollectRepository.deleteByUserIdAndPostId(userId, postId);
+            
+            // 更新收藏数
+            long newCollectCount = postCollectRepository.countByPostId(postId);
+            post.setCollectCount((int) newCollectCount);
+            postRepository.save(post);
+            
+            // 清除Redis缓存
+            String collectKey = "user:collect:" + userId + ":" + postId;
+            redisTemplate.delete(collectKey);
+            
+            return new CollectResponse(false, (int) newCollectCount);
+        } else {
+            // 用户未收藏，添加收藏
+            PostCollect postCollect = new PostCollect(user, post);
+            postCollectRepository.save(postCollect);
+            
+            // 更新收藏数
+            long newCollectCount = postCollectRepository.countByPostId(postId);
+            post.setCollectCount((int) newCollectCount);
+            postRepository.save(post);
+            
+            // 记录用户收藏行为到Redis
+            String collectKey = "user:collect:" + userId + ":" + postId;
+            redisTemplate.opsForValue().set(collectKey, java.time.LocalDateTime.now(), 30, TimeUnit.DAYS);
+            
+            return new CollectResponse(true, (int) newCollectCount);
         }
-        
-        // 更新收藏数
-        int newCollectCount = post.getCollectCount() == null ? 1 : post.getCollectCount() + 1;
-        post.setCollectCount(newCollectCount);
-        postRepository.save(post);
-        
-        // 记录用户收藏行为到Redis
-        redisTemplate.opsForValue().set(collectKey, java.time.LocalDateTime.now(), 30, TimeUnit.DAYS);
-        
-        return CompletableFuture.completedFuture(new CollectResponse(true, newCollectCount));
     }
 
     @Async
@@ -175,6 +182,23 @@ public class PostService {
     public List<Post> findPostsByUserId(Long userId) {
         return postRepository.findByAuthorId(userId);
     }
+    
+    public List<Post> findCollectedPostsByUserId(Long userId) {
+        List<PostCollect> collects = postCollectRepository.findByUserIdOrderByCreatedAtDesc(userId);
+        return collects.stream()
+                .map(PostCollect::getPost)
+                .toList();
+    }
+    
+    public List<Post> findLikedPostsByUserId(Long userId) {
+        return postLikeService.getUserLikedPosts(userId, org.springframework.data.domain.Pageable.unpaged()).getContent();
+    }
+    
+
+    
+    public boolean isPostLikedByUser(Long postId, Long userId) {
+        return postLikeService.isLikedByUser(postId, userId);
+    }
 
     @Async
     @CacheEvict(value = "posts", allEntries = true)
@@ -189,6 +213,9 @@ public class PostService {
                     throw new RuntimeException("无权限删除");
                 }
 
+                // 删除相关的点赞记录
+                postLikeService.deleteAllLikesForPost(id);
+                
                 // 删除帖子
                 postRepository.deleteById(id);
 

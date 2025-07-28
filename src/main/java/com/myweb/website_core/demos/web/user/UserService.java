@@ -1,5 +1,6 @@
 package com.myweb.website_core.demos.web.user;
 
+import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -97,8 +98,8 @@ public class UserService {
         return CompletableFuture.completedFuture(null);
     }
 
-    @Async
-    public CompletableFuture<UserProfileDTO> getProfile(Long userId) {
+    //@Async
+    public UserProfileDTO getProfile(Long userId) {
         try {
             System.out.println("UserService: Getting profile for user ID: " + userId);
             User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("用户不存在"));
@@ -139,7 +140,7 @@ public class UserService {
             
             System.out.println("UserService: Profile DTO created - Username: " + dto.getUsername() + 
                               ", Bio: " + dto.getBio() + ", Followers: " + dto.getFollowersCount());
-            return CompletableFuture.completedFuture(dto);
+            return dto;
         } catch (Exception e) {
             System.err.println("Error in getProfile: " + e.getMessage());
             e.printStackTrace();
@@ -148,6 +149,7 @@ public class UserService {
     }
 }
 
+@Getter
 class UserProfileDTO {
     private Long id;
     private String username;
@@ -157,20 +159,20 @@ class UserProfileDTO {
     private int followingCount;
     private int likedCount;
     private java.util.List<Post> posts;
-    public Long getId() { return id; }
+
     public void setId(Long id) { this.id = id; }
-    public String getUsername() { return username; }
+
     public void setUsername(String username) { this.username = username; }
-    public String getAvatarUrl() { return avatarUrl; }
+
     public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
-    public String getBio() { return bio; }
+
     public void setBio(String bio) { this.bio = bio; }
-    public int getFollowersCount() { return followersCount; }
+
     public void setFollowersCount(int followersCount) { this.followersCount = followersCount; }
-    public int getFollowingCount() { return followingCount; }
+
     public void setFollowingCount(int followingCount) { this.followingCount = followingCount; }
-    public int getLikedCount() { return likedCount; }
+
     public void setLikedCount(int likedCount) { this.likedCount = likedCount; }
-    public java.util.List<Post> getPosts() { return posts; }
+
     public void setPosts(java.util.List<Post> posts) { this.posts = posts; }
 }

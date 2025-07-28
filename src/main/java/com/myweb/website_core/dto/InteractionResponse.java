@@ -1,10 +1,14 @@
 package com.myweb.website_core.dto;
 
+import lombok.Getter;
+
 /**
  * 交互操作响应DTO
  */
+@Getter
 public class InteractionResponse {
-    
+
+    // Getters and Setters
     private boolean success;
     private String message;
     private String operation; // "like", "unlike", "bookmark", "unbookmark"
@@ -37,57 +41,28 @@ public class InteractionResponse {
         return new InteractionResponse(false, message, operation, postId, userId, 0, false);
     }
 
-    // Getters and Setters
-    public boolean isSuccess() {
-        return success;
-    }
-
     public void setSuccess(boolean success) {
         this.success = success;
-    }
-
-    public String getMessage() {
-        return message;
     }
 
     public void setMessage(String message) {
         this.message = message;
     }
 
-    public String getOperation() {
-        return operation;
-    }
-
     public void setOperation(String operation) {
         this.operation = operation;
-    }
-
-    public Long getPostId() {
-        return postId;
     }
 
     public void setPostId(Long postId) {
         this.postId = postId;
     }
 
-    public Long getUserId() {
-        return userId;
-    }
-
     public void setUserId(Long userId) {
         this.userId = userId;
     }
 
-    public long getNewCount() {
-        return newCount;
-    }
-
     public void setNewCount(long newCount) {
         this.newCount = newCount;
-    }
-
-    public boolean isCurrentStatus() {
-        return currentStatus;
     }
 
     public void setCurrentStatus(boolean currentStatus) {

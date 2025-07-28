@@ -1,8 +1,5 @@
 package com.myweb.website_core.demos.web.user;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,7 +10,6 @@ import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
@@ -64,15 +60,10 @@ public class UserController {
     }
 
     @GetMapping("/{id}/profile")
-    public CompletableFuture<UserProfileDTO> getProfile(@PathVariable Long id) {
+    public UserProfileDTO getProfile(@PathVariable Long id) {
         System.out.println("Getting profile for user ID: " + id);
-        return userService.getProfile(id).whenComplete((result, throwable) -> {
-            if (throwable != null) {
-                System.err.println("Error getting profile: " + throwable.getMessage());
-            } else {
-                System.out.println("Profile retrieved successfully for user: " + (result != null ? result.getUsername() : "null"));
-            }
-        });
+        return userService.getProfile(id);
+
     }
 }
 

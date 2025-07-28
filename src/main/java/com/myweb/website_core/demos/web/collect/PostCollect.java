@@ -1,15 +1,18 @@
-package com.myweb.website_core.demos.web.interaction;
+package com.myweb.website_core.demos.web.collect;
 
 import com.myweb.website_core.demos.web.user.User;
 import com.myweb.website_core.demos.web.blog.Post;
 import jakarta.persistence.*;
+import lombok.Getter;
+
 import java.time.LocalDateTime;
 
+@Getter
 @Entity
-@Table(name = "post_bookmarks", uniqueConstraints = {
+@Table(name = "post_collect", uniqueConstraints = {
     @UniqueConstraint(columnNames = {"user_id", "post_id"})
 })
-public class PostBookmark {
+public class PostCollect {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -26,43 +29,26 @@ public class PostBookmark {
     private LocalDateTime createdAt;
 
     // Constructors
-    public PostBookmark() {
+    public PostCollect() {
         this.createdAt = LocalDateTime.now();
     }
 
-    public PostBookmark(User user, Post post) {
+    public PostCollect(User user, Post post) {
         this.user = user;
         this.post = post;
         this.createdAt = LocalDateTime.now();
-    }
-
-    // Getters and Setters
-    public Long getId() {
-        return id;
     }
 
     public void setId(Long id) {
         this.id = id;
     }
 
-    public User getUser() {
-        return user;
-    }
-
     public void setUser(User user) {
         this.user = user;
     }
 
-    public Post getPost() {
-        return post;
-    }
-
     public void setPost(Post post) {
         this.post = post;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
     }
 
     public void setCreatedAt(LocalDateTime createdAt) {
