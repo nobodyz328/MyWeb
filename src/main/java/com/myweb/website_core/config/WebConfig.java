@@ -35,6 +35,11 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addResourceHandler("/images/**")
                 .addResourceLocations("classpath:/static/images/")
                 .setCachePeriod(3600);
+        
+        // 配置上传文件的静态资源访问
+        registry.addResourceHandler("/uploads/**")
+                .addResourceLocations("file:uploads/")
+                .setCachePeriod(3600);
     }
     @Bean
     TomcatServletWebServerFactory tomcatServletWebServerFactory() {

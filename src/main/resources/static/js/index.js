@@ -19,40 +19,51 @@ function loadAllPosts() {
   
   fetch(url)
     .then(res => res.json())
-    .then(posts => {
+    .then(async posts => {
       const list = document.getElementById('allPostsList');
       if (!posts || posts.length === 0) {
         list.innerHTML = '<div class="empty-state">暂无帖子</div>';
         return;
       }
       
-      list.innerHTML = posts.map(post => `
-        <div class="post-card">
-          <div class="post-title">
-            <a href="/blog/post/${post.id}">${escapeHtml(post.title)}</a>
-          </div>
-          <div class="post-meta">
-            <span class="post-author">${escapeHtml(post.author?.username || '未知作者')}</span> |
-            <span class="post-time">${formatTime(post.createdAt)}</span>
-            <div class="post-stats">
-              <span class="post-stat"><i class="stat-icon">👁️</i> ${post.viewCount || 0}</span>
-              <span class="post-stat"><i class="stat-icon">❤️</i> ${post.likeCount || 0}</span>
-              <span class="post-stat"><i class="stat-icon">⭐</i> ${post.collectCount || 0}</span>
-              <span class="post-stat"><i class="stat-icon">💬</i> ${post.commentCount || 0}</span>
+      // 如果用户已登录，获取用户的交互状态
+      let userInteractions = {};
+      if (userId) {
+        userInteractions = await loadUserInteractionsForPosts(posts.map(p => p.id));
+      }
+      
+      list.innerHTML = posts.map(post => {
+        const userLiked = userInteractions[post.id]?.liked || false;
+        const userBookmarked = userInteractions[post.id]?.collected || false;
+        
+        return `
+          <div class="post-card">
+            <div class="post-title">
+              <a href="/blog/post/${post.id}">${escapeHtml(post.title)}</a>
+            </div>
+            <div class="post-meta">
+              <span class="post-author">${escapeHtml(post.author?.username || '未知作者')}</span> |
+              <span class="post-time">${formatTime(post.createdAt)}</span>
+              <div class="post-stats">
+                <span class="post-stat"><i class="stat-icon ${userLiked ? 'active' : ''}">👁️</i> ${post.viewCount || 0}</span>
+                <span class="post-stat"><i class="stat-icon ${userLiked ? 'active' : ''}">❤️</i> ${post.likeCount || 0}</span>
+                <span class="post-stat"><i class="stat-icon ${userBookmarked ? 'active' : ''}">⭐</i> ${post.collectCount || 0}</span>
+                <span class="post-stat"><i class="stat-icon">💬</i> ${post.commentCount || 0}</span>
+              </div>
+            </div>
+            <div class="post-summary">${escapeHtml(post.content ? post.content.slice(0, 80) + (post.content.length > 80 ? '...' : '') : '')}</div>
+            <div class="post-interaction-preview">
+              <button class="interaction-preview-btn ${userLiked ? 'active' : ''}" data-action="like" data-post-id="${post.id}">
+                ${userLiked ? '❤️ 已点赞' : '🤍 点赞'}
+              </button>
+              <button class="interaction-preview-btn ${userBookmarked ? 'active' : ''}" data-action="bookmark" data-post-id="${post.id}">
+                ${userBookmarked ? '⭐ 已收藏' : '☆ 收藏'}
+              </button>
+              <a href="/blog/post/${post.id}#comments" class="interaction-preview-link">💬 评论 (${post.commentCount || 0})</a>
             </div>
           </div>
-          <div class="post-summary">${escapeHtml(post.content ? post.content.slice(0, 80) + (post.content.length > 80 ? '...' : '') : '')}</div>
-          <div class="post-interaction-preview">
-            <button class="interaction-preview-btn" data-action="like" data-post-id="${post.id}">
-              ${post.userLiked ? '❤️ ' : '🤍 '}
-            </button>
-            <button class="interaction-preview-btn" data-action="bookmark" data-post-id="${post.id}">
-              ${post.userBookmarked ? '⭐ ' : '☆ '}
-            </button>
-            <a href="/blog/post/${post.id}#comments" class="interaction-preview-link">💬 评论 (${post.commentCount || 0})</a>
-          </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
 
       // 设置交互按钮事件处理
       setupInteractionButtons();
@@ -64,6 +75,49 @@ function loadAllPosts() {
     });
 }
 
+// 加载用户对帖子的交互状态
+async function loadUserInteractionsForPosts(postIds) {
+  if (!userId || !postIds || postIds.length === 0) {
+    return {};
+  }
+
+  const interactions = {};
+  
+  try {
+    // 并发获取所有帖子的交互状态
+    const promises = postIds.map(async postId => {
+      try {
+        // 获取点赞状态
+        const likeResponse = await fetch(`/blog/api/posts/${postId}/like-status?userId=${userId}`);
+        let liked = false;
+        if (likeResponse.ok) {
+          const likeData = await likeResponse.json();
+          liked = likeData.success ? likeData.data : false;
+        }
+
+        // 获取收藏状态
+        const collectResponse = await fetch(`/blog/api/posts/${postId}/collect-status?userId=${userId}`);
+        let collected = false;
+        if (collectResponse.ok) {
+          const collectData = await collectResponse.json();
+          collected = collectData.success ? collectData.data : false;
+        }
+
+        interactions[postId] = { liked, collected };
+      } catch (error) {
+        console.warn(`获取帖子 ${postId} 交互状态失败:`, error);
+        interactions[postId] = { liked: false, collected: false };
+      }
+    });
+
+    await Promise.all(promises);
+  } catch (error) {
+    console.error('批量获取交互状态失败:', error);
+  }
+
+  return interactions;
+}
+
 // 设置交互按钮事件处理
 function setupInteractionButtons() {
   // 如果用户未登录，不需要设置事件处理
@@ -71,7 +125,8 @@ function setupInteractionButtons() {
 
   // 点赞按钮
   document.querySelectorAll('.interaction-preview-btn[data-action="like"]').forEach(btn => {
-    btn.addEventListener('click', async function () {
+    btn.addEventListener('click', async function (e) {
+      e.preventDefault();
       const postId = this.dataset.postId;
       if (!postId) return;
 
@@ -115,7 +170,7 @@ function setupInteractionButtons() {
         } else {
           // 恢复原始状态
           updateLikeButtonState(this, wasLiked);
-          showNotification('点赞操作失败，请重试', 'error');
+          showNotification(data.message || '点赞操作失败，请重试', 'error');
         }
       } catch (error) {
         console.error('点赞操作失败:', error);
@@ -128,7 +183,8 @@ function setupInteractionButtons() {
 
   // 收藏按钮
   document.querySelectorAll('.interaction-preview-btn[data-action="bookmark"]').forEach(btn => {
-    btn.addEventListener('click', async function () {
+    btn.addEventListener('click', async function (e) {
+      e.preventDefault();
       const postId = this.dataset.postId;
       if (!postId) return;
 
@@ -172,7 +228,7 @@ function setupInteractionButtons() {
         } else {
           // 恢复原始状态
           updateBookmarkButtonState(this, wasBookmarked);
-          showNotification('收藏操作失败，请重试', 'error');
+          showNotification(data.message || '收藏操作失败，请重试', 'error');
         }
       } catch (error) {
         console.error('收藏操作失败:', error);

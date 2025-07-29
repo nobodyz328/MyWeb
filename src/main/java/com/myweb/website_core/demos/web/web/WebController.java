@@ -39,4 +39,9 @@ public class WebController {
     public String announcements() {
         return "announcements";
     }
+    
+    @GetMapping("/test-upload")
+    public String testUpload() {
+        return "test-upload";
+    }
 }

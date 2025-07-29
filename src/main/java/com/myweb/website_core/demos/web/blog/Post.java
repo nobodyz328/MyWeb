@@ -1,12 +1,13 @@
 package com.myweb.website_core.demos.web.blog;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.myweb.website_core.demos.web.image.Image;
 import com.myweb.website_core.demos.web.user.User;
 import jakarta.persistence.*;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -23,19 +24,21 @@ public class Post {
     @Column(columnDefinition = "TEXT")
     private String content;
 
-    @ManyToOne
-    @JsonManagedReference
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "author_id")
     private User author;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
 
-    @ElementCollection
-    private List<String> images;
+    @OneToMany(mappedBy = "post", fetch = FetchType.LAZY)
+    private List<com.myweb.website_core.demos.web.image.Image> images;
+
 
     private Integer likeCount = 0;
     private Integer commentCount = 0;
     private Integer collectCount = 0;
+
 
     public void setAuthor(User author) { this.author = author; }
 
@@ -47,11 +50,31 @@ public class Post {
 
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
-    public void setImages(List<String> images) { this.images = images; }
-
     public void setLikeCount(Integer likeCount) { this.likeCount = likeCount; }
 
     public void setCommentCount(Integer commentCount) { this.commentCount = commentCount; }
 
     public void setCollectCount(Integer collectCount) { this.collectCount = collectCount; }
+    
+    public void setImages(List<com.myweb.website_core.demos.web.image.Image> images) { 
+        this.images = images; 
+    }
+    
+    /**
+     * 获取图片ID列表（从关联的图片实体中提取）
+     */
+    public List<Long> getImageIds() {
+        List<Long> imageIds = new ArrayList<>();
+        if (images == null || images.isEmpty()) {
+            return imageIds;
+        }
+        for (Image image : images) {
+            if (image != null && image.getId() != null) {
+                imageIds.add(image.getId());
+            }
+        }
+        return imageIds;
+    }
+
+
 }

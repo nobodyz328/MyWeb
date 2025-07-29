@@ -1,94 +1,58 @@
-/*
- * Copyright 2013-2018 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      https://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.myweb.website_core.demos.web.user;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
-import java.util.Set;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.Getter;
+import lombok.Setter;
 
+import java.util.List;
+
+/**
+ * 用户实体类
+ * 
+ * 表示系统中的用户信息，包括：
+ * - 基本信息（用户名、邮箱等）
+ * - 个人资料（头像、简介等）
+ * - 社交关系（关注、粉丝等）
+ * - 统计数据（获赞数等）
+ */
+@Getter
+@Setter
 @Entity
 @Table(name = "users")
 public class User {
+    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(nullable = false, unique = true,name="username")
+    
+    @Column(unique = true, nullable = false)
     private String username;
-
+    
+    @Column(unique = true, nullable = false)
+    private String email;
+    
     @Column(nullable = false)
     private String password;
-
-    @Column(nullable = true, unique = false, name = "email")
-    private String email;
-
-    private String avatarUrl = "https://static.hdslb.com/images/member/noface.gif";
-    private String bio = "这个人很懒，什么都没有留下";
-
-    @JsonIgnore
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(name = "user_followers",
+    
+    private String avatarUrl;
+    
+    @Column(columnDefinition = "TEXT")
+    private String bio;
+    
+    @ManyToMany
+    @JoinTable(
+        name = "user_followers",
         joinColumns = @JoinColumn(name = "user_id"),
-        inverseJoinColumns = @JoinColumn(name = "follower_id"))
-    private Set<User> followers;
-
-    @JsonIgnore
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(name = "user_following",
-        joinColumns = @JoinColumn(name = "user_id"),
-        inverseJoinColumns = @JoinColumn(name = "following_id"))
-    private Set<User> following;
-
+        inverseJoinColumns = @JoinColumn(name = "follower_id")
+    )
+    @JsonBackReference("user-followers")
+    private List<User> followers;
+    
+    @ManyToMany(mappedBy = "followers")
+    @JsonBackReference("user-following")
+    private List<User> following;
+    
     private Integer likedCount = 0;
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
-    public String getAvatarUrl() { return avatarUrl; }
-    public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
-    public String getBio() { return bio; }
-    public void setBio(String bio) { this.bio = bio; }
-    public Set<User> getFollowers() { return followers; }
-    public void setFollowers(Set<User> followers) { this.followers = followers; }
-    public Set<User> getFollowing() { return following; }
-    public void setFollowing(Set<User> following) { this.following = following; }
-    public Integer getLikedCount() { return likedCount; }
-    public void setLikedCount(Integer likedCount) { this.likedCount = likedCount; }
 }

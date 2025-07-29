@@ -50,8 +50,7 @@ function renderPostDetail(post) {
   document.getElementById('postContent').textContent = post.content || '';
   
   // 设置作者头像
-  const avatarUrl = post.author?.avatarUrl || '/blog/static/images/noface.gif';
-  document.getElementById('postAuthorAvatar').src = avatarUrl;
+  document.getElementById('postAuthorAvatar').src = post.author?.avatarUrl || '/blog/static/images/noface.gif';
   
   // 更新统计数据
   document.getElementById('postViewCount').textContent = post.viewCount || 0;
@@ -178,7 +177,10 @@ async function handleBookmark(e) {
 
   try {
     const response = await fetch(`/blog/api/posts/${postId}/collect?userId=${userId}`, {
-      method: 'POST'
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
     });
 
     const data = await response.json();
@@ -408,19 +410,32 @@ async function loadUserInteractionStatus() {
         }
       }
     }
+
+    // 获取收藏状态
+    const collectResponse = await fetch(`/blog/api/posts/${postId}/collect-status?userId=${userId}`);
+    if (collectResponse.ok) {
+      const collectData = await collectResponse.json();
+      if (collectData.success) {
+        const bookmarkBtn = document.getElementById('bookmarkBtn');
+        if (bookmarkBtn) {
+          updateBookmarkButton(bookmarkBtn, collectData.data);
+        }
+      }
+    }
+    
   } catch (error) {
     console.warn('加载用户交互状态失败:', error);
   }
 }
 
 // 更新点赞按钮
-function updateLikeButton(button, isLiked, likeCount) {
+function updateLikeButton(button, isLiked, Count) {
   if (isLiked) {
     button.classList.add('active');
-    button.innerHTML = '❤️ <span class="count">' + (likeCount !== null && likeCount !== undefined ? likeCount : (parseInt(button.querySelector('.count')?.textContent || '0'))) + '</span>';
+    button.innerHTML = '❤️<span class="count">' + (Count !== null ? Count : (parseInt(button.querySelector('.count')?.textContent || '0'))) + '</span>';
   } else {
     button.classList.remove('active');
-    button.innerHTML = '🤍 <span class="count">' + (likeCount !== null && likeCount !== undefined ? likeCount : Math.max(0, parseInt(button.querySelector('.count')?.textContent || '0'))) + '</span>';
+    button.innerHTML = '🤍 <span class="count">' + (Count !== null ? Count :(parseInt(button.querySelector('.count')?.textContent || '0'))) + '</span>';
   }
 }
 

@@ -1,6 +1,5 @@
 package com.myweb.website_core.demos.web.like;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.myweb.website_core.demos.web.blog.Post;
 import com.myweb.website_core.demos.web.user.User;
@@ -25,12 +24,10 @@ public class PostLike {
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    @JsonBackReference("user-likes")
     private User user;
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id", nullable = false)
-    @JsonBackReference("post-likes")
     private Post post;
     
     @Column(name = "created_at", nullable = false)

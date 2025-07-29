@@ -26,4 +26,11 @@ public interface PostCollectRepository extends JpaRepository<PostCollect, Long> 
     
     // 检查用户是否收藏了某个帖子
     boolean existsByUserIdAndPostId(Long userId, Long postId);
+    
+    // 根据帖子ID和用户ID查找收藏记录
+    Optional<PostCollect> findByPostIdAndUserId(Long postId, Long userId);
+    
+    // 获取用户收藏的帖子列表
+    @Query("SELECT pc.post FROM PostCollect pc WHERE pc.user.id = :userId ORDER BY pc.createdAt DESC")
+    List<com.myweb.website_core.demos.web.blog.Post> findPostsByUserId(@Param("userId") Long userId);
 }

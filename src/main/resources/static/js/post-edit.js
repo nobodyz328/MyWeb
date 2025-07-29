@@ -108,10 +108,26 @@ async function handleFormSubmit(e) {
       author: { id: parseInt(userId) }
     };
     
-    // 收集图片URLs
+    // 收集图片IDs
     const imageElements = document.querySelectorAll('.image-preview img');
     if (imageElements.length > 0) {
-      postData.images = Array.from(imageElements).map(img => img.src);
+      postData.imageIds = Array.from(imageElements).map(img => {
+        let url = img.src;
+        console.log('原始图片URL:', url);
+        
+        // 从URL中提取图片ID
+        let imageId = null;
+        if (url.includes('/blog/api/images/')) {
+          const index = url.indexOf('/blog/api/images/');
+          const idStr = url.substring(index + '/blog/api/images/'.length);
+          imageId = parseInt(idStr);
+        }
+        
+        console.log('提取的图片ID:', imageId);
+        return imageId;
+      }).filter(id => id !== null && !isNaN(id)); // 过滤无效ID
+      
+      console.log('收集到的图片IDs:', postData.imageIds);
     }
     
     // 发送请求
@@ -207,12 +223,8 @@ function handleFiles(files) {
         return;
       }
       
-      // 读取文件并创建预览
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        addImagePreview(e.target.result);
-      };
-      reader.readAsDataURL(file);
+      // 上传图片到服务器
+      uploadImageToServer(file);
     } else {
       showNotification('请选择图片文件', 'error');
     }
@@ -243,10 +255,84 @@ function addImagePreview(imageSrc) {
   container.appendChild(previewDiv);
 }
 
+// 上传图片到服务器
+async function uploadImageToServer(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  if(isEditMode){
+    formData.append('postId', postId);
+  }
+  
+  
+  
+  // 显示上传进度
+  const progressDiv = document.createElement('div');
+  progressDiv.className = 'upload-progress';
+  progressDiv.innerHTML = `
+    <div class="progress-bar">
+      <div class="progress-fill" style="width: 0%"></div>
+    </div>
+    <div class="progress-text">上传中... 0%</div>
+  `;
+  document.getElementById('imagePreviewContainer').appendChild(progressDiv);
+  
+  try {
+    const response = await fetch('/blog/api/upload/image', {
+      method: 'POST',
+      body: formData
+    });
+    
+    const result = await response.json();
+    
+    // 移除进度条
+    progressDiv.remove();
+    
+    if (response.ok && result.success) {
+      // 上传成功，添加图片预览
+      addImagePreview(result.data.url);
+      showNotification('图片上传成功', 'success');
+      
+      // 如果有postId，显示关联信息
+      if (result.data.postId) {
+        console.log('图片已关联到帖子:', result.data.postId);
+      }
+    } else {
+      showNotification(result.message || '图片上传失败', 'error');
+    }
+    
+  } catch (error) {
+    console.error('图片上传失败:', error);
+    progressDiv.remove();
+    showNotification('图片上传失败，请重试', 'error');
+  }
+}
+
 // 移除图片预览
 function removeImagePreview(button) {
   const previewDiv = button.closest('.image-preview');
+  const imageUrl = previewDiv.querySelector('img').src;
+  
+  // 如果是服务器上的图片，调用删除API
+  if (imageUrl.startsWith('/uploads/images/')) {
+    deleteImageFromServer(imageUrl);
+  }
+  
   previewDiv.remove();
+}
+
+// 从服务器删除图片
+async function deleteImageFromServer(imageUrl) {
+  try {
+    await fetch('/blog/api/upload/image', {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: `url=${encodeURIComponent(imageUrl)}`
+    });
+  } catch (error) {
+    console.error('删除图片失败:', error);
+  }
 }
 
 // 取消编辑
@@ -280,7 +366,7 @@ function updateCharCount() {
   const textarea = document.getElementById('contentTextarea');
   const charCount = document.getElementById('charCount');
   const currentLength = textarea.value.length;
-  const maxLength = 2000; // 假设最大长度为2000字符
+  const maxLength = 9999; // 最大长度
   
   if (charCount) {
     charCount.textContent = `${currentLength}/${maxLength}`;

@@ -249,6 +249,35 @@ body::before {
   justify-content: center;
 }
 
+.upload-progress {
+  background: rgba(27, 40, 56, 0.9);
+  border: 1px solid rgba(102, 192, 244, 0.3);
+  border-radius: 8px;
+  padding: 16px;
+  margin: 12px 0;
+  text-align: center;
+}
+
+.progress-bar {
+  background: rgba(102, 192, 244, 0.2);
+  border-radius: 4px;
+  height: 8px;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  background: linear-gradient(90deg, #66c0f4, #4a9eff);
+  height: 100%;
+  transition: width 0.3s ease;
+  border-radius: 4px;
+}
+
+.progress-text {
+  color: #c7d5e0;
+  font-size: 0.9rem;
+}
+
 .form-actions {
   display: flex;
   gap: 16px;

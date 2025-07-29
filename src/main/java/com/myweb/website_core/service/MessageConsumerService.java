@@ -18,11 +18,14 @@ public class MessageConsumerService {
 
     private static final Logger logger = LoggerFactory.getLogger(MessageConsumerService.class);
 
-    @Autowired
-    private EmailService emailService;
+    private final EmailService emailService;
 
+    private final RedisTemplate<String, Object> redisTemplate;
     @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
+    public MessageConsumerService(EmailService emailService, RedisTemplate<String, Object> redisTemplate) {
+        this.emailService = emailService;
+        this.redisTemplate = redisTemplate;
+    }
 
     /**
      * 处理帖子创建消息

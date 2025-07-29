@@ -5,7 +5,7 @@ server:
   port: 8443
   ssl:
     key-store: classpath:keystore.p12
-    key-store-password: 123456  # 替换为生成证书时设置的密码
+    key-store-password: 123456
     key-store-type: PKCS12
     key-alias: myweb
   servlet:
@@ -27,6 +27,16 @@ spring:
       connection-timeout: 30000
       maximum-pool-size: 10
 
+# ========================
+# 文件上传配置
+# ========================
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 20MB
+      enabled: true
+
+
   mail:
     host: smtp.qq.com           # 邮箱SMTP服务器
     port: 465                   # 通常SSL用465，非SSL用25
@@ -44,7 +54,7 @@ spring:
   # ========================
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
@@ -125,9 +135,17 @@ logging:
   pattern:
     console: '%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n'
 
+
 # ========================
 # 自定义配置
 # ========================
-#app:
-#  blog:
-#    default-author: "作者"
+app:
+  upload:
+    upload-dir: uploads/images/
+    max-file-size: 5242880  # 5MB in bytes
+    max-request-size: 20971520  # 20MB in bytes
+    allowed-types:
+      - image/jpeg
+      - image/png
+      - image/gif
+      - image/webp

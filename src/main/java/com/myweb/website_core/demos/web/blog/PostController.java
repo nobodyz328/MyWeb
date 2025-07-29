@@ -1,13 +1,14 @@
-package com.myweb.website_core.demos.web.web;
+package com.myweb.website_core.demos.web.blog;
 
-import com.myweb.website_core.demos.web.blog.Post;
-import com.myweb.website_core.demos.web.blog.PostService;
 import com.myweb.website_core.demos.web.comment.Comment;
 import com.myweb.website_core.demos.web.comment.CommentDTO;
 import com.myweb.website_core.demos.web.comment.CommentService;
+import com.myweb.website_core.demos.web.user.UserRepository;
 import com.myweb.website_core.dto.ApiResponse;
 import com.myweb.website_core.dto.CollectResponse;
 import com.myweb.website_core.dto.LikeResponse;
+import lombok.Getter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,35 +16,54 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
 @RestController
 @RequestMapping("/api/posts")
 public class PostController {
     private final PostService postService;
+    private final UserRepository userRepository;
     private final CommentService commentService;
-
-    public PostController(PostService postService, CommentService commentService) {
+    @Autowired
+    public PostController(PostService postService, UserRepository userRepository, CommentService commentService) {
         this.postService = postService;
+        this.userRepository = userRepository;
         this.commentService = commentService;
     }
 
-    @PostMapping("")
-    public ResponseEntity<Post> createPost(@RequestBody Post post) {
+    @PostMapping(value = "", consumes = "application/json", produces = "application/json")
+    public ResponseEntity<PostDTO> createPost(@RequestBody CreatePostRequest request) {
         try {
+            Post post = new Post();
+            post.setTitle(request.getTitle());
+            post.setContent(request.getContent());
+            Long userId = request.getAuthor().getId();
+            post.setAuthor(userRepository.findById(userId).get());
+
             Post createdPost = postService.createPost(post).get();
-            return ResponseEntity.ok(createdPost);
+            // 优先使用imageIds，如果没有则使用imageUrls
+            if (request.getImageIds() != null && !request.getImageIds().isEmpty()) {
+                postService.associateImagesByIds(createdPost.getId(), request.getImageIds());
+            } else if (request.getImageUrls() != null && !request.getImageUrls().isEmpty()) {
+                postService.associateImagesToPost(createdPost.getId(), request.getImageUrls());
+            }
+            PostDTO postDTO = postService.convertToDTO(createdPost);
+            return ResponseEntity.ok(postDTO);
         } catch (Exception e) {
+            e.printStackTrace(); // 添加异常打印用于调试
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
+
+
     @PutMapping("/{id}")
-    public ResponseEntity<Post> editPost(@PathVariable Long id, @RequestBody Post post) {
+    public ResponseEntity<PostDTO> editPost(@PathVariable Long id, @RequestBody Post post) {
         try {
             Post updatedPost = postService.editPost(id, post);
-            return ResponseEntity.ok(updatedPost);
+            PostDTO postDTO = postService.convertToDTO(updatedPost);
+            return ResponseEntity.ok(postDTO);
         } catch (Exception e) {
+            e.printStackTrace(); // 添加异常打印用于调试
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -81,15 +101,18 @@ public class PostController {
     }
 
     @GetMapping("/mine")
-    public CompletableFuture<List<Post>> getMyPosts(@RequestParam Long userId) {
-        return CompletableFuture.completedFuture(postService.findPostsByUserId(userId));
+    public CompletableFuture<List<PostDTO>> getMyPosts(@RequestParam Long userId) {
+        List<Post> posts = postService.findPostsByUserId(userId);
+        List<PostDTO> postDTOs = postService.convertToDTOList(posts);
+        return CompletableFuture.completedFuture(postDTOs);
     }
 
     @GetMapping("/collected")
-    public ResponseEntity<List<Post>> getCollectedPosts(@RequestParam Long userId) {
+    public ResponseEntity<List<PostDTO>> getCollectedPosts(@RequestParam Long userId) {
         try {
             List<Post> collectedPosts = postService.findCollectedPostsByUserId(userId);
-            return ResponseEntity.ok(collectedPosts);
+            List<PostDTO> postDTOs = postService.convertToDTOList(collectedPosts);
+            return ResponseEntity.ok(postDTOs);
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -97,10 +120,11 @@ public class PostController {
     }
     
     @GetMapping("/liked")
-    public ResponseEntity<List<Post>> getLikedPosts(@RequestParam Long userId) {
+    public ResponseEntity<List<PostDTO>> getLikedPosts(@RequestParam Long userId) {
         try {
             List<Post> likedPosts = postService.findLikedPostsByUserId(userId);
-            return ResponseEntity.ok(likedPosts);
+            List<PostDTO> postDTOs = postService.convertToDTOList(likedPosts);
+            return ResponseEntity.ok(postDTOs);
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -118,12 +142,23 @@ public class PostController {
             return ResponseEntity.ok(ApiResponse.error("获取点赞状态失败"));
         }
     }
+    
+    @GetMapping("/{id}/collect-status")
+    public ResponseEntity<ApiResponse<Boolean>> getCollectStatus(@PathVariable Long id, @RequestParam(required = false) Long userId) {
+        try {
+            boolean isCollected = postService.isPostCollectedByUser(id, userId);
+            return ResponseEntity.ok(ApiResponse.success(isCollected));
+        } catch (Exception e) {
+            return ResponseEntity.ok(ApiResponse.error("获取收藏状态失败"));
+        }
+    }
 
     @GetMapping("")
-    public ResponseEntity<List<Post>> getAllPosts() {
+    public ResponseEntity<List<PostDTO>> getAllPosts() {
         try {
             List<Post> posts = postService.getAllPosts();
-            return ResponseEntity.ok(posts);
+            List<PostDTO> postDTOs = postService.convertToDTOList(posts);
+            return ResponseEntity.ok(postDTOs);
         } catch (Exception e) {
             e.printStackTrace(); // 添加异常打印用于调试
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -131,11 +166,15 @@ public class PostController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Post> getPostById(@PathVariable Long id) {
+    public ResponseEntity<PostDTO> getPostById(@PathVariable Long id) {
         try {
             Optional<Post> post = postService.getPostById(id);
-            return post.map(ResponseEntity::ok)
-                    .orElse(ResponseEntity.notFound().build());
+            if (post.isPresent()) {
+                PostDTO postDTO = postService.convertToDTO(post.get());
+                return ResponseEntity.ok(postDTO);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
@@ -223,24 +262,44 @@ public class PostController {
         
         return dto;
     }
+
     
+    // 创建帖子请求DTO
+    @Getter
+    public static class CreatePostRequest {
+        private String title;
+        private String content;
+        private AuthorInfo author;
+        private List<Long> imageIds; // 优先使用：图片ID列表
+        private List<String> imageUrls; // 备用：图片URL列表（向后兼容）
+
+        public void setTitle(String title) { this.title = title; }
+        public void setContent(String content) { this.content = content; }
+        public void setAuthor(AuthorInfo author) { this.author = author; }
+        public void setImageIds(List<Long> imageIds) { this.imageIds = imageIds; }
+        public void setImageUrls(List<String> imageUrls) { this.imageUrls = imageUrls; }
+
+        @Getter
+        public static class AuthorInfo {
+            private Long id;
+            public void setId(Long id) { this.id = id; }
+        }
+    }
+
     // 评论请求DTO
+    @Getter
     public static class CommentRequest {
         private String content;
         private Long userId;
         private Long postId;
         private Long parentCommentId;
-        
-        public String getContent() { return content; }
+
         public void setContent(String content) { this.content = content; }
-        
-        public Long getUserId() { return userId; }
+
         public void setUserId(Long userId) { this.userId = userId; }
-        
-        public Long getPostId() { return postId; }
+
         public void setPostId(Long postId) { this.postId = postId; }
-        
-        public Long getParentCommentId() { return parentCommentId; }
+
         public void setParentCommentId(Long parentCommentId) { this.parentCommentId = parentCommentId; }
     }
 }
