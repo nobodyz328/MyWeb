@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MySteam社区 - 搜索</title>
+  <link rel="stylesheet" href="/blog/static/css/search.css">
+</head>
+
+<body>
+  <nav class="steam-navbar">
+    <div class="logo"><a href="/blog/view">MySteam社区</a></div>
+    <ul id="navUser">
+      <li><a href="/blog/search" class="active">搜索</a></li>
+      <li><a href="/blog/posts/new">发帖</a></li>
+      <li><a href="/blog/announcements">公告</a></li>
+      <li><a href="/blog/profile">个人中心</a></li>
+      <li id="loginNav"><a href="/blog/login">登录/注册</a></li>
+    </ul>
+  </nav>
+
+  <div id="userCard">
+    <div class="user-info">
+      <img id="userCardAvatar" src="/blog/static/images/noface.gif" alt="用户头像">
+      <div>
+        <div id="userCardName">用户名</div>
+      </div>
+    </div>
+    <div class="user-stats">
+      <div id="userCardFollow" class="user-stat">
+        <div class="user-stat-number">0</div>
+        <div class="user-stat-label">关注</div>
+      </div>
+      <div id="userCardFans" class="user-stat">
+        <div class="user-stat-number">0</div>
+        <div class="user-stat-label">粉丝</div>
+      </div>
+      <div id="userCardLike" class="user-stat">
+        <div class="user-stat-number">0</div>
+        <div class="user-stat-label">获赞</div>
+      </div>
+    </div>
+    <button id="logoutBtn">退出登录</button>
+  </div>
+
+  <div class="container">
+    <!-- 搜索区域 -->
+    <section class="search-section">
+      <div class="search-header">
+        <h1 class="search-title">搜索内容</h1>
+        <p class="search-subtitle">发现更多精彩内容和有趣的用户</p>
+      </div>
+      
+      <div class="search-container">
+        <div class="search-input-wrapper">
+          <input type="text" id="searchInput" class="search-input" placeholder="输入关键词搜索帖子或用户..." autocomplete="off">
+          <button id="searchBtn" class="search-btn">
+            <span class="search-icon">🔍</span>
+            搜索
+          </button>
+        </div>
+        
+        <div class="search-filters">
+          <div class="filter-group">
+            <label class="filter-label">搜索类型：</label>
+            <div class="filter-options">
+              <button class="filter-btn active" data-type="ALL">全部</button>
+              <button class="filter-btn" data-type="POST">帖子</button>
+              <button class="filter-btn" data-type="USER">用户</button>
+            </div>
+          </div>
+          
+          <div class="filter-group">
+            <label class="filter-label">排序方式：</label>
+            <div class="filter-options">
+              <button class="sort-btn active" data-sort="RELEVANCE">相关性</button>
+              <button class="sort-btn" data-sort="TIME">时间</button>
+              <button class="sort-btn" data-sort="POPULARITY">热度</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 热门搜索关键词 -->
+    <section class="hot-keywords-section">
+      <h3 class="section-title">热门搜索</h3>
+      <div id="hotKeywords" class="hot-keywords">
+        <!-- 热门关键词将通过JavaScript动态加载 -->
+      </div>
+    </section>
+
+    <!-- 搜索结果区域 -->
+    <section class="search-results-section" id="searchResultsSection" style="display: none;">
+      <div class="results-header">
+        <h3 class="results-title">搜索结果</h3>
+        <div class="results-info">
+          <span id="resultsCount">0</span> 个结果
+          <span class="results-keyword">关键词: "<span id="currentKeyword"></span>"</span>
+        </div>
+      </div>
+      
+      <div id="searchResults" class="search-results">
+        <!-- 搜索结果将通过JavaScript动态加载 -->
+      </div>
+      
+      <div id="loadingIndicator" class="loading-indicator" style="display: none;">
+        <div class="loading-spinner"></div>
+        <span>加载中...</span>
+      </div>
+      
+      <div id="noMoreResults" class="no-more-results" style="display: none;">
+        <span>没有更多结果了</span>
+      </div>
+    </section>
+
+    <!-- 空状态 -->
+    <section class="empty-state-section" id="emptyStateSection" style="display: none;">
+      <div class="empty-state">
+        <div class="empty-icon">🔍</div>
+        <h3 class="empty-title">没有找到相关内容</h3>
+        <p class="empty-message">尝试使用其他关键词或调整搜索条件</p>
+      </div>
+    </section>
+  </div>
+
+  <script src="/blog/static/js/search.js"></script>
+</body>
+
+</html>

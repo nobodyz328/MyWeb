@@ -351,10 +351,10 @@ function initializeUserCard() {
 function updateLikeButtonState(button, isLiked) {
   if (isLiked) {
     button.classList.add('active');
-    button.innerHTML = '❤️ 已点赞';
+    button.innerHTML = '❤️';
   } else {
     button.classList.remove('active');
-    button.innerHTML = '🤍 点赞';
+    button.innerHTML = '🤍';
   }
 }
 

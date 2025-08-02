@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.myweb.website_core.mapper.PostMapper">
+<mapper namespace="com.myweb.website_core.infrastructure.mapper.PostMapper">
 
     <!-- 结果映射 -->
-    <resultMap id="PostResultMap" type="com.myweb.website_core.demos.web.blog.Post">
+    <resultMap id="PostResultMap" type="com.myweb.website_core.domain.entity.Post">
         <id column="id" property="id" jdbcType="BIGINT"/>
         <result column="title" property="title" jdbcType="VARCHAR"/>
         <result column="content" property="content" jdbcType="VARCHAR"/>
@@ -13,7 +13,7 @@
         <result column="comment_count" property="commentCount" jdbcType="INTEGER"/>
         <!-- Images are handled via @ElementCollection in the entity -->
         <!-- 关联用户信息 -->
-        <association property="author" javaType="com.myweb.website_core.demos.web.user.User">
+        <association property="author" javaType="com.myweb.website_core.domain.entity.User">
             <id column="author_id" property="id" jdbcType="BIGINT"/>
             <result column="author_username" property="username" jdbcType="VARCHAR"/>
             <result column="author_avatar_url" property="avatarUrl" jdbcType="VARCHAR"/>
@@ -26,7 +26,7 @@
     </sql>
 
     <!-- 插入帖子 -->
-    <insert id="insertPost" parameterType="com.myweb.website_core.demos.web.blog.Post" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insertPost" parameterType="com.myweb.website_core.domain.entity.Post" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO posts (title, content, author_id, created_at, like_count, collect_count, comment_count)
         VALUES (#{title}, #{content}, #{author.id}, #{createdAt}, #{likeCount}, #{collectCount}, #{commentCount})
     </insert>
@@ -57,7 +57,7 @@
     </select>
 
     <!-- 更新帖子 -->
-    <update id="updatePost" parameterType="com.myweb.website_core.demos.web.blog.Post">
+    <update id="updatePost" parameterType="com.myweb.website_core.domain.entity.Post">
         UPDATE posts
         SET title = #{title},
             content = #{content}
@@ -94,9 +94,281 @@
         UPDATE posts SET like_count = #{likeCount} WHERE id = #{id}
     </update>
 
-    <!-- 更新帖子收藏�?-->
+    <!-- 更新帖子收藏数 -->
     <update id="updateCollectCount">
         UPDATE posts SET collect_count = #{collectCount} WHERE id = #{id}
     </update>
+
+    <!-- ========== 搜索功能相关SQL ========== -->
+    
+    <!-- 帖子搜索结果映射 -->
+    <resultMap id="PostSearchResultMap" type="com.myweb.website_core.domain.vo.PostSearchVO">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="title" property="title" jdbcType="VARCHAR"/>
+        <result column="content_summary" property="contentSummary" jdbcType="VARCHAR"/>
+        <result column="author_id" property="authorId" jdbcType="BIGINT"/>
+        <result column="author_username" property="authorUsername" jdbcType="VARCHAR"/>
+        <result column="author_avatar_url" property="authorAvatarUrl" jdbcType="VARCHAR"/>
+        <result column="created_at" property="createdAt" jdbcType="TIMESTAMP"/>
+        <result column="like_count" property="likeCount" jdbcType="INTEGER"/>
+        <result column="collect_count" property="collectCount" jdbcType="INTEGER"/>
+        <result column="comment_count" property="commentCount" jdbcType="INTEGER"/>
+        <result column="relevance_score" property="relevanceScore" jdbcType="DOUBLE"/>
+        <result column="popularity_score" property="popularityScore" jdbcType="DOUBLE"/>
+    </resultMap>
+    
+    <!-- 搜索字段列表 -->
+    <sql id="Search_Column_List">
+        p.id, p.title, 
+        CASE 
+            WHEN LENGTH(p.content) > 200 THEN CONCAT(SUBSTRING(p.content, 1, 200), '...')
+            ELSE p.content 
+        END as content_summary,
+        p.author_id, u.username as author_username, u.avatar_url as author_avatar_url,
+        p.created_at, p.like_count, p.collect_count, p.comment_count,
+        (p.like_count * 2 + p.collect_count * 3 + p.comment_count * 1.5) as popularity_score
+    </sql>
+    
+    <!-- 高性能帖子搜索 - 支持全文搜索和分页 -->
+    <select id="searchPostsWithPagination" resultMap="PostSearchResultMap">
+        SELECT <include refid="Search_Column_List"/>,
+        CASE 
+            WHEN p.title LIKE CONCAT('%', #{keyword}, '%') THEN 3.0
+            WHEN p.content LIKE CONCAT('%', #{keyword}, '%') THEN 2.0
+            WHEN u.username LIKE CONCAT('%', #{keyword}, '%') THEN 1.0
+            ELSE 0.0
+        END as relevance_score
+        FROM posts p
+        LEFT JOIN users u ON p.author_id = u.id
+        WHERE (p.title LIKE CONCAT('%', #{keyword}, '%')
+           OR p.content LIKE CONCAT('%', #{keyword}, '%')
+           OR u.username LIKE CONCAT('%', #{keyword}, '%'))
+        <choose>
+            <when test="sortBy == 'RELEVANCE'">
+                ORDER BY relevance_score DESC, p.created_at DESC
+            </when>
+            <when test="sortBy == 'TIME'">
+                ORDER BY p.created_at DESC
+            </when>
+            <when test="sortBy == 'POPULARITY'">
+                ORDER BY popularity_score DESC, p.created_at DESC
+            </when>
+            <otherwise>
+                ORDER BY relevance_score DESC, p.created_at DESC
+            </otherwise>
+        </choose>
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+    
+    <!-- 统计帖子搜索结果总数 -->
+    <select id="countSearchPosts" resultType="java.lang.Long">
+        SELECT COUNT(DISTINCT p.id)
+        FROM posts p
+        LEFT JOIN users u ON p.author_id = u.id
+        WHERE (p.title LIKE CONCAT('%', #{keyword}, '%')
+           OR p.content LIKE CONCAT('%', #{keyword}, '%')
+           OR u.username LIKE CONCAT('%', #{keyword}, '%'))
+    </select>
+    
+    <!-- 根据标题搜索帖子（精确匹配优先） -->
+    <select id="searchPostsByTitle" resultMap="PostSearchResultMap">
+        SELECT <include refid="Search_Column_List"/>,
+        CASE 
+            WHEN p.title = #{keyword} THEN 5.0
+            WHEN p.title LIKE CONCAT(#{keyword}, '%') THEN 4.0
+            WHEN p.title LIKE CONCAT('%', #{keyword}, '%') THEN 3.0
+            ELSE 2.0
+        END as relevance_score
+        FROM posts p
+        LEFT JOIN users u ON p.author_id = u.id
+        WHERE p.title LIKE CONCAT('%', #{keyword}, '%')
+        ORDER BY relevance_score DESC, p.created_at DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+    
+    <!-- 根据内容搜索帖子 -->
+    <select id="searchPostsByContent" resultMap="PostSearchResultMap">
+        SELECT <include refid="Search_Column_List"/>,
+        CASE 
+            WHEN p.content LIKE CONCAT(#{keyword}, '%') THEN 3.0
+            WHEN p.content LIKE CONCAT('%', #{keyword}, '%') THEN 2.0
+            ELSE 1.0
+        END as relevance_score
+        FROM posts p
+        LEFT JOIN users u ON p.author_id = u.id
+        WHERE p.content LIKE CONCAT('%', #{keyword}, '%')
+        ORDER BY relevance_score DESC, p.created_at DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+    
+    <!-- 根据作者搜索帖子 -->
+    <select id="searchPostsByAuthor" resultMap="PostSearchResultMap">
+        SELECT <include refid="Search_Column_List"/>,
+        CASE 
+            WHEN u.username = #{keyword} THEN 5.0
+            WHEN u.username LIKE CONCAT(#{keyword}, '%') THEN 4.0
+            WHEN u.username LIKE CONCAT('%', #{keyword}, '%') THEN 3.0
+            ELSE 2.0
+        END as relevance_score
+        FROM posts p
+        LEFT JOIN users u ON p.author_id = u.id
+        WHERE u.username LIKE CONCAT('%', #{keyword}, '%')
+        ORDER BY relevance_score DESC, p.created_at DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+    
+    <!-- 获取热门帖子 -->
+    <select id="getHotPosts" resultMap="PostSearchResultMap">
+        SELECT <include refid="Search_Column_List"/>, 0.0 as relevance_score
+        FROM posts p
+        LEFT JOIN users u ON p.author_id = u.id
+        ORDER BY popularity_score DESC, p.created_at DESC
+        LIMIT #{limit}
+    </select>
+    
+    <!-- 游标分页搜索帖子（用于无限滚动） -->
+    <select id="searchPostsWithCursor" resultMap="PostSearchResultMap">
+        SELECT <include refid="Search_Column_List"/>,
+        CASE 
+            WHEN p.title LIKE CONCAT('%', #{keyword}, '%') THEN 3.0
+            WHEN p.content LIKE CONCAT('%', #{keyword}, '%') THEN 2.0
+            WHEN u.username LIKE CONCAT('%', #{keyword}, '%') THEN 1.0
+            ELSE 0.0
+        END as relevance_score
+        FROM posts p
+        LEFT JOIN users u ON p.author_id = u.id
+        WHERE (p.title LIKE CONCAT('%', #{keyword}, '%')
+           OR p.content LIKE CONCAT('%', #{keyword}, '%')
+           OR u.username LIKE CONCAT('%', #{keyword}, '%'))
+        <if test="lastId != null and lastId > 0">
+            <choose>
+                <when test="sortBy == 'RELEVANCE'">
+                    AND (
+                        (CASE 
+                            WHEN p.title LIKE CONCAT('%', #{keyword}, '%') THEN 3.0
+                            WHEN p.content LIKE CONCAT('%', #{keyword}, '%') THEN 2.0
+                            WHEN u.username LIKE CONCAT('%', #{keyword}, '%') THEN 1.0
+                            ELSE 0.0
+                        END) &lt; (
+                            SELECT CASE 
+                                WHEN p2.title LIKE CONCAT('%', #{keyword}, '%') THEN 3.0
+                                WHEN p2.content LIKE CONCAT('%', #{keyword}, '%') THEN 2.0
+                                WHEN u2.username LIKE CONCAT('%', #{keyword}, '%') THEN 1.0
+                                ELSE 0.0
+                            END
+                            FROM posts p2
+                            LEFT JOIN users u2 ON p2.author_id = u2.id
+                            WHERE p2.id = #{lastId}
+                        )
+                        OR (
+                            (CASE 
+                                WHEN p.title LIKE CONCAT('%', #{keyword}, '%') THEN 3.0
+                                WHEN p.content LIKE CONCAT('%', #{keyword}, '%') THEN 2.0
+                                WHEN u.username LIKE CONCAT('%', #{keyword}, '%') THEN 1.0
+                                ELSE 0.0
+                            END) = (
+                                SELECT CASE 
+                                    WHEN p2.title LIKE CONCAT('%', #{keyword}, '%') THEN 3.0
+                                    WHEN p2.content LIKE CONCAT('%', #{keyword}, '%') THEN 2.0
+                                    WHEN u2.username LIKE CONCAT('%', #{keyword}, '%') THEN 1.0
+                                    ELSE 0.0
+                                END
+                                FROM posts p2
+                                LEFT JOIN users u2 ON p2.author_id = u2.id
+                                WHERE p2.id = #{lastId}
+                            )
+                            AND p.id &lt; #{lastId}
+                        )
+                    )
+                </when>
+                <when test="sortBy == 'TIME'">
+                    AND (
+                        p.created_at &lt; (SELECT created_at FROM posts WHERE id = #{lastId})
+                        OR (p.created_at = (SELECT created_at FROM posts WHERE id = #{lastId}) AND p.id &lt; #{lastId})
+                    )
+                </when>
+                <when test="sortBy == 'POPULARITY'">
+                    AND (
+                        (p.like_count * 2 + p.collect_count * 3 + p.comment_count * 1.5) &lt; (
+                            SELECT (like_count * 2 + collect_count * 3 + comment_count * 1.5) 
+                            FROM posts WHERE id = #{lastId}
+                        )
+                        OR (
+                            (p.like_count * 2 + p.collect_count * 3 + p.comment_count * 1.5) = (
+                                SELECT (like_count * 2 + collect_count * 3 + comment_count * 1.5) 
+                                FROM posts WHERE id = #{lastId}
+                            )
+                            AND p.id &lt; #{lastId}
+                        )
+                    )
+                </when>
+                <otherwise>
+                    AND p.id &lt; #{lastId}
+                </otherwise>
+            </choose>
+        </if>
+        <choose>
+            <when test="sortBy == 'RELEVANCE'">
+                ORDER BY relevance_score DESC, p.created_at DESC, p.id DESC
+            </when>
+            <when test="sortBy == 'TIME'">
+                ORDER BY p.created_at DESC, p.id DESC
+            </when>
+            <when test="sortBy == 'POPULARITY'">
+                ORDER BY popularity_score DESC, p.created_at DESC, p.id DESC
+            </when>
+            <otherwise>
+                ORDER BY relevance_score DESC, p.created_at DESC, p.id DESC
+            </otherwise>
+        </choose>
+        LIMIT #{limit}
+    </select>
+    
+    <!-- 获取所有帖子（游标分页）- 用于关键词为"all"时 -->
+    <select id="getAllPostsWithCursor" resultMap="PostSearchResultMap">
+        SELECT <include refid="Search_Column_List"/>, 0.0 as relevance_score
+        FROM posts p
+        LEFT JOIN users u ON p.author_id = u.id
+        <if test="lastId != null and lastId > 0">
+            <choose>
+                <when test="sortBy == 'TIME'">
+                    WHERE (
+                        p.created_at &lt; (SELECT created_at FROM posts WHERE id = #{lastId})
+                        OR (p.created_at = (SELECT created_at FROM posts WHERE id = #{lastId}) AND p.id &lt; #{lastId})
+                    )
+                </when>
+                <when test="sortBy == 'POPULARITY'">
+                    WHERE (
+                        (p.like_count * 2 + p.collect_count * 3 + p.comment_count * 1.5) &lt; (
+                            SELECT (like_count * 2 + collect_count * 3 + comment_count * 1.5) 
+                            FROM posts WHERE id = #{lastId}
+                        )
+                        OR (
+                            (p.like_count * 2 + p.collect_count * 3 + p.comment_count * 1.5) = (
+                                SELECT (like_count * 2 + collect_count * 3 + comment_count * 1.5) 
+                                FROM posts WHERE id = #{lastId}
+                            )
+                            AND p.id &lt; #{lastId}
+                        )
+                    )
+                </when>
+                <otherwise>
+                    WHERE p.id &lt; #{lastId}
+                </otherwise>
+            </choose>
+        </if>
+        <choose>
+            <when test="sortBy == 'TIME'">
+                ORDER BY p.created_at DESC, p.id DESC
+            </when>
+            <when test="sortBy == 'POPULARITY'">
+                ORDER BY popularity_score DESC, p.created_at DESC, p.id DESC
+            </when>
+            <otherwise>
+                ORDER BY p.created_at DESC, p.id DESC
+            </otherwise>
+        </choose>
+        LIMIT #{limit}
+    </select>
 
 </mapper>

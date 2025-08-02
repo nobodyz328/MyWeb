@@ -1,0 +1,424 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.myweb.website_core.infrastructure.mapper.UserMapper">
+
+    <!-- 用户结果映射 -->
+    <resultMap id="UserResultMap" type="com.myweb.website_core.domain.entity.User">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="username" property="username" jdbcType="VARCHAR"/>
+        <result column="email" property="email" jdbcType="VARCHAR"/>
+        <result column="password" property="password" jdbcType="VARCHAR"/>
+        <result column="avatar_url" property="avatarUrl" jdbcType="VARCHAR"/>
+        <result column="bio" property="bio" jdbcType="VARCHAR"/>
+        <result column="liked_count" property="likedCount" jdbcType="INTEGER"/>
+    </resultMap>
+    
+    <!-- 用户搜索结果映射 -->
+    <resultMap id="UserSearchResultMap" type="com.myweb.website_core.domain.vo.UserSearchVO">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="username" property="username" jdbcType="VARCHAR"/>
+        <result column="email" property="email" jdbcType="VARCHAR"/>
+        <result column="avatar_url" property="avatarUrl" jdbcType="VARCHAR"/>
+        <result column="bio" property="bio" jdbcType="VARCHAR"/>
+        <result column="liked_count" property="likedCount" jdbcType="INTEGER"/>
+        <result column="followers_count" property="followersCount" jdbcType="INTEGER"/>
+        <result column="following_count" property="followingCount" jdbcType="INTEGER"/>
+        <result column="posts_count" property="postsCount" jdbcType="INTEGER"/>
+        <result column="relevance_score" property="relevanceScore" jdbcType="DOUBLE"/>
+    </resultMap>
+
+    <!-- 基础字段列表 -->
+    <sql id="Base_Column_List">
+        u.id, u.username, u.email, u.password, u.avatar_url, u.bio, u.liked_count
+    </sql>
+    
+    <!-- 搜索字段列表 -->
+    <sql id="Search_Column_List">
+        u.id, u.username, u.email, u.avatar_url,
+        CASE 
+            WHEN LENGTH(u.bio) > 100 THEN CONCAT(SUBSTRING(u.bio, 1, 100), '...')
+            ELSE u.bio 
+        END as bio,
+        u.liked_count,
+        COALESCE(followers.count, 0) as followers_count,
+        COALESCE(following.count, 0) as following_count,
+        COALESCE(posts.count, 0) as posts_count
+    </sql>
+
+    <!-- ========== 基础CRUD操作 ========== -->
+    
+    <!-- 插入用户 -->
+    <insert id="insertUser" parameterType="com.myweb.website_core.domain.entity.User" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO users (username, email, password, avatar_url, bio, liked_count)
+        VALUES (#{username}, #{email}, #{password}, #{avatarUrl}, #{bio}, #{likedCount})
+    </insert>
+
+    <!-- 根据ID查询用户 -->
+    <select id="selectUserById" resultMap="UserResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM users u
+        WHERE u.id = #{id}
+    </select>
+
+    <!-- 根据用户名查询用户 -->
+    <select id="selectUserByUsername" resultMap="UserResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM users u
+        WHERE u.username = #{username}
+    </select>
+
+    <!-- 根据邮箱查询用户 -->
+    <select id="selectUserByEmail" resultMap="UserResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM users u
+        WHERE u.email = #{email}
+    </select>
+
+    <!-- 查询所有用户 -->
+    <select id="selectAllUsers" resultMap="UserResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM users u
+        ORDER BY u.id DESC
+    </select>
+
+    <!-- 更新用户信息 -->
+    <update id="updateUser" parameterType="com.myweb.website_core.domain.entity.User">
+        UPDATE users
+        SET username = #{username},
+            email = #{email},
+            <if test="password != null">password = #{password},</if>
+            avatar_url = #{avatarUrl},
+            bio = #{bio},
+            liked_count = #{likedCount}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除用户 -->
+    <delete id="deleteUser">
+        DELETE FROM users WHERE id = #{id}
+    </delete>
+
+    <!-- ========== 搜索功能相关SQL ========== -->
+    
+    <!-- 高性能用户搜索 - 支持用户名和昵称模糊搜索 -->
+    <select id="searchUsersWithPagination" resultMap="UserSearchResultMap">
+        SELECT <include refid="Search_Column_List"/>,
+        CASE 
+            WHEN u.username = #{keyword} THEN 5.0
+            WHEN u.username LIKE CONCAT(#{keyword}, '%') THEN 4.0
+            WHEN u.username LIKE CONCAT('%', #{keyword}, '%') THEN 3.0
+            WHEN u.bio LIKE CONCAT('%', #{keyword}, '%') THEN 2.0
+            ELSE 1.0
+        END as relevance_score
+        FROM users u
+        LEFT JOIN (
+            SELECT user_id, COUNT(*) as count
+            FROM user_followers
+            GROUP BY user_id
+        ) followers ON u.id = followers.user_id
+        LEFT JOIN (
+            SELECT follower_id, COUNT(*) as count
+            FROM user_followers
+            GROUP BY follower_id
+        ) following ON u.id = following.follower_id
+        LEFT JOIN (
+            SELECT author_id, COUNT(*) as count
+            FROM posts
+            GROUP BY author_id
+        ) posts ON u.id = posts.author_id
+        WHERE (u.username LIKE CONCAT('%', #{keyword}, '%')
+           OR u.bio LIKE CONCAT('%', #{keyword}, '%'))
+        <choose>
+            <when test="sortBy == 'RELEVANCE'">
+                ORDER BY relevance_score DESC, u.liked_count DESC
+            </when>
+            <when test="sortBy == 'POPULARITY'">
+                ORDER BY u.liked_count DESC, followers_count DESC, posts_count DESC
+            </when>
+            <otherwise>
+                ORDER BY relevance_score DESC, u.liked_count DESC
+            </otherwise>
+        </choose>
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+    
+    <!-- 统计用户搜索结果总数 -->
+    <select id="countSearchUsers" resultType="java.lang.Long">
+        SELECT COUNT(DISTINCT u.id)
+        FROM users u
+        WHERE (u.username LIKE CONCAT('%', #{keyword}, '%')
+           OR u.bio LIKE CONCAT('%', #{keyword}, '%'))
+    </select>
+    
+    <!-- 根据用户名搜索用户（精确匹配优先） -->
+    <select id="searchUsersByUsername" resultMap="UserSearchResultMap">
+        SELECT <include refid="Search_Column_List"/>,
+        CASE 
+            WHEN u.username = #{keyword} THEN 5.0
+            WHEN u.username LIKE CONCAT(#{keyword}, '%') THEN 4.0
+            WHEN u.username LIKE CONCAT('%', #{keyword}, '%') THEN 3.0
+            ELSE 2.0
+        END as relevance_score
+        FROM users u
+        LEFT JOIN (
+            SELECT user_id, COUNT(*) as count
+            FROM user_followers
+            GROUP BY user_id
+        ) followers ON u.id = followers.user_id
+        LEFT JOIN (
+            SELECT follower_id, COUNT(*) as count
+            FROM user_followers
+            GROUP BY follower_id
+        ) following ON u.id = following.follower_id
+        LEFT JOIN (
+            SELECT author_id, COUNT(*) as count
+            FROM posts
+            GROUP BY author_id
+        ) posts ON u.id = posts.author_id
+        WHERE u.username LIKE CONCAT('%', #{keyword}, '%')
+        ORDER BY relevance_score DESC, u.liked_count DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+    
+    <!-- 根据个人简介搜索用户 -->
+    <select id="searchUsersByBio" resultMap="UserSearchResultMap">
+        SELECT <include refid="Search_Column_List"/>,
+        CASE 
+            WHEN u.bio LIKE CONCAT(#{keyword}, '%') THEN 3.0
+            WHEN u.bio LIKE CONCAT('%', #{keyword}, '%') THEN 2.0
+            ELSE 1.0
+        END as relevance_score
+        FROM users u
+        LEFT JOIN (
+            SELECT user_id, COUNT(*) as count
+            FROM user_followers
+            GROUP BY user_id
+        ) followers ON u.id = followers.user_id
+        LEFT JOIN (
+            SELECT follower_id, COUNT(*) as count
+            FROM user_followers
+            GROUP BY follower_id
+        ) following ON u.id = following.follower_id
+        LEFT JOIN (
+            SELECT author_id, COUNT(*) as count
+            FROM posts
+            GROUP BY author_id
+        ) posts ON u.id = posts.author_id
+        WHERE u.bio LIKE CONCAT('%', #{keyword}, '%')
+        ORDER BY relevance_score DESC, u.liked_count DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+    
+    <!-- 获取活跃用户 -->
+    <select id="getActiveUsers" resultMap="UserSearchResultMap">
+        SELECT <include refid="Search_Column_List"/>, 0.0 as relevance_score
+        FROM users u
+        LEFT JOIN (
+            SELECT user_id, COUNT(*) as count
+            FROM user_followers
+            GROUP BY user_id
+        ) followers ON u.id = followers.user_id
+        LEFT JOIN (
+            SELECT follower_id, COUNT(*) as count
+            FROM user_followers
+            GROUP BY follower_id
+        ) following ON u.id = following.follower_id
+        LEFT JOIN (
+            SELECT author_id, COUNT(*) as count
+            FROM posts
+            GROUP BY author_id
+        ) posts ON u.id = posts.author_id
+        ORDER BY u.liked_count DESC, followers_count DESC, posts_count DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- ========== 统计相关方法 ========== -->
+    
+    <!-- 更新用户获赞数 -->
+    <update id="updateLikedCount">
+        UPDATE users SET liked_count = #{likedCount} WHERE id = #{id}
+    </update>
+    
+    <!-- 获取用户统计信息 -->
+    <select id="getUserStats" resultMap="UserSearchResultMap">
+        SELECT <include refid="Search_Column_List"/>, 0.0 as relevance_score
+        FROM users u
+        LEFT JOIN (
+            SELECT user_id, COUNT(*) as count
+            FROM user_followers
+            GROUP BY user_id
+        ) followers ON u.id = followers.user_id
+        LEFT JOIN (
+            SELECT follower_id, COUNT(*) as count
+            FROM user_followers
+            GROUP BY follower_id
+        ) following ON u.id = following.follower_id
+        LEFT JOIN (
+            SELECT author_id, COUNT(*) as count
+            FROM posts
+            GROUP BY author_id
+        ) posts ON u.id = posts.author_id
+        WHERE u.id = #{userId}
+    </select>
+    
+    <!-- 游标分页搜索用户（用于无限滚动） -->
+    <select id="searchUsersWithCursor" resultMap="UserSearchResultMap">
+        SELECT <include refid="Search_Column_List"/>,
+        CASE 
+            WHEN u.username = #{keyword} THEN 5.0
+            WHEN u.username LIKE CONCAT(#{keyword}, '%') THEN 4.0
+            WHEN u.username LIKE CONCAT('%', #{keyword}, '%') THEN 3.0
+            WHEN u.bio LIKE CONCAT('%', #{keyword}, '%') THEN 2.0
+            ELSE 1.0
+        END as relevance_score
+        FROM users u
+        LEFT JOIN (
+            SELECT user_id, COUNT(*) as count
+            FROM user_followers
+            GROUP BY user_id
+        ) followers ON u.id = followers.user_id
+        LEFT JOIN (
+            SELECT follower_id, COUNT(*) as count
+            FROM user_followers
+            GROUP BY follower_id
+        ) following ON u.id = following.follower_id
+        LEFT JOIN (
+            SELECT author_id, COUNT(*) as count
+            FROM posts
+            GROUP BY author_id
+        ) posts ON u.id = posts.author_id
+        WHERE (u.username LIKE CONCAT('%', #{keyword}, '%')
+           OR u.bio LIKE CONCAT('%', #{keyword}, '%'))
+        <if test="lastId != null and lastId > 0">
+            <choose>
+                <when test="sortBy == 'RELEVANCE'">
+                    AND (
+                        (CASE 
+                            WHEN u.username = #{keyword} THEN 5.0
+                            WHEN u.username LIKE CONCAT(#{keyword}, '%') THEN 4.0
+                            WHEN u.username LIKE CONCAT('%', #{keyword}, '%') THEN 3.0
+                            WHEN u.bio LIKE CONCAT('%', #{keyword}, '%') THEN 2.0
+                            ELSE 1.0
+                        END) &lt; (
+                            SELECT CASE 
+                                WHEN u2.username = #{keyword} THEN 5.0
+                                WHEN u2.username LIKE CONCAT(#{keyword}, '%') THEN 4.0
+                                WHEN u2.username LIKE CONCAT('%', #{keyword}, '%') THEN 3.0
+                                WHEN u2.bio LIKE CONCAT('%', #{keyword}, '%') THEN 2.0
+                                ELSE 1.0
+                            END
+                            FROM users u2
+                            WHERE u2.id = #{lastId}
+                        )
+                        OR (
+                            (CASE 
+                                WHEN u.username = #{keyword} THEN 5.0
+                                WHEN u.username LIKE CONCAT(#{keyword}, '%') THEN 4.0
+                                WHEN u.username LIKE CONCAT('%', #{keyword}, '%') THEN 3.0
+                                WHEN u.bio LIKE CONCAT('%', #{keyword}, '%') THEN 2.0
+                                ELSE 1.0
+                            END) = (
+                                SELECT CASE 
+                                    WHEN u2.username = #{keyword} THEN 5.0
+                                    WHEN u2.username LIKE CONCAT(#{keyword}, '%') THEN 4.0
+                                    WHEN u2.username LIKE CONCAT('%', #{keyword}, '%') THEN 3.0
+                                    WHEN u2.bio LIKE CONCAT('%', #{keyword}, '%') THEN 2.0
+                                    ELSE 1.0
+                                END
+                                FROM users u2
+                                WHERE u2.id = #{lastId}
+                            )
+                            AND u.liked_count &lt; (SELECT liked_count FROM users WHERE id = #{lastId})
+                        )
+                        OR (
+                            (CASE 
+                                WHEN u.username = #{keyword} THEN 5.0
+                                WHEN u.username LIKE CONCAT(#{keyword}, '%') THEN 4.0
+                                WHEN u.username LIKE CONCAT('%', #{keyword}, '%') THEN 3.0
+                                WHEN u.bio LIKE CONCAT('%', #{keyword}, '%') THEN 2.0
+                                ELSE 1.0
+                            END) = (
+                                SELECT CASE 
+                                    WHEN u2.username = #{keyword} THEN 5.0
+                                    WHEN u2.username LIKE CONCAT(#{keyword}, '%') THEN 4.0
+                                    WHEN u2.username LIKE CONCAT('%', #{keyword}, '%') THEN 3.0
+                                    WHEN u2.bio LIKE CONCAT('%', #{keyword}, '%') THEN 2.0
+                                    ELSE 1.0
+                                END
+                                FROM users u2
+                                WHERE u2.id = #{lastId}
+                            )
+                            AND u.liked_count = (SELECT liked_count FROM users WHERE id = #{lastId})
+                            AND u.id &lt; #{lastId}
+                        )
+                    )
+                </when>
+                <when test="sortBy == 'POPULARITY'">
+                    AND (
+                        u.liked_count &lt; (SELECT liked_count FROM users WHERE id = #{lastId})
+                        OR (u.liked_count = (SELECT liked_count FROM users WHERE id = #{lastId}) AND u.id &lt; #{lastId})
+                    )
+                </when>
+                <otherwise>
+                    AND u.id &lt; #{lastId}
+                </otherwise>
+            </choose>
+        </if>
+        <choose>
+            <when test="sortBy == 'RELEVANCE'">
+                ORDER BY relevance_score DESC, u.liked_count DESC, u.id DESC
+            </when>
+            <when test="sortBy == 'POPULARITY'">
+                ORDER BY u.liked_count DESC, followers_count DESC, posts_count DESC, u.id DESC
+            </when>
+            <otherwise>
+                ORDER BY relevance_score DESC, u.liked_count DESC, u.id DESC
+            </otherwise>
+        </choose>
+        LIMIT #{limit}
+    </select>
+    
+    <!-- 获取所有用户（游标分页）- 用于关键词为"all"时 -->
+    <select id="getAllUsersWithCursor" resultMap="UserSearchResultMap">
+        SELECT <include refid="Search_Column_List"/>, 0.0 as relevance_score
+        FROM users u
+        LEFT JOIN (
+            SELECT user_id, COUNT(*) as count
+            FROM user_followers
+            GROUP BY user_id
+        ) followers ON u.id = followers.user_id
+        LEFT JOIN (
+            SELECT follower_id, COUNT(*) as count
+            FROM user_followers
+            GROUP BY follower_id
+        ) following ON u.id = following.follower_id
+        LEFT JOIN (
+            SELECT author_id, COUNT(*) as count
+            FROM posts
+            GROUP BY author_id
+        ) posts ON u.id = posts.author_id
+        <if test="lastId != null and lastId > 0">
+            <choose>
+                <when test="sortBy == 'POPULARITY'">
+                    WHERE (
+                        u.liked_count &lt; (SELECT liked_count FROM users WHERE id = #{lastId})
+                        OR (u.liked_count = (SELECT liked_count FROM users WHERE id = #{lastId}) AND u.id &lt; #{lastId})
+                    )
+                </when>
+                <otherwise>
+                    WHERE u.id &lt; #{lastId}
+                </otherwise>
+            </choose>
+        </if>
+        <choose>
+            <when test="sortBy == 'POPULARITY'">
+                ORDER BY u.liked_count DESC, followers_count DESC, posts_count DESC, u.id DESC
+            </when>
+            <otherwise>
+                ORDER BY u.id DESC
+            </otherwise>
+        </choose>
+        LIMIT #{limit}
+    </select>
+
+</mapper>

@@ -6,7 +6,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 
 /**
  * MyWeb 博客系统主应用类
- * 
+ * <p>
  * 功能特性：
  * - 异步博客社区系统
  * - 用户注册/登录/关注
@@ -14,7 +14,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
  * - 评论系统
  * - 公告管理
  * - 消息队列和缓存支持
- * 
+ * <p>
  * 技术栈：
  * - Java 21
  * - Spring Boot 3.2.0
