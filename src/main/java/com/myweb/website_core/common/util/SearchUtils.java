@@ -2,7 +2,7 @@ package com.myweb.website_core.common.util;
 
 import com.myweb.website_core.common.constant.SearchConstants;
 import com.myweb.website_core.common.exception.SearchException;
-import com.myweb.website_core.domain.dto.SearchRequestDTO;
+import com.myweb.website_core.domain.business.dto.SearchRequestDTO;
 import org.springframework.util.StringUtils;
 
 import java.util.regex.Pattern;

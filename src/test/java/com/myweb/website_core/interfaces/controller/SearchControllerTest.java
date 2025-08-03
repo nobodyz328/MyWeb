@@ -1,9 +1,9 @@
 package com.myweb.website_core.interfaces.controller;
 
-import com.myweb.website_core.application.service.SearchService;
-import com.myweb.website_core.domain.dto.SearchResultDTO;
-import com.myweb.website_core.domain.vo.PostSearchVO;
-import com.myweb.website_core.domain.vo.UserSearchVO;
+import com.myweb.website_core.application.service.business.SearchService;
+import com.myweb.website_core.domain.business.dto.SearchResultDTO;
+import com.myweb.website_core.domain.business.vo.PostSearchVO;
+import com.myweb.website_core.domain.business.vo.UserSearchVO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

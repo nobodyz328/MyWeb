@@ -1,7 +1,7 @@
 package com.myweb.website_core.interfaces.controller;
 
-import com.myweb.website_core.application.service.ImageService;
-import com.myweb.website_core.domain.entity.Image;
+import com.myweb.website_core.application.service.file.ImageService;
+import com.myweb.website_core.domain.business.entity.Image;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

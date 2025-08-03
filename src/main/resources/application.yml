@@ -14,10 +14,16 @@ server:
 
 
 
-# ========================
-# 数据源配置
-# ========================
+
 spring:
+  config:
+    import:
+      - classpath:application-security-events.yml
+      - classpath:application-security.yml
+
+    # ========================
+    # 数据源配置
+    # ========================
   datasource:
     url: jdbc:postgresql://localhost:5432/postgres
     username: postgres
@@ -66,7 +72,7 @@ spring:
   # Flyway 配置
   # ========================
   flyway:
-    enabled: true
+    enabled: false
     locations: classpath:db/migration
     baseline-on-migrate: true
     validate-on-migrate: false
@@ -149,3 +155,40 @@ app:
       - image/png
       - image/gif
       - image/webp
+  
+  # ========================
+  # 审计日志配置
+  # ========================
+  audit:
+    # 日志保留天数
+    retention-days: 90
+    # 批量处理大小
+    batch-size: 1000
+    # 导出记录数限制
+    export-limit: 10000
+    
+    # 存储管理配置
+    storage:
+      # 日志存储路径
+      path: /var/log/myweb
+      # 存储空间告警阈值（百分比）
+      warning-threshold: 50
+      # 存储空间严重告警阈值（百分比）
+      critical-threshold: 70
+      # 日志文件保留天数
+      retention-days: 90
+      # 压缩阈值（MB）
+      compression-threshold: 100
+      # 是否启用自动压缩
+      auto-compression: true
+      # 是否启用完整性校验
+      integrity-check: true
+    
+    # 备份管理配置
+    backup:
+      # 备份存储路径
+      path: /var/backup/myweb/logs
+      # 备份文件保留天数
+      retention-days: 365
+
+

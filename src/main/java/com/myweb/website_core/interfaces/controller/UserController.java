@@ -1,9 +1,11 @@
 package com.myweb.website_core.interfaces.controller;
 
-import com.myweb.website_core.application.service.UserService;
-import com.myweb.website_core.domain.dto.UserProfileDTO;
-import com.myweb.website_core.domain.entity.User;
+import com.myweb.website_core.application.service.business.UserService;
+import com.myweb.website_core.domain.business.dto.UserProfileDTO;
+import com.myweb.website_core.domain.business.dto.UserLoginResponse;
+import com.myweb.website_core.domain.business.entity.User;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+@Slf4j
 @RestController
 @RequestMapping("/users")
 public class UserController {
@@ -30,27 +33,43 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    public CompletableFuture<User> register(@RequestBody RegisterRequest req) {
+    public User register(@RequestBody RegisterRequest req) {
         try{
             return userService.register(req.getUsername(), req.getPassword());
         }catch (Exception e){
-            e.printStackTrace();
+            log.error("Error during user registration: ", e);
             return null;
         }
     }
 
     @PostMapping("/login")
-    public CompletableFuture<User> login(@RequestBody LoginRequest req, HttpServletRequest request) {
+    public UserLoginResponse login(@RequestBody LoginRequest req, HttpServletRequest request) {
         try {
-            User user = userService.login(req.getUsername(), req.getPassword(), req.getCode()).join();
-            UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+            User user = userService.login(req.getUsername(), req.getPassword(), req.getCode());
+                UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
                 user.getUsername(), null, Collections.emptyList());
             SecurityContextHolder.getContext().setAuthentication(auth);
             request.getSession().setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
-            return CompletableFuture.completedFuture(user);
+            return getUserLoginResponse(user);
         } catch (Exception e) {
             throw new RuntimeException("登录失败: " + e.getMessage());
         }
+    }
+
+    private UserLoginResponse getUserLoginResponse(User user) {
+        UserLoginResponse response = new UserLoginResponse();
+        response.setId(user.getId());
+        response.setUsername(user.getUsername());
+        response.setEmail(user.getEmail());
+        response.setAvatarUrl(user.getAvatarUrl());
+        response.setBio(user.getBio());
+        response.setLikedCount(user.getLikedCount());
+        response.setRole(user.getRole());
+        response.setEmailVerified(user.getEmailVerified());
+        response.setTotpEnabled(user.getTotpEnabled());
+        response.setLastLoginTime(user.getLastLoginTime());
+        response.setCreatedAt(user.getCreatedAt());
+        return response;
     }
 
     @PostMapping("/{id}/follow")

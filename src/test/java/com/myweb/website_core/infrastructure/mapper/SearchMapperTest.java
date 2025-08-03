@@ -1,7 +1,9 @@
 package com.myweb.website_core.infrastructure.mapper;
 
-import com.myweb.website_core.domain.vo.PostSearchVO;
-import com.myweb.website_core.domain.vo.UserSearchVO;
+import com.myweb.website_core.domain.business.vo.PostSearchVO;
+import com.myweb.website_core.domain.business.vo.UserSearchVO;
+import com.myweb.website_core.infrastructure.persistence.mapper.PostMapper;
+import com.myweb.website_core.infrastructure.persistence.mapper.UserMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;

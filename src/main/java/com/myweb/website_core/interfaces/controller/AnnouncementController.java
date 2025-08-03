@@ -1,7 +1,7 @@
 package com.myweb.website_core.interfaces.controller;
 
-import com.myweb.website_core.application.service.AnnouncementService;
-import com.myweb.website_core.domain.entity.Announcement;
+import com.myweb.website_core.application.service.business.AnnouncementService;
+import com.myweb.website_core.domain.business.entity.Announcement;
 import org.springframework.web.bind.annotation.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.List;

@@ -1,11 +1,12 @@
 package com.myweb.website_core.interfaces.controller;
 
-import com.myweb.website_core.application.service.PostService;
-import com.myweb.website_core.domain.dto.*;
-import com.myweb.website_core.domain.entity.Comment;
-import com.myweb.website_core.application.service.CommentService;
-import com.myweb.website_core.infrastructure.mapper.UserRepository;
-import com.myweb.website_core.domain.entity.Post;
+import com.myweb.website_core.application.service.business.PostService;
+import com.myweb.website_core.domain.business.dto.*;
+//import com.myweb.website_core.domain.dto.*;
+import com.myweb.website_core.domain.business.entity.Comment;
+import com.myweb.website_core.application.service.business.CommentService;
+import com.myweb.website_core.infrastructure.persistence.repository.UserRepository;
+import com.myweb.website_core.domain.business.entity.Post;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,7 +41,7 @@ public class PostController {
             Long userId = request.getAuthor().getId();
             post.setAuthor(userRepository.findById(userId).get());
 
-            Post createdPost = postService.createPost(post).get();
+            Post createdPost = postService.createPost(post);
             // 优先使用imageIds，如果没有则使用imageUrls
             if (request.getImageIds() != null && !request.getImageIds().isEmpty()) {
                 postService.associateImagesByIds(createdPost.getId(), request.getImageIds());

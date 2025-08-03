@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.myweb.website_core.infrastructure.mapper.PostMapper">
+<mapper namespace="com.myweb.website_core.infrastructure.persistence.mapper.PostMapper">
 
     <!-- 结果映射 -->
-    <resultMap id="PostResultMap" type="com.myweb.website_core.domain.entity.Post">
+    <resultMap id="PostResultMap" type="com.myweb.website_core.domain.business.entity.Post">
         <id column="id" property="id" jdbcType="BIGINT"/>
         <result column="title" property="title" jdbcType="VARCHAR"/>
         <result column="content" property="content" jdbcType="VARCHAR"/>
@@ -13,7 +13,7 @@
         <result column="comment_count" property="commentCount" jdbcType="INTEGER"/>
         <!-- Images are handled via @ElementCollection in the entity -->
         <!-- 关联用户信息 -->
-        <association property="author" javaType="com.myweb.website_core.domain.entity.User">
+        <association property="author" javaType="com.myweb.website_core.domain.business.entity.User">
             <id column="author_id" property="id" jdbcType="BIGINT"/>
             <result column="author_username" property="username" jdbcType="VARCHAR"/>
             <result column="author_avatar_url" property="avatarUrl" jdbcType="VARCHAR"/>
@@ -26,7 +26,7 @@
     </sql>
 
     <!-- 插入帖子 -->
-    <insert id="insertPost" parameterType="com.myweb.website_core.domain.entity.Post" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insertPost" parameterType="com.myweb.website_core.domain.business.entity.Post" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO posts (title, content, author_id, created_at, like_count, collect_count, comment_count)
         VALUES (#{title}, #{content}, #{author.id}, #{createdAt}, #{likeCount}, #{collectCount}, #{commentCount})
     </insert>
@@ -57,7 +57,7 @@
     </select>
 
     <!-- 更新帖子 -->
-    <update id="updatePost" parameterType="com.myweb.website_core.domain.entity.Post">
+    <update id="updatePost" parameterType="com.myweb.website_core.domain.business.entity.Post">
         UPDATE posts
         SET title = #{title},
             content = #{content}
@@ -102,7 +102,7 @@
     <!-- ========== 搜索功能相关SQL ========== -->
     
     <!-- 帖子搜索结果映射 -->
-    <resultMap id="PostSearchResultMap" type="com.myweb.website_core.domain.vo.PostSearchVO">
+    <resultMap id="PostSearchResultMap" type="com.myweb.website_core.domain.business.vo.PostSearchVO">
         <id column="id" property="id" jdbcType="BIGINT"/>
         <result column="title" property="title" jdbcType="VARCHAR"/>
         <result column="content_summary" property="contentSummary" jdbcType="VARCHAR"/>

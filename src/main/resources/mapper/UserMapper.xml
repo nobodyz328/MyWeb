@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.myweb.website_core.infrastructure.mapper.UserMapper">
+<mapper namespace="com.myweb.website_core.infrastructure.persistence.mapper.UserMapper">
 
     <!-- 用户结果映射 -->
-    <resultMap id="UserResultMap" type="com.myweb.website_core.domain.entity.User">
+    <resultMap id="UserResultMap" type="com.myweb.website_core.domain.business.entity.User">
         <id column="id" property="id" jdbcType="BIGINT"/>
         <result column="username" property="username" jdbcType="VARCHAR"/>
         <result column="email" property="email" jdbcType="VARCHAR"/>
@@ -14,7 +14,7 @@
     </resultMap>
     
     <!-- 用户搜索结果映射 -->
-    <resultMap id="UserSearchResultMap" type="com.myweb.website_core.domain.vo.UserSearchVO">
+    <resultMap id="UserSearchResultMap" type="com.myweb.website_core.domain.business.vo.UserSearchVO">
         <id column="id" property="id" jdbcType="BIGINT"/>
         <result column="username" property="username" jdbcType="VARCHAR"/>
         <result column="email" property="email" jdbcType="VARCHAR"/>
@@ -48,7 +48,7 @@
     <!-- ========== 基础CRUD操作 ========== -->
     
     <!-- 插入用户 -->
-    <insert id="insertUser" parameterType="com.myweb.website_core.domain.entity.User" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insertUser" parameterType="com.myweb.website_core.domain.business.entity.User" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO users (username, email, password, avatar_url, bio, liked_count)
         VALUES (#{username}, #{email}, #{password}, #{avatarUrl}, #{bio}, #{likedCount})
     </insert>
@@ -82,7 +82,7 @@
     </select>
 
     <!-- 更新用户信息 -->
-    <update id="updateUser" parameterType="com.myweb.website_core.domain.entity.User">
+    <update id="updateUser" parameterType="com.myweb.website_core.domain.business.entity.User">
         UPDATE users
         SET username = #{username},
             email = #{email},

@@ -1,13 +1,13 @@
 package com.myweb.website_core.interfaces.controller;
 
-import com.myweb.website_core.application.service.SearchService;
+import com.myweb.website_core.application.service.business.SearchService;
 import com.myweb.website_core.common.constant.SearchConstants;
 import com.myweb.website_core.common.exception.SearchException;
-import com.myweb.website_core.domain.dto.ApiResponse;
-import com.myweb.website_core.domain.dto.SearchRequestDTO;
-import com.myweb.website_core.domain.dto.SearchResultDTO;
-import com.myweb.website_core.domain.vo.PostSearchVO;
-import com.myweb.website_core.domain.vo.UserSearchVO;
+import com.myweb.website_core.domain.business.dto.ApiResponse;
+import com.myweb.website_core.domain.business.dto.SearchRequestDTO;
+import com.myweb.website_core.domain.business.dto.SearchResultDTO;
+import com.myweb.website_core.domain.business.vo.PostSearchVO;
+import com.myweb.website_core.domain.business.vo.UserSearchVO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

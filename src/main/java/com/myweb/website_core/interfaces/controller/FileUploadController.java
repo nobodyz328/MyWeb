@@ -1,8 +1,8 @@
 package com.myweb.website_core.interfaces.controller;
 
-import com.myweb.website_core.domain.dto.ApiResponse;
+import com.myweb.website_core.domain.business.dto.ApiResponse;
 import com.myweb.website_core.common.exception.FileUploadException;
-import com.myweb.website_core.application.service.FileUploadService;
+import com.myweb.website_core.application.service.file.FileUploadService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
