@@ -1,7 +1,7 @@
 package com.myweb.website_core.application.service;
 
-import com.myweb.website_core.application.service.security.JwtService;
-import com.myweb.website_core.application.service.security.SessionManagementService;
+import com.myweb.website_core.application.service.security.authentication.JwtService;
+import com.myweb.website_core.application.service.security.authentication.SessionManagementService;
 import com.myweb.website_core.common.enums.UserRole;
 import com.myweb.website_core.common.util.RedisKey;
 import com.myweb.website_core.domain.security.dto.SessionInfo;

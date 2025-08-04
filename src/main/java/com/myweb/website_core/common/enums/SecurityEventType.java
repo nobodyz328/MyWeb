@@ -1,60 +1,63 @@
 package com.myweb.website_core.common.enums;
 
+import lombok.Getter;
+
 /**
  * 安全事件类型枚举
  * 
- * 定义系统中需要监控和告警的安全事件类型
- * 符合GB/T 22239-2019二级等保要求的入侵防范和安全监控机制
+ * 定义系统中各种安全事件的类型和严重级别
+ * 符合GB/T 22239-2019二级等保要求的安全事件分类
+ * 
+ * @author MyWeb Security Team
+ * @version 1.0
+ * @since 2025-01-01
  */
+@Getter
 public enum SecurityEventType {
     
-    // ========== 认证安全事件 ==========
+    // ========== 认证相关安全事件 ==========
     
     /**
-     * 暴力破解攻击
+     * 连续登录失败
      */
-    BRUTE_FORCE_ATTACK("BRUTE_FORCE_ATTACK", "暴力破解攻击", "检测到针对用户账户的暴力破解尝试", 5),
+    CONTINUOUS_LOGIN_FAILURE("CONTINUOUS_LOGIN_FAILURE", "连续登录失败", "检测到连续多次登录失败", 4),
     
     /**
-     * 多次登录失败
+     * 账户被锁定
      */
-    MULTIPLE_LOGIN_FAILURES("MULTIPLE_LOGIN_FAILURES", "多次登录失败", "用户在短时间内多次登录失败", 4),
+    ACCOUNT_LOCKED("ACCOUNT_LOCKED", "账户锁定", "用户账户因多次失败尝试被锁定", 3),
     
     /**
      * 异常登录地点
      */
-    UNUSUAL_LOGIN_LOCATION("UNUSUAL_LOGIN_LOCATION", "异常登录地点", "用户从异常地理位置登录", 3),
+    UNUSUAL_LOGIN_LOCATION("UNUSUAL_LOGIN_LOCATION", "异常登录地点", "检测到来自异常地理位置的登录", 3),
     
     /**
      * 异常登录时间
      */
-    UNUSUAL_LOGIN_TIME("UNUSUAL_LOGIN_TIME", "异常登录时间", "用户在异常时间段登录", 2),
+    UNUSUAL_LOGIN_TIME("UNUSUAL_LOGIN_TIME", "异常登录时间", "检测到异常时间段的登录行为", 2),
     
     /**
-     * 会话劫持尝试
+     * 暴力破解攻击
      */
-    SESSION_HIJACK_ATTEMPT("SESSION_HIJACK_ATTEMPT", "会话劫持尝试", "检测到可能的会话劫持行为", 5),
+    BRUTE_FORCE_ATTACK("BRUTE_FORCE_ATTACK", "暴力破解攻击", "检测到暴力破解登录攻击", 5),
     
-    /**
-     * 凭证泄露
-     */
-    CREDENTIAL_COMPROMISE("CREDENTIAL_COMPROMISE", "凭证泄露", "检测到用户凭证可能已泄露", 5),
-    
-    // ========== 访问控制事件 ==========
+    // ========== 访问控制相关安全事件 ==========
     
     /**
      * 权限提升尝试
      */
-    PRIVILEGE_ESCALATION_ATTEMPT("PRIVILEGE_ESCALATION_ATTEMPT", "权限提升尝试", "检测到用户尝试获取更高权限", 5),
+    PRIVILEGE_ESCALATION("PRIVILEGE_ESCALATION", "权限提升尝试", "检测到尝试提升权限的行为", 4),
     
     /**
      * 未授权访问尝试
      */
-    UNAUTHORIZED_ACCESS_ATTEMPT("UNAUTHORIZED_ACCESS_ATTEMPT", "未授权访问尝试", "用户尝试访问未授权资源", 4),
+    UNAUTHORIZED_ACCESS("UNAUTHORIZED_ACCESS", "未授权访问", "检测到未授权的资源访问尝试", 4),
     
     /**
-     * 敏感数据访问
+     * 敏感操作异常
      */
+    SENSITIVE_OPERATION_ANOMALY("SENSITIVE_OPERATION_ANOMALY", "敏感操作异常", "检测到异常的敏感操作行为", 4),
     SENSITIVE_DATA_ACCESS("SENSITIVE_DATA_ACCESS", "敏感数据访问", "用户访问敏感数据", 3),
     
     /**
@@ -226,21 +229,37 @@ public enum SecurityEventType {
     
     /**
      * 事件代码
+     * -- GETTER --
+     *  获取事件代码
+     *
+
      */
     private final String code;
     
     /**
      * 事件名称
+     * -- GETTER --
+     *  获取事件名称
+     *
+
      */
     private final String name;
     
     /**
      * 事件描述
+     * -- GETTER --
+     *  获取事件描述
+     *
+
      */
     private final String description;
     
     /**
      * 严重级别（1-5，数值越大越严重）
+     * -- GETTER --
+     *  获取严重级别
+     *
+
      */
     private final int severity;
     
@@ -258,43 +277,7 @@ public enum SecurityEventType {
         this.description = description;
         this.severity = severity;
     }
-    
-    /**
-     * 获取事件代码
-     * 
-     * @return 事件代码
-     */
-    public String getCode() {
-        return code;
-    }
-    
-    /**
-     * 获取事件名称
-     * 
-     * @return 事件名称
-     */
-    public String getName() {
-        return name;
-    }
-    
-    /**
-     * 获取事件描述
-     * 
-     * @return 事件描述
-     */
-    public String getDescription() {
-        return description;
-    }
-    
-    /**
-     * 获取严重级别
-     * 
-     * @return 严重级别
-     */
-    public int getSeverity() {
-        return severity;
-    }
-    
+
     /**
      * 根据代码获取安全事件类型枚举
      * 
@@ -347,9 +330,9 @@ public enum SecurityEventType {
      * @return 是否为认证相关事件
      */
     public boolean isAuthenticationEvent() {
-        return this == BRUTE_FORCE_ATTACK || this == MULTIPLE_LOGIN_FAILURES ||
+        return this == BRUTE_FORCE_ATTACK || this == CONTINUOUS_LOGIN_FAILURE ||
                this == UNUSUAL_LOGIN_LOCATION || this == UNUSUAL_LOGIN_TIME ||
-               this == SESSION_HIJACK_ATTEMPT || this == CREDENTIAL_COMPROMISE;
+               this == ACCOUNT_LOCKED;
     }
     
     /**
@@ -358,7 +341,7 @@ public enum SecurityEventType {
      * @return 是否为访问控制相关事件
      */
     public boolean isAccessControlEvent() {
-        return this == PRIVILEGE_ESCALATION_ATTEMPT || this == UNAUTHORIZED_ACCESS_ATTEMPT ||
+        return this == PRIVILEGE_ESCALATION || this == UNAUTHORIZED_ACCESS ||
                this == SENSITIVE_DATA_ACCESS || this == BULK_DATA_ACCESS ||
                this == CROSS_DOMAIN_ANOMALY;
     }

@@ -1,6 +1,7 @@
 package com.myweb.website_core.infrastructure.security;
 
 import com.myweb.website_core.application.service.security.audit.AuditLogService;
+import com.myweb.website_core.application.service.security.audit.AuditLogServiceAdapter;
 import com.myweb.website_core.common.enums.AuditOperation;
 import com.myweb.website_core.domain.security.dto.AuditLogRequest;
 import org.junit.jupiter.api.Test;
@@ -120,7 +121,7 @@ class AuditAspectIntegrationTest {
     static class TestConfig {
         
         @Bean
-        public AuditAspect auditAspect(AuditLogService auditLogService) {
+        public AuditAspect auditAspect(AuditLogServiceAdapter auditLogService) {
             return new AuditAspect(auditLogService, new com.fasterxml.jackson.databind.ObjectMapper());
         }
         

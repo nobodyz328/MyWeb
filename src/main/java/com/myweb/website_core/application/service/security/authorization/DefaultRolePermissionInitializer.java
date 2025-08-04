@@ -1,4 +1,4 @@
-package com.myweb.website_core.application.service.security;
+package com.myweb.website_core.application.service.security.authorization;
 
 import com.myweb.website_core.domain.security.entity.Permission;
 import com.myweb.website_core.domain.security.entity.Role;

@@ -1,6 +1,7 @@
 package com.myweb.website_core.domain.security.entity;
 
 import com.myweb.website_core.common.enums.AuditOperation;
+import com.myweb.website_core.domain.security.dto.SecurityAuditMessage;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -215,15 +216,7 @@ public class AuditLog {
      */
     @Column(name = "location", length = 100)
     private String location;
-    
-    /**
-     * 设备指纹
-     * 客户端设备的唯一标识，用于设备识别和异常检测
-     * 最大长度100字符，通常使用哈希值
-     */
-    @Column(name = "device_fingerprint", length = 100)
-    private String deviceFingerprint;
-    
+
     /**
      * 标签
      * 用于分类和标记的标签信息，以逗号分隔
@@ -495,5 +488,53 @@ public class AuditLog {
         return String.format("AuditLog{id=%d, operation=%s, username='%s', result='%s', timestamp=%s}", 
                            id, operation, username, result, 
                            timestamp != null ? timestamp.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) : "null");
+    }
+
+    public AuditLog(){
+
+    }
+    
+    public AuditLog(SecurityAuditMessage  message){
+        this.setUserId(message.getUserId());
+        this.setUsername(message.getUsername());
+        this.setOperation(message.getOperation());
+        this.setResourceType(message.getResourceType());
+        this.setResourceId(message.getResourceId());
+        this.setIpAddress(message.getIpAddress());
+        this.setUserAgent(message.getUserAgent());
+        this.setResult(message.getResult());
+        this.setErrorMessage(message.getErrorMessage());
+        this.setRequestData(message.getRequestData());
+        this.setResponseData(message.getResponseData());
+        this.setExecutionTime(message.getExecutionTime());
+        this.setTimestamp(message.getTimestamp() != null ? message.getTimestamp() : LocalDateTime.now());
+        this.setSessionId(message.getSessionId());
+        this.setRequestId(message.getRequestId());
+        this.setDescription(message.getDescription());
+        this.setRiskLevel(message.getRiskLevel());
+        this.setLocation(message.getLocation());
+        this.setTags(message.getTags());
+    }
+    
+    public AuditLog(com.myweb.website_core.domain.security.dto.UnifiedSecurityMessage message){
+        this.setUserId(message.getUserId());
+        this.setUsername(message.getUsername());
+        this.setOperation(message.getOperation());
+        this.setResourceType(message.getResourceType());
+        this.setResourceId(message.getResourceId());
+        this.setIpAddress(message.getIpAddress());
+        this.setUserAgent(message.getUserAgent());
+        this.setResult(message.getResult());
+        this.setErrorMessage(message.getErrorMessage());
+        this.setRequestData(message.getRequestData());
+        this.setResponseData(message.getResponseData());
+        this.setExecutionTime(message.getExecutionTime());
+        this.setTimestamp(message.getTimestamp() != null ? message.getTimestamp() : LocalDateTime.now());
+        this.setSessionId(message.getSessionId());
+        this.setRequestId(message.getRequestId());
+        this.setDescription(message.getDescription());
+        this.setRiskLevel(message.getRiskLevel());
+        this.setLocation(message.getLocation());
+        this.setTags(message.getTags());
     }
 }

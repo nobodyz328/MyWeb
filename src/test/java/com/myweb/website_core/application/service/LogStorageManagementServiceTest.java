@@ -1,6 +1,6 @@
 package com.myweb.website_core.application.service;
 
-import com.myweb.website_core.application.service.security.SecurityAlertService;
+import com.myweb.website_core.application.service.security.audit.SecurityAlertService;
 import com.myweb.website_core.common.enums.AuditOperation;
 import com.myweb.website_core.domain.security.dto.LogStorageStatistics;
 import com.myweb.website_core.domain.business.dto.StorageInfo;

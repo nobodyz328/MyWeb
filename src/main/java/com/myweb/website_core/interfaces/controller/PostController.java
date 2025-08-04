@@ -1,12 +1,14 @@
 package com.myweb.website_core.interfaces.controller;
 
 import com.myweb.website_core.application.service.business.PostService;
+import com.myweb.website_core.common.enums.AuditOperation;
 import com.myweb.website_core.domain.business.dto.*;
 //import com.myweb.website_core.domain.dto.*;
 import com.myweb.website_core.domain.business.entity.Comment;
 import com.myweb.website_core.application.service.business.CommentService;
 import com.myweb.website_core.infrastructure.persistence.repository.UserRepository;
 import com.myweb.website_core.domain.business.entity.Post;
+import com.myweb.website_core.infrastructure.security.Auditable;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,7 +34,8 @@ public class PostController {
         this.commentService = commentService;
     }
 
-    @PostMapping(value = "", consumes = "application/json", produces = "application/json")
+    @PostMapping(value = "")
+    @Auditable(operation = AuditOperation.POST_CREATE, resourceType = "POST", description = "创建帖子")
     public ResponseEntity<PostDTO> createPost(@RequestBody CreatePostRequest request) {
         try {
             Post post = new Post();
@@ -59,8 +62,10 @@ public class PostController {
 
 
     @PutMapping("/{id}")
+    @Auditable(operation = AuditOperation.POST_UPDATE, resourceType = "POST",  description = "更新帖子")
     public ResponseEntity<PostDTO> editPost(@PathVariable Long id, @RequestBody Post post) {
         try {
+
             Post updatedPost = postService.editPost(id, post);
             PostDTO postDTO = postService.convertToDTO(updatedPost);
             return ResponseEntity.ok(postDTO);
@@ -71,6 +76,7 @@ public class PostController {
     }
 
     @PostMapping("/{id}/like")
+    @Auditable(operation = AuditOperation.POST_LIKE, resourceType = "POST", description = "点赞帖子")
     public ResponseEntity<ApiResponse<LikeResponse>> likePost(@PathVariable Long id, @RequestParam Long userId) {
         try {
             LikeResponse likeResponse = postService.likePost(id, userId);
@@ -83,6 +89,7 @@ public class PostController {
     }
 
     @PostMapping("/{id}/collect")
+    @Auditable(operation = AuditOperation.POST_COLLECT, resourceType = "POST", description = "收藏帖子")
     public ResponseEntity<ApiResponse<CollectResponse>> collectPost(@PathVariable Long id, @RequestParam Long userId) {
         try {
             CollectResponse collectResponse = postService.collectPost(id, userId);
@@ -97,10 +104,6 @@ public class PostController {
         return postService.getTopLikedPosts();
     }
 
-    @GetMapping("/search")
-    public CompletableFuture<List<Post>> searchPosts(@RequestParam String keyword) {
-        return postService.searchPosts(keyword);
-    }
 
     @GetMapping("/mine")
     public CompletableFuture<List<PostDTO>> getMyPosts(@RequestParam Long userId) {
@@ -168,6 +171,7 @@ public class PostController {
     }
 
     @GetMapping("/{id}")
+    @Auditable(operation = AuditOperation.POST_VIEW, resourceType = "POST",description = "查看帖子")
     public ResponseEntity<PostDTO> getPostById(@PathVariable Long id) {
         try {
             Optional<Post> post = postService.getPostById(id);
@@ -183,6 +187,7 @@ public class PostController {
     }
 
     @DeleteMapping("/{id}")
+    @Auditable(operation = AuditOperation.POST_DELETE, resourceType = "POST", description = "删除帖子")
     public ResponseEntity<Void> deletePost(@PathVariable Long id, @RequestParam Long userId) {
         try {
             postService.deletePost(id, userId).get();

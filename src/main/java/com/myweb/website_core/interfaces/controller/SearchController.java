@@ -2,12 +2,14 @@ package com.myweb.website_core.interfaces.controller;
 
 import com.myweb.website_core.application.service.business.SearchService;
 import com.myweb.website_core.common.constant.SearchConstants;
+import com.myweb.website_core.common.enums.AuditOperation;
 import com.myweb.website_core.common.exception.SearchException;
 import com.myweb.website_core.domain.business.dto.ApiResponse;
 import com.myweb.website_core.domain.business.dto.SearchRequestDTO;
 import com.myweb.website_core.domain.business.dto.SearchResultDTO;
 import com.myweb.website_core.domain.business.vo.PostSearchVO;
 import com.myweb.website_core.domain.business.vo.UserSearchVO;
+import com.myweb.website_core.infrastructure.security.Auditable;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,6 +48,7 @@ public class SearchController {
      * @return 帖子搜索结果
      */
     @GetMapping("/posts")
+    @Auditable(operation = AuditOperation.SEARCH_OPERATION, resourceType = "SEARCH", description = "搜索帖子")
     public ResponseEntity<ApiResponse<SearchResultDTO<PostSearchVO>>> searchPosts(
             @RequestParam String keyword,
             @RequestParam(defaultValue = "0") Long lastId,
@@ -126,6 +129,7 @@ public class SearchController {
      * @return 用户搜索结果
      */
     @GetMapping("/users")
+    @Auditable(operation = AuditOperation.SEARCH_OPERATION, resourceType = "SEARCH", description = "搜索用户")
     public ResponseEntity<ApiResponse<SearchResultDTO<UserSearchVO>>> searchUsers(
             @RequestParam String keyword,
             @RequestParam(defaultValue = "0") Long lastId,
@@ -197,7 +201,7 @@ public class SearchController {
     }
     
     /**
-     * 综合搜索（同时搜索帖子和用户，无限滚动分页）
+     * 综合搜索
      * 
      * @param keyword 搜索关键词
      * @param lastPostId 上次加载的最后一个帖子ID，首次加载传0或不传
@@ -207,6 +211,7 @@ public class SearchController {
      * @return 综合搜索结果
      */
     @GetMapping("/all")
+    @Auditable(operation = AuditOperation.SEARCH_OPERATION, resourceType = "SEARCH", description = "综合搜索")
     public ResponseEntity<ApiResponse<SearchResultDTO<Object>>> searchAll(
             @RequestParam String keyword,
             @RequestParam(defaultValue = "0") Long lastPostId,
@@ -367,6 +372,7 @@ public class SearchController {
      * @return 操作结果
      */
     @DeleteMapping("/cache")
+    @Auditable(operation = AuditOperation.CACHE_CLEANUP, resourceType = "SEARCH", description = "清除搜索缓存")
     public ResponseEntity<ApiResponse<Void>> clearSearchCache(
             @RequestParam(required = false) String keyword) {
         

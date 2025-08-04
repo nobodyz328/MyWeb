@@ -1,4 +1,4 @@
-package com.myweb.website_core.interfaces.controller;
+package com.myweb.website_core.interfaces.controller.security;
 
 import com.myweb.website_core.application.service.security.audit.LogStorageManagementService;
 import com.myweb.website_core.common.enums.AuditOperation;

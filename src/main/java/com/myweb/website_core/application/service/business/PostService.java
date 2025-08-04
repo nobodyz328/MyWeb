@@ -56,17 +56,11 @@ public class PostService {
         postRepository.save(post);
 
         // 清除Redis缓存
-        redisTemplate.delete("posts:all");
+//        redisTemplate.delete("posts:all");
 
         // 发送消息到RabbitMQ
-        messageProducerService.sendPostCreatedMessage(post);
+//        messageProducerService.sendPostCreatedMessage(post);
 
-        // 发送审计日志
-        messageProducerService.sendAuditLogMessage(
-                author.getId().toString(),
-                author.getUsername(),
-                "CREATE_POST",
-                "创建帖子: " + post.getTitle());
 
         return post;
     }
@@ -102,23 +96,10 @@ public class PostService {
         return CompletableFuture.completedFuture(null);
     }
 
-    @Async
-    public CompletableFuture<List<Post>> searchPosts(String keyword) {
-        // 搜索逻辑
-        return CompletableFuture.completedFuture(null);
-    }
-
     // @Async
     @CachePut(value = "posts", key = "'posts:all'")
     public List<Post> getAllPosts() {
         try {
-            // 优先从Redis缓存获取
-            // String cacheKey = "posts:all";
-            // List<Post> cachedPosts = (List<Post>)
-            // redisTemplate.opsForValue().get(cacheKey);
-            // if (cachedPosts != null) {
-            // return CompletableFuture.completedFuture(cachedPosts);
-            // }
             return postRepository.findAll();
         } catch (Exception e) {
             // Log the exception for debugging

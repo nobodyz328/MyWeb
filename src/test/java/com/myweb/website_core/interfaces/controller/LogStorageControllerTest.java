@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.myweb.website_core.application.service.security.audit.LogStorageManagementService;
 import com.myweb.website_core.domain.security.dto.LogStorageStatistics;
 import com.myweb.website_core.domain.business.dto.StorageInfo;
+import com.myweb.website_core.interfaces.controller.security.LogStorageController;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,4 +1,4 @@
-package com.myweb.website_core.application.service.security.audit;
+package com.myweb.website_core.zmple;
 
 import com.myweb.website_core.common.enums.AuditOperation;
 import com.myweb.website_core.infrastructure.security.Auditable;

@@ -69,8 +69,7 @@ public class EmailVerificationService {
         
         // 发送邮件
         sendRegistrationEmail(email, code);
-        
-        log.info("注册验证码已发送到邮箱: {}", email);
+
         return CompletableFuture.completedFuture(null);
     }
     

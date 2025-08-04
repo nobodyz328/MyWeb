@@ -2,7 +2,7 @@ package com.myweb.website_core.infrastructure.security;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.myweb.website_core.application.service.security.audit.AuditLogService;
+import com.myweb.website_core.application.service.security.audit.AuditLogServiceAdapter;
 import com.myweb.website_core.domain.security.dto.AuditLogRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -41,7 +41,7 @@ import java.util.*;
 @Component
 public class AuditAspect {
     
-    private final AuditLogService auditLogService;
+    private final AuditLogServiceAdapter auditLogServiceAdapter;
     private final ObjectMapper objectMapper;
     
     // 敏感信息关键字，用于参数脱敏
@@ -54,8 +54,8 @@ public class AuditAspect {
     private static final String MASKED_VALUE = "*********";
     
     @Autowired
-    public AuditAspect(AuditLogService auditLogService, ObjectMapper objectMapper) {
-        this.auditLogService = auditLogService;
+    public AuditAspect(AuditLogServiceAdapter auditLogServiceAdapter, ObjectMapper objectMapper) {
+        this.auditLogServiceAdapter = auditLogServiceAdapter;
         this.objectMapper = objectMapper;
     }
     
@@ -86,7 +86,7 @@ public class AuditAspect {
         // 构建审计日志请求基础信息
         AuditLogRequest.AuditLogRequestBuilder logBuilder = AuditLogRequest.builder()
                 .operation(auditable.operation())
-                .resourceType(auditable.resourceType().isEmpty() ? null : auditable.resourceType())
+                .resourceType(auditable.resourceType())
                 .description(auditable.description().isEmpty() ? methodName : auditable.description())
                 .userId(userInfo.getUserId())
                 .username(userInfo.getUsername())
@@ -168,11 +168,7 @@ public class AuditAspect {
             
             // 记录审计日志
             AuditLogRequest auditRequest = logBuilder.build();
-            if (auditable.async()) {
-                auditLogService.logOperation(auditRequest);
-            } else {
-                auditLogService.logOperation(auditRequest).join();
-            }
+            auditLogServiceAdapter.logOperation(auditRequest);
             
             log.debug("审计日志记录成功: operation={}, method={}, executionTime={}ms", 
                     auditable.operation(), methodName, executionTime);
@@ -218,12 +214,12 @@ public class AuditAspect {
             String failureTags = currentTags != null ? currentTags + ",failure" : "failure";
             logBuilder.tags(failureTags);
             
-            // 记录审计日志
+            // 记录审计日志（使用适配器，同时支持数据库和消息队列）
             AuditLogRequest auditRequest = logBuilder.build();
             if (auditable.async()) {
-                auditLogService.logOperation(auditRequest);
+                auditLogServiceAdapter.logOperation(auditRequest);
             } else {
-                auditLogService.logOperation(auditRequest).join();
+                auditLogServiceAdapter.logOperation(auditRequest).join();
             }
             
             log.debug("失败审计日志记录成功: operation={}, method={}, error={}, executionTime={}ms", 

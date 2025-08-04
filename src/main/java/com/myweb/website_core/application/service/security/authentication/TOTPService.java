@@ -52,7 +52,7 @@ public class TOTPService {
     private final QrGenerator qrGenerator;
     private final TimeProvider timeProvider;
     
-    @Value("${app.name:MyWeb博客系统}")
+    @Value("${app.name:MyWeb}")
     private String applicationName;
     
     @Value("${app.issuer:MyWeb}")

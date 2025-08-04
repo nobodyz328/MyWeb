@@ -1,8 +1,13 @@
 package com.myweb.website_core.interfaces.controller;
 
+import com.myweb.website_core.common.enums.AuditOperation;
 import com.myweb.website_core.domain.business.dto.ApiResponse;
 import com.myweb.website_core.common.exception.FileUploadException;
 import com.myweb.website_core.application.service.file.FileUploadService;
+import com.myweb.website_core.domain.business.entity.User;
+import com.myweb.website_core.infrastructure.security.Auditable;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,9 +28,9 @@ import java.util.Map;
  * - 多图片批量上传
  * - 图片删除
  */
+@Slf4j
 @RestController
 @RequestMapping("/api/upload")
-@CrossOrigin(origins = "*")
 public class FileUploadController {
     
     private static final Logger logger = LoggerFactory.getLogger(FileUploadController.class);
@@ -44,6 +49,7 @@ public class FileUploadController {
      * @return 上传结果，包含图片URL
      */
     @PostMapping("/image")
+    @Auditable(operation = AuditOperation.FILE_UPLOAD, resourceType = "FILE", description = "上传图片")
     public ResponseEntity<ApiResponse<Map<String, String>>> uploadImage(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "postId",required = false) Long postId) {
@@ -83,6 +89,7 @@ public class FileUploadController {
      * @return 上传结果，包含所有图片URL列表
      */
     @PostMapping("/images")
+    @Auditable(operation = AuditOperation.FILE_UPLOAD, resourceType = "FILE", description = "批量上传图片")
     public ResponseEntity<ApiResponse<Map<String, Object>>> uploadImages(
             @RequestParam("files") MultipartFile[] files,
             @RequestParam(value = "postId") Long postId) {
@@ -148,6 +155,7 @@ public class FileUploadController {
      * @return 删除结果
      */
     @DeleteMapping("/image")
+    @Auditable(operation = AuditOperation.FILE_UPLOAD, resourceType = "FILE", description = "删除图片")
     public ResponseEntity<ApiResponse<String>> deleteImage(@RequestParam("url") String imageUrl) {
         try {
             boolean deleted = fileUploadService.deleteFile(imageUrl);
@@ -167,6 +175,34 @@ public class FileUploadController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                 ApiResponse.error("服务器内部错误")
             );
+        }
+    }
+    /**
+     * 获取上传统计信息（管理员功能）
+     */
+    @GetMapping("/statistics")
+    @Auditable(operation = AuditOperation.AUDIT_STATISTICS_QUERY, resourceType = "FILE", description = "查看上传统计")
+    public ResponseEntity<?> getUploadStatistics(
+            @RequestParam(defaultValue = "7") Integer days,
+            HttpServletRequest request) {
+
+        try {
+
+            // 获取上传统计（这里需要实现统计服务）
+            Map<String, Object> statistics = new HashMap<>();
+            statistics.put("totalUploads", 0);
+            statistics.put("totalSize", 0);
+            statistics.put("successRate", 0.0);
+
+
+
+            return ResponseEntity.ok(ApiResponse.success(statistics));
+
+        } catch (Exception e) {
+            log.error("获取上传统计失败: ", e);
+
+
+            return ResponseEntity.badRequest().body("获取上传统计失败: " + e.getMessage());
         }
     }
 }

@@ -1,6 +1,6 @@
 package com.myweb.website_core.application.service;
 
-import com.myweb.website_core.application.service.security.SecurityAlertService;
+import com.myweb.website_core.application.service.security.audit.SecurityAlertService;
 import com.myweb.website_core.common.enums.SecurityEventType;
 import com.myweb.website_core.domain.security.entity.SecurityEvent;
 import org.junit.jupiter.api.BeforeEach;
@@ -70,7 +70,7 @@ class SecurityAlertServiceTest {
         
         highRiskEvent = SecurityEvent.builder()
                 .id(2L)
-                .eventType(SecurityEventType.UNAUTHORIZED_ACCESS_ATTEMPT)
+                .eventType(SecurityEventType.UNAUTHORIZED_ACCESS)
                 .title("未授权访问尝试")
                 .description("检测到未授权访问尝试")
                 .severity(4)

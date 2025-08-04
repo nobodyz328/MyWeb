@@ -1,0 +1,402 @@
+/* 管理员面板样式 */
+
+/* 侧边栏样式 */
+.sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 100;
+    padding: 48px 0 0;
+    box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+}
+
+.sidebar-sticky {
+    position: relative;
+    top: 0;
+    height: calc(100vh - 48px);
+    padding-top: .5rem;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.sidebar .nav-link {
+    font-weight: 500;
+    color: #333;
+    padding: 0.75rem 1rem;
+    border-radius: 0.375rem;
+    margin: 0.125rem 0.5rem;
+}
+
+.sidebar .nav-link:hover {
+    color: #007bff;
+    background-color: rgba(0, 123, 255, 0.1);
+}
+
+.sidebar .nav-link.active {
+    color: #007bff;
+    background-color: rgba(0, 123, 255, 0.1);
+    font-weight: 600;
+}
+
+.sidebar .nav-link i {
+    margin-right: 0.5rem;
+}
+
+/* 主内容区样式 */
+main {
+    margin-left: 240px;
+    padding-top: 1rem;
+}
+
+@media (max-width: 767.98px) {
+    main {
+        margin-left: 0;
+    }
+    
+    .sidebar {
+        position: relative;
+        height: auto;
+        padding: 0;
+    }
+}
+
+/* 卡片样式 */
+.card {
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+    border: 1px solid #e3e6f0;
+}
+
+.card-header {
+    background-color: #f8f9fc;
+    border-bottom: 1px solid #e3e6f0;
+}
+
+/* 边框颜色样式 */
+.border-left-primary {
+    border-left: 0.25rem solid #4e73df !important;
+}
+
+.border-left-success {
+    border-left: 0.25rem solid #1cc88a !important;
+}
+
+.border-left-info {
+    border-left: 0.25rem solid #36b9cc !important;
+}
+
+.border-left-warning {
+    border-left: 0.25rem solid #f6c23e !important;
+}
+
+.border-left-danger {
+    border-left: 0.25rem solid #e74a3b !important;
+}
+
+/* 表格样式 */
+.table th {
+    border-top: none;
+    font-weight: 600;
+    color: #5a5c69;
+    background-color: #f8f9fc;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+/* 状态标签样式 */
+.status-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.35rem;
+}
+
+.status-success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-warning {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.status-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.status-info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+.status-secondary {
+    background-color: #e2e3e5;
+    color: #383d41;
+}
+
+/* 严重级别样式 */
+.severity-1 {
+    color: #28a745;
+    font-weight: 500;
+}
+
+.severity-2 {
+    color: #ffc107;
+    font-weight: 500;
+}
+
+.severity-3 {
+    color: #fd7e14;
+    font-weight: 600;
+}
+
+.severity-4 {
+    color: #dc3545;
+    font-weight: 600;
+}
+
+.severity-5 {
+    color: #6f42c1;
+    font-weight: 700;
+}
+
+/* 风险评分样式 */
+.risk-score {
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+}
+
+.risk-low {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.risk-medium {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.risk-high {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.risk-critical {
+    background-color: #f5c6cb;
+    color: #721c24;
+    font-weight: 700;
+}
+
+/* 操作按钮样式 */
+.btn-action {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    margin: 0 0.125rem;
+}
+
+/* 加载动画 */
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+/* 统计卡片动画 */
+.card-body {
+    transition: transform 0.2s ease-in-out;
+}
+
+.card:hover .card-body {
+    transform: translateY(-2px);
+}
+
+/* 搜索表单样式 */
+.search-form {
+    background-color: #f8f9fc;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+/* 分页样式 */
+.pagination .page-link {
+    color: #5a5c69;
+    border-color: #e3e6f0;
+}
+
+.pagination .page-link:hover {
+    color: #007bff;
+    background-color: #e9ecef;
+    border-color: #dee2e6;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+/* 模态框样式 */
+.modal-header {
+    background-color: #f8f9fc;
+    border-bottom: 1px solid #e3e6f0;
+}
+
+.modal-footer {
+    background-color: #f8f9fc;
+    border-top: 1px solid #e3e6f0;
+}
+
+/* 表单样式 */
+.form-label {
+    font-weight: 600;
+    color: #5a5c69;
+}
+
+.form-control:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.form-select:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* 权限复选框样式 */
+.permission-group {
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    border: 1px solid #e3e6f0;
+    border-radius: 0.375rem;
+    background-color: #f8f9fc;
+}
+
+.permission-group-title {
+    font-weight: 600;
+    color: #5a5c69;
+    margin-bottom: 0.5rem;
+}
+
+.permission-item {
+    margin-bottom: 0.25rem;
+}
+
+.permission-item .form-check-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .card-body .row .col-md-6,
+    .card-body .row .col-md-4,
+    .card-body .row .col-md-3 {
+        margin-bottom: 1rem;
+    }
+    
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+    
+    .btn-action {
+        padding: 0.125rem 0.25rem;
+        font-size: 0.75rem;
+    }
+}
+
+/* 深色模式支持 */
+@media (prefers-color-scheme: dark) {
+    .sidebar {
+        background-color: #2c3e50;
+        color: #ecf0f1;
+    }
+    
+    .sidebar .nav-link {
+        color: #bdc3c7;
+    }
+    
+    .sidebar .nav-link:hover,
+    .sidebar .nav-link.active {
+        color: #3498db;
+        background-color: rgba(52, 152, 219, 0.1);
+    }
+    
+    .card {
+        background-color: #34495e;
+        border-color: #2c3e50;
+        color: #ecf0f1;
+    }
+    
+    .card-header {
+        background-color: #2c3e50;
+        border-color: #34495e;
+    }
+    
+    .table th {
+        background-color: #2c3e50;
+        color: #bdc3c7;
+        border-color: #34495e;
+    }
+    
+    .table td {
+        border-color: #34495e;
+        color: #ecf0f1;
+    }
+    
+    .form-control,
+    .form-select {
+        background-color: #34495e;
+        border-color: #2c3e50;
+        color: #ecf0f1;
+    }
+    
+    .modal-content {
+        background-color: #34495e;
+        color: #ecf0f1;
+    }
+    
+    .modal-header,
+    .modal-footer {
+        background-color: #2c3e50;
+        border-color: #34495e;
+    }
+}
+
+/* 打印样式 */
+@media print {
+    .sidebar,
+    .btn-toolbar,
+    .pagination,
+    .modal {
+        display: none !important;
+    }
+    
+    main {
+        margin-left: 0;
+    }
+    
+    .card {
+        box-shadow: none;
+        border: 1px solid #000;
+    }
+    
+    .table {
+        font-size: 0.75rem;
+    }
+}

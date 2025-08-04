@@ -1,7 +1,10 @@
 package com.myweb.website_core.infrastructure.security;
 
 import com.myweb.website_core.domain.business.entity.User;
+import com.myweb.website_core.domain.security.entity.Permission;
+import com.myweb.website_core.domain.security.entity.Role;
 import com.myweb.website_core.infrastructure.persistence.repository.UserRepository;
+import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -27,9 +30,12 @@ import java.util.Set;
 @Transactional(readOnly = true)
 public class CustomUserDetailsService implements UserDetailsService {
     
+    private final UserRepository userRepository;
     @Autowired
-    private UserRepository userRepository;
-    
+    public CustomUserDetailsService(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
+
     /**
      * 根据用户名加载用户详情
      * 
@@ -51,7 +57,13 @@ public class CustomUserDetailsService implements UserDetailsService {
      * 实现UserDetails接口，封装用户信息和权限
      */
     public static class CustomUserPrincipal implements UserDetails {
-        
+
+        /**
+         * -- GETTER --
+         *  获取用户对象
+         *
+         */
+        @Getter
         private final User user;
         private final Set<GrantedAuthority> authorities;
         
@@ -78,7 +90,7 @@ public class CustomUserDetailsService implements UserDetailsService {
             // 添加RBAC角色权限
             if (user.getRoles() != null) {
                 user.getRoles().stream()
-                    .filter(role -> role.isEnabled())
+                    .filter(Role::isEnabled)
                     .forEach(role -> {
                         // 添加角色权限
                         authorities.add(new SimpleGrantedAuthority("ROLE_" + role.getName()));
@@ -86,7 +98,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                         // 添加角色包含的具体权限
                         if (role.getPermissions() != null) {
                             role.getPermissions().stream()
-                                .filter(permission -> permission.isEnabled())
+                                .filter(Permission::isEnabled)
                                 .forEach(permission -> {
                                     authorities.add(new SimpleGrantedAuthority(permission.getName()));
                                 });
@@ -104,7 +116,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         
         @Override
         public String getPassword() {
-            return user.getPasswordHash() != null ? user.getPasswordHash() : user.getPassword();
+            return user.getPasswordHash();
         }
         
         @Override
@@ -131,16 +143,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         public boolean isEnabled() {
             return user.getEmailVerified() != null ? user.getEmailVerified() : true;
         }
-        
-        /**
-         * 获取用户对象
-         * 
-         * @return 用户对象
-         */
-        public User getUser() {
-            return user;
-        }
-        
+
         /**
          * 获取用户ID
          * 

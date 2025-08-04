@@ -1,8 +1,8 @@
 package com.myweb.website_core.application.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.myweb.website_core.application.service.security.SecurityAlertService;
-import com.myweb.website_core.application.service.security.SecurityEventService;
+import com.myweb.website_core.application.service.security.audit.SecurityAlertService;
+import com.myweb.website_core.application.service.security.audit.SecurityEventService;
 import com.myweb.website_core.common.enums.SecurityEventType;
 import com.myweb.website_core.domain.security.dto.SecurityEventQuery;
 import com.myweb.website_core.domain.security.dto.SecurityEventRequest;
@@ -64,7 +64,7 @@ class SecurityEventServiceTest {
 //        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         
         testRequest = SecurityEventRequest.builder()
-                .eventType(SecurityEventType.MULTIPLE_LOGIN_FAILURES)
+                .eventType(SecurityEventType.CONTINUOUS_LOGIN_FAILURE)
                 .title("登录失败测试")
                 .description("测试用户登录失败")
                 .userId(1L)
@@ -79,7 +79,7 @@ class SecurityEventServiceTest {
         
         testEvent = SecurityEvent.builder()
                 .id(1L)
-                .eventType(SecurityEventType.MULTIPLE_LOGIN_FAILURES)
+                .eventType(SecurityEventType.CONTINUOUS_LOGIN_FAILURE)
                 .title("登录失败测试")
                 .description("测试用户登录失败")
                 .severity(4)
@@ -148,7 +148,7 @@ class SecurityEventServiceTest {
     void testFindEvents_WithQuery() {
         // Given
         SecurityEventQuery query = SecurityEventQuery.builder()
-                .eventTypes(List.of(SecurityEventType.MULTIPLE_LOGIN_FAILURES))
+                .eventTypes(List.of(SecurityEventType.CONTINUOUS_LOGIN_FAILURE))
                 .severities(List.of(4, 5))
                 .userId(1L)
                 .build();
@@ -199,7 +199,7 @@ class SecurityEventServiceTest {
         when(securityEventRepository.countAlertedByTimeRange(startTime, endTime)).thenReturn(25L);
         
         // 修复: 明确指定泛型类型
-        List<Object[]> eventTypeStats = List.<Object[]>of(new Object[]{SecurityEventType.MULTIPLE_LOGIN_FAILURES, 50L});
+        List<Object[]> eventTypeStats = List.<Object[]>of(new Object[]{SecurityEventType.CONTINUOUS_LOGIN_FAILURE, 50L});
         List<Object[]> severityStats = List.<Object[]>of(new Object[]{4, 20L});
         List<Object[]> statusStats = List.<Object[]>of(new Object[]{"NEW", 15L});
         List<Object[]> hourlyStats = List.<Object[]>of(new Object[]{10, 5L});
@@ -291,7 +291,7 @@ class SecurityEventServiceTest {
         // Given
         Long userId = 1L;
         String sourceIp = "192.168.1.100";
-        SecurityEventType eventType = SecurityEventType.MULTIPLE_LOGIN_FAILURES;
+        SecurityEventType eventType = SecurityEventType.CONTINUOUS_LOGIN_FAILURE;
         
         when(securityEventRepository.countByUserAndTypeInTimeWindow(
                 eq(userId), eq(eventType), any(LocalDateTime.class), any(LocalDateTime.class)))
@@ -311,7 +311,7 @@ class SecurityEventServiceTest {
         // Given
         Long userId = 1L;
         String sourceIp = "192.168.1.100";
-        SecurityEventType eventType = SecurityEventType.MULTIPLE_LOGIN_FAILURES;
+        SecurityEventType eventType = SecurityEventType.CONTINUOUS_LOGIN_FAILURE;
         
         when(securityEventRepository.countByUserAndTypeInTimeWindow(
                 eq(userId), eq(eventType), any(LocalDateTime.class), any(LocalDateTime.class)))
@@ -335,7 +335,7 @@ class SecurityEventServiceTest {
         // Given
         Long userId = 1L;
         String sourceIp = "192.168.1.100";
-        SecurityEventType eventType = SecurityEventType.MULTIPLE_LOGIN_FAILURES;
+        SecurityEventType eventType = SecurityEventType.CONTINUOUS_LOGIN_FAILURE;
         
         when(securityEventRepository.countByUserAndTypeInTimeWindow(
                 eq(userId), eq(eventType), any(LocalDateTime.class), any(LocalDateTime.class)))

@@ -806,6 +806,30 @@ public class AuditLogService {
                       "ipAddress", "result", "errorMessage", "executionTime", "riskLevel");
     }
     
+
+    
+    /**
+     * 统计活跃IP数
+     * 
+     * @param startTime 开始时间
+     * @param endTime 结束时间
+     * @return 活跃IP数
+     */
+    public long countActiveIPs(LocalDateTime startTime, LocalDateTime endTime) {
+        try {
+            return auditLogRepository.countActiveIPs(startTime, endTime);
+        } catch (Exception e) {
+            log.error("统计活跃IP数失败: startTime={}, endTime={}", startTime, endTime, e);
+            return 0L;
+        }
+    }
+    
+
+
+
+
+
+    
     /**
      * 获取字段标题
      * 
@@ -1079,19 +1103,5 @@ public class AuditLogService {
         }
     }
     
-    /**
-     * 统计活跃IP数
-     * 
-     * @param startTime 开始时间
-     * @param endTime 结束时间
-     * @return 活跃IP数
-     */
-    public long countActiveIPs(LocalDateTime startTime, LocalDateTime endTime) {
-        try {
-            return auditLogRepository.countActiveIPs(startTime, endTime);
-        } catch (Exception e) {
-            log.error("统计活跃IP数失败: startTime={}, endTime={}", startTime, endTime, e);
-            return 0L;
-        }
-    }
+
 }

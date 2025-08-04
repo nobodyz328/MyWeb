@@ -19,6 +19,9 @@ import org.springframework.security.web.SecurityFilterChain;
 
 import org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler;
 import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 
 
 
@@ -104,6 +107,31 @@ public class SecurityConfig {
     }
     
 
+    
+    /**
+     * 配置认证管理器
+     * 
+     * @param authConfig 认证配置
+     * @return 认证管理器
+     * @throws Exception 配置异常
+     */
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
+        return authConfig.getAuthenticationManager();
+    }
+    
+    /**
+     * 配置DAO认证提供者
+     * 
+     * @return DAO认证提供者
+     */
+    @Bean
+    public DaoAuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+        authProvider.setUserDetailsService(userDetailsService);
+        authProvider.setPasswordEncoder(passwordEncoder());
+        return authProvider;
+    }
     
     /**
      * 配置方法级安全表达式处理器

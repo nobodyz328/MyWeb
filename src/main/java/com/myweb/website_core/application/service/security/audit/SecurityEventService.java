@@ -1,8 +1,8 @@
-package com.myweb.website_core.application.service.security;
+package com.myweb.website_core.application.service.security.audit;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.myweb.website_core.application.service.security.SecurityAlertService;
+import com.myweb.website_core.application.service.security.audit.SecurityAlertService;
 import com.myweb.website_core.common.constant.SecurityConstants;
 import com.myweb.website_core.common.enums.SecurityEventType;
 import com.myweb.website_core.domain.security.dto.SecurityEventQuery;

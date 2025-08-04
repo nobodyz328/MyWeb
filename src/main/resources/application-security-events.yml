@@ -90,10 +90,10 @@ app:
 # 日志配置
 logging:
   level:
-    com.myweb.website_core.application.service.security.SecurityEventService: INFO
-    com.myweb.website_core.application.service.security.SecurityAlertService: INFO
+    com.myweb.website_core.application.service.security.audit.SecurityEventService: INFO
+    com.myweb.website_core.application.service.security.audit.SecurityAlertService: INFO
     # 开发环境可以设置为DEBUG查看详细日志
-    # com.myweb.website_core.application.service.security.SecurityEventService: DEBUG
+    # com.myweb.website_core.application.service.security.audit.SecurityEventService: DEBUG
   
   pattern:
     # 安全事件相关日志使用特殊格式便于分析

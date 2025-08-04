@@ -1,4 +1,4 @@
-package com.myweb.website_core.application.service.security;
+package com.myweb.website_core.application.service.security.authentication;
 
 import com.myweb.website_core.domain.business.entity.User;
 import io.jsonwebtoken.*;

@@ -1,15 +1,32 @@
 package com.myweb.website_core.common.exception;
 
 /**
- * Exception thrown when rate limit is exceeded for interactions
+ * 频率限制超出异常
+ * 
+ * 当用户操作频率超出限制时抛出此异常
+ * 
+ * @author MyWeb Security Team
+ * @version 1.0
+ * @since 2025-01-01
  */
-public class RateLimitExceededException extends InteractionException {
+public class RateLimitExceededException extends RuntimeException {
     
+    /**
+     * 构造函数
+     * 
+     * @param message 错误消息
+     */
     public RateLimitExceededException(String message) {
         super(message);
     }
     
-    public RateLimitExceededException(String operation, Long userId) {
-        super(String.format("Rate limit exceeded for %s operation by user %d", operation, userId));
+    /**
+     * 构造函数
+     * 
+     * @param message 错误消息
+     * @param cause 原因
+     */
+    public RateLimitExceededException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

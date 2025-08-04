@@ -24,7 +24,7 @@ public class SecurityEventUtils {
      */
     public static SecurityEventRequest createLoginFailureEvent(String username, String reason) {
         return SecurityEventRequest.builder()
-                .eventType(SecurityEventType.MULTIPLE_LOGIN_FAILURES)
+                .eventType(SecurityEventType.CONTINUOUS_LOGIN_FAILURE)
                 .title("用户登录失败")
                 .description(String.format("用户 %s 登录失败：%s", username, reason))
                 .username(username)
@@ -64,7 +64,7 @@ public class SecurityEventUtils {
     public static SecurityEventRequest createUnauthorizedAccessEvent(String resource, String action) {
         String currentUser = getCurrentUsername();
         return SecurityEventRequest.builder()
-                .eventType(SecurityEventType.UNAUTHORIZED_ACCESS_ATTEMPT)
+                .eventType(SecurityEventType.UNAUTHORIZED_ACCESS)
                 .title("未授权访问尝试")
                 .description(String.format("用户 %s 尝试未授权访问资源：%s，操作：%s", currentUser, resource, action))
                 .username(currentUser)
@@ -168,7 +168,7 @@ public class SecurityEventUtils {
     public static SecurityEventRequest createPrivilegeEscalationEvent(String targetRole, String currentRole) {
         String currentUser = getCurrentUsername();
         return SecurityEventRequest.builder()
-                .eventType(SecurityEventType.PRIVILEGE_ESCALATION_ATTEMPT)
+                .eventType(SecurityEventType.PRIVILEGE_ESCALATION)
                 .title("权限提升尝试")
                 .description(String.format("用户 %s 尝试从角色 %s 提升到角色 %s", currentUser, currentRole, targetRole))
                 .username(currentUser)

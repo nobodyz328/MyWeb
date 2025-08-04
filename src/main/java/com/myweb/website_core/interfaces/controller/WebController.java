@@ -45,4 +45,28 @@ public class WebController {
         return "search";
     }
 
+    @GetMapping("/admin_users")
+    public String adminUsers() {
+        return "admin/users";
+    }
+    @GetMapping("/admin_settings")
+    public String adminSettings() {
+        return "admin/settings";
+    }
+    @GetMapping("/admin_security_events")
+    public String adminSecurityEvents() {
+        return "admin/security-events";
+    }
+    @GetMapping("/admin_audit_logs")
+    public String adminAuditLogs() {
+        return "admin/audit-logs";
+    }
+    @GetMapping("/admin_roles")
+    public String adminRoles() {
+        return "admin/roles";
+    }
+    @GetMapping("/admin_dashboard")
+    public String adminDashboard() {
+        return "admin/dashboard";
+    }
 }

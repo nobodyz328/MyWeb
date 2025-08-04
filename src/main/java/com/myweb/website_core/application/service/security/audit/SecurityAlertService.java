@@ -1,4 +1,4 @@
-package com.myweb.website_core.application.service.security;
+package com.myweb.website_core.application.service.security.audit;
 
 import com.myweb.website_core.domain.security.entity.SecurityEvent;
 import lombok.extern.slf4j.Slf4j;
@@ -367,11 +367,11 @@ public class SecurityAlertService {
      */
     private String getHandlingSuggestion(SecurityEvent event) {
         return switch (event.getEventType()) {
-            case BRUTE_FORCE_ATTACK, MULTIPLE_LOGIN_FAILURES -> 
+            case BRUTE_FORCE_ATTACK, CONTINUOUS_LOGIN_FAILURE -> 
                 "建议立即锁定相关账户，检查登录日志，加强密码策略。";
             case SQL_INJECTION_ATTEMPT, XSS_ATTACK_ATTEMPT -> 
                 "建议检查输入验证机制，更新安全过滤规则，审查相关代码。";
-            case UNAUTHORIZED_ACCESS_ATTEMPT, PRIVILEGE_ESCALATION_ATTEMPT -> 
+            case UNAUTHORIZED_ACCESS, PRIVILEGE_ESCALATION -> 
                 "建议检查权限配置，审查用户权限，加强访问控制。";
             case SUSPICIOUS_IP_ACCESS, DDOS_ATTACK -> 
                 "建议将可疑IP加入黑名单，检查防火墙规则，考虑启用CDN防护。";

@@ -24,9 +24,12 @@ import java.util.Collection;
 @Component
 public class CustomAccessDecisionVoter implements AccessDecisionVoter<Object> {
     
+    private final AuthorizationService authorizationService;
     @Autowired
-    private AuthorizationService authorizationService;
-    
+    public CustomAccessDecisionVoter(AuthorizationService authorizationService) {
+        this.authorizationService = authorizationService;
+    }
+
     /**
      * 检查是否支持指定的配置属性
      * 

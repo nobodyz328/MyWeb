@@ -54,7 +54,7 @@ public class UserRegistrationService {
     
     // 注册频率限制配置
     private static final Duration RATE_LIMIT_WINDOW = Duration.ofMinutes(10);
-    private static final int MAX_REGISTRATIONS_PER_IP = 3; // 每10分钟最多3次注册
+    private static final int MAX_REGISTRATIONS_PER_IP = 5; // 每10分钟最多3次注册
     private static final Duration DAILY_LIMIT_WINDOW = Duration.ofHours(24);
     private static final int MAX_REGISTRATIONS_PER_IP_DAILY = 10; // 每天最多10次注册
     
@@ -173,7 +173,6 @@ public class UserRegistrationService {
         user.setEmail(registrationDTO.getEmail());
         
         // 设置密码相关字段
-        user.setPassword(encodedPassword); // 保持向后兼容
         user.setPasswordHash(encodedPassword); // 新的安全字段
         
         // 设置邮箱验证状态为已验证（因为已通过验证码验证）

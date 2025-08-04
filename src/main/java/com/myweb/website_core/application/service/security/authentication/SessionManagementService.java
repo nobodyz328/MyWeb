@@ -1,5 +1,6 @@
-package com.myweb.website_core.application.service.security;
+package com.myweb.website_core.application.service.security.authentication;
 
+import com.myweb.website_core.application.service.security.authentication.JwtService;
 import com.myweb.website_core.common.util.RedisKey;
 import com.myweb.website_core.domain.security.dto.SessionInfo;
 import com.myweb.website_core.domain.security.dto.SessionStatistics;
