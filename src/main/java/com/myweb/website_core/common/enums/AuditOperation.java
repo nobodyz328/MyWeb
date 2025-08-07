@@ -32,11 +32,20 @@ public enum AuditOperation {
      * 用户退出登录
      */
     USER_LOGOUT("USER_LOGOUT", "用户退出登录", "用户主动退出系统"),
-    
+
+    /**
+     * 用户删除
+     */
+    USER_DELETE("USER_DELETE", "用户删除", "用户删除账户"),
     /**
      * 用户会话超时
      */
     USER_SESSION_TIMEOUT("USER_SESSION_TIMEOUT", "用户会话超时", "用户会话因超时被系统清理"),
+    
+    /**
+     * 会话清理
+     */
+    SESSION_CLEANUP("SESSION_CLEANUP", "会话清理", "系统清理用户会话和相关数据"),
     
     /**
      * 账户被锁定
@@ -111,6 +120,31 @@ public enum AuditOperation {
     POST_UNCOLLECT("POST_UNCOLLECT", "取消收藏帖子", "用户取消对帖子的收藏"),
     
     /**
+     * 帖子审核
+     */
+    POST_REVIEW("POST_REVIEW", "帖子审核", "管理员审核帖子内容"),
+    
+    /**
+     * 帖子置顶
+     */
+    POST_PIN("POST_PIN", "帖子置顶", "管理员置顶帖子"),
+    
+    /**
+     * 取消置顶
+     */
+    POST_UNPIN("POST_UNPIN", "取消置顶", "管理员取消帖子置顶"),
+    
+    /**
+     * 帖子加精
+     */
+    POST_HIGHLIGHT("POST_HIGHLIGHT", "帖子加精", "管理员将帖子设为精华"),
+    
+    /**
+     * 取消加精
+     */
+    POST_UNHIGHLIGHT("POST_UNHIGHLIGHT", "取消加精", "管理员取消帖子精华状态"),
+    
+    /**
      * 创建评论
      */
     COMMENT_CREATE("COMMENT_CREATE", "创建评论", "用户发表评论"),
@@ -124,6 +158,21 @@ public enum AuditOperation {
      * 删除评论
      */
     COMMENT_DELETE("COMMENT_DELETE", "删除评论", "用户或管理员删除评论"),
+    
+    /**
+     * 评论审核
+     */
+    COMMENT_REVIEW("COMMENT_REVIEW", "评论审核", "管理员审核评论内容"),
+    
+    /**
+     * 评论点赞
+     */
+    COMMENT_LIKE("COMMENT_LIKE", "评论点赞", "用户给评论点赞"),
+    
+    /**
+     * 取消评论点赞
+     */
+    COMMENT_UNLIKE("COMMENT_UNLIKE", "取消评论点赞", "用户取消对评论的点赞"),
     
     // ========== 用户管理相关操作 ==========
     
@@ -180,6 +229,11 @@ public enum AuditOperation {
     SYSTEM_CONFIG_UPDATE("SYSTEM_CONFIG_UPDATE", "系统配置修改", "管理员修改系统配置"),
     
     /**
+     * 配置变更
+     */
+    CONFIG_CHANGE("CONFIG_CHANGE", "配置变更", "系统配置发生变更"),
+    
+    /**
      * 审计日志查看
      */
     AUDIT_LOG_VIEW("AUDIT_LOG_VIEW", "审计日志查看", "管理员查看审计日志"),
@@ -234,6 +288,11 @@ public enum AuditOperation {
      */
     DATA_RESTORE("DATA_RESTORE", "数据恢复", "管理员执行数据恢复操作"),
     
+    /**
+     * 数据导出
+     */
+    DATA_EXPORT("DATA_EXPORT", "数据导出", "用户或管理员导出个人数据"),
+    
     // ========== 安全相关操作 ==========
     
     /**
@@ -262,9 +321,39 @@ public enum AuditOperation {
     FILE_DOWNLOAD("FILE_DOWNLOAD", "文件下载", "用户下载文件"),
     
     /**
+     * 文件删除
+     */
+    FILE_DELETE("FILE_DELETE", "文件删除", "用户或管理员删除文件"),
+    
+    /**
+     * 头像删除
+     */
+    AVATAR_DELETE("AVATAR_DELETE", "头像删除", "用户删除头像"),
+    
+    /**
+     * 文件审核
+     */
+    FILE_REVIEW("FILE_REVIEW", "文件审核", "管理员审核上传文件"),
+    
+    /**
+     * 恶意文件检测
+     */
+    MALICIOUS_FILE_DETECTED("MALICIOUS_FILE_DETECTED", "恶意文件检测", "系统检测到恶意文件上传"),
+    
+    /**
      * 搜索操作
      */
     SEARCH_OPERATION("SEARCH_OPERATION", "搜索操作", "用户执行搜索操作"),
+    
+    /**
+     * 高级搜索
+     */
+    ADVANCED_SEARCH("ADVANCED_SEARCH", "高级搜索", "用户执行高级搜索操作"),
+    
+    /**
+     * 搜索缓存清理
+     */
+    SEARCH_CACHE_CLEAR("SEARCH_CACHE_CLEAR", "搜索缓存清理", "管理员清理搜索缓存"),
     
     // ========== 系统操作 ==========
     
@@ -306,7 +395,91 @@ public enum AuditOperation {
     /**
      * 完整性检查
      */
-    INTEGRITY_CHECK("INTEGRITY_CHECK", "完整性检查", "系统执行文件完整性检查");
+    INTEGRITY_CHECK("INTEGRITY_CHECK", "完整性检查", "系统执行文件完整性检查"),
+    
+    // ========== SQL安全相关操作 ==========
+    
+    /**
+     * 数据库操作
+     */
+    DATABASE_OPERATION("DATABASE_OPERATION", "数据库操作", "系统执行数据库操作"),
+    
+    /**
+     * SQL注入检查
+     */
+    SQL_INJECTION_CHECK("SQL_INJECTION_CHECK", "SQL注入检查", "系统执行SQL注入安全检查"),
+    
+    /**
+     * 安全事件
+     */
+    SECURITY_EVENT("SECURITY_EVENT", "安全事件", "系统记录安全相关事件"),
+    
+    /**
+     * 病毒扫描
+     */
+    VIRUS_SCAN("VIRUS_SCAN", "病毒扫描", "系统执行文件病毒扫描"),
+    
+    /**
+     * 文件隔离
+     */
+    FILE_QUARANTINE("FILE_QUARANTINE", "文件隔离", "系统隔离可疑文件"),
+    
+    /**
+     * 安全告警
+     */
+    SECURITY_ALERT("SECURITY_ALERT", "安全告警", "系统发送安全告警通知"),
+    
+    /**
+     * 文件恢复
+     */
+    FILE_RECOVERY("FILE_RECOVERY", "文件恢复", "系统恢复被篡改的关键文件"),
+    
+    /**
+     * 文件备份
+     */
+    FILE_BACKUP("FILE_BACKUP", "文件备份", "系统创建关键文件备份"),
+    
+    // ========== 安全监控面板相关操作 ==========
+    
+    /**
+     * 安全概览查看
+     */
+    SECURITY_DASHBOARD_VIEW("SECURITY_DASHBOARD_VIEW", "安全概览查看", "管理员查看安全监控面板概览"),
+    
+    /**
+     * 安全统计查看
+     */
+    SECURITY_STATISTICS_VIEW("SECURITY_STATISTICS_VIEW", "安全统计查看", "管理员查看安全事件统计"),
+    
+    /**
+     * 用户行为分析
+     */
+    USER_BEHAVIOR_ANALYSIS("USER_BEHAVIOR_ANALYSIS", "用户行为分析", "管理员分析用户行为模式"),
+    
+    /**
+     * 系统状态查看
+     */
+    SYSTEM_STATUS_VIEW("SYSTEM_STATUS_VIEW", "系统状态查看", "管理员查看系统安全状态"),
+    
+    /**
+     * 威胁检测查看
+     */
+    THREAT_DETECTION_VIEW("THREAT_DETECTION_VIEW", "威胁检测查看", "管理员查看威胁检测结果"),
+    
+    /**
+     * 审计统计查看
+     */
+    AUDIT_STATISTICS_VIEW("AUDIT_STATISTICS_VIEW", "审计统计查看", "管理员查看审计日志统计"),
+    
+    /**
+     * 实时监控
+     */
+    REALTIME_MONITORING("REALTIME_MONITORING", "实时监控", "管理员查看实时监控数据"),
+    
+    /**
+     * 安全报告导出
+     */
+    SECURITY_REPORT_EXPORT("SECURITY_REPORT_EXPORT", "安全报告导出", "管理员导出安全分析报告");
     
     /**
      * 操作代码
@@ -400,7 +573,11 @@ public enum AuditOperation {
         return this == ADMIN_LOGIN || this == USER_MANAGEMENT || this == ROLE_ASSIGNMENT ||
                this == PERMISSION_MANAGEMENT || this == SYSTEM_CONFIG_UPDATE ||
                this == AUDIT_LOG_VIEW || this == AUDIT_LOG_EXPORT || this == DATA_BACKUP ||
-               this == DATA_RESTORE || this == SECURITY_POLICY_UPDATE;
+               this == DATA_RESTORE || this == SECURITY_POLICY_UPDATE ||
+               this == SECURITY_DASHBOARD_VIEW || this == SECURITY_STATISTICS_VIEW ||
+               this == USER_BEHAVIOR_ANALYSIS || this == SYSTEM_STATUS_VIEW ||
+               this == THREAT_DETECTION_VIEW || this == AUDIT_STATISTICS_VIEW ||
+               this == REALTIME_MONITORING || this == SECURITY_REPORT_EXPORT;
     }
     
     /**

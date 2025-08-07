@@ -162,6 +162,18 @@
             <artifactId>poi-ooxml</artifactId>
             <version>5.2.4</version>
         </dependency>
+        <!-- ClamAV Java Client for virus scanning -->
+        <dependency>
+            <groupId>fi.solita.clamav</groupId>
+            <artifactId>clamav-client</artifactId>
+            <version>1.0.1</version>
+        </dependency>
+        <!-- Apache Tika for file type detection -->
+        <dependency>
+            <groupId>org.apache.tika</groupId>
+            <artifactId>tika-core</artifactId>
+            <version>2.9.1</version>
+        </dependency>
     </dependencies>
     <dependencyManagement>
         <dependencies>
@@ -207,7 +219,127 @@
                     </execution>
                 </executions>
             </plugin>
+            <!-- OWASP Dependency Check Plugin -->
+            <plugin>
+                <groupId>org.owasp</groupId>
+                <artifactId>dependency-check-maven</artifactId>
+                <version>9.0.7</version>
+                <configuration>
+                    <!-- 设置漏洞严重级别阈值，高危漏洞阻止构建 -->
+                    <failBuildOnCVSS>7.0</failBuildOnCVSS>
+                    <!-- 漏洞抑制配置文件 -->
+                    <suppressionFiles>
+                        <suppressionFile>owasp-suppressions.xml</suppressionFile>
+                    </suppressionFiles>
+                    <!-- 报告格式 -->
+                    <formats>
+                        <format>HTML</format>
+                        <format>JSON</format>
+                        <format>XML</format>
+                        <format>CSV</format>
+                    </formats>
+                    <!-- 报告输出目录 -->
+                    <outputDirectory>${project.build.directory}/dependency-check-report</outputDirectory>
+                    <!-- 数据库更新设置 -->
+                    <autoUpdate>true</autoUpdate>
+                    <!-- 分析器配置 -->
+                    <assemblyAnalyzerEnabled>true</assemblyAnalyzerEnabled>
+                    <jarAnalyzerEnabled>true</jarAnalyzerEnabled>
+                    <archiveAnalyzerEnabled>true</archiveAnalyzerEnabled>
+                    <nodeAnalyzerEnabled>false</nodeAnalyzerEnabled>
+                    <nuspecAnalyzerEnabled>false</nuspecAnalyzerEnabled>
+                    <nugetconfAnalyzerEnabled>false</nugetconfAnalyzerEnabled>
+                    <!-- 跳过测试依赖 -->
+                    <skipTestScope>false</skipTestScope>
+                    <!-- 详细日志 -->
+                    <verbose>true</verbose>
+                    <!-- 项目信息 -->
+                    <name>MyWeb博客系统</name>
+                    <applicationName>MyWeb Website Core</applicationName>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>security-check</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <phase>verify</phase>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
+
+    <!-- Maven Profiles -->
+    <profiles>
+        <!-- 安全扫描配置文件 -->
+        <profile>
+            <id>security-scan</id>
+            <activation>
+                <property>
+                    <name>security.scan</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.owasp</groupId>
+                        <artifactId>dependency-check-maven</artifactId>
+                        <version>9.0.7</version>
+                        <configuration>
+                            <!-- 安全扫描模式下的特殊配置 -->
+                            <failBuildOnCVSS>0.0</failBuildOnCVSS>
+                            <formats>
+                                <format>ALL</format>
+                            </formats>
+                            <verbose>true</verbose>
+                            <!-- 生成详细报告 -->
+                            <prettyPrint>true</prettyPrint>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        
+        <!-- 生产构建配置文件 -->
+        <profile>
+            <id>production</id>
+            <activation>
+                <property>
+                    <name>env</name>
+                    <value>prod</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.owasp</groupId>
+                        <artifactId>dependency-check-maven</artifactId>
+                        <version>9.0.7</version>
+                        <configuration>
+                            <!-- 生产环境严格模式 -->
+                            <failBuildOnCVSS>5.0</failBuildOnCVSS>
+                            <skipTestScope>true</skipTestScope>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                                <phase>validate</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 </project>

@@ -1,5 +1,6 @@
 package com.myweb.website_core.common.config;
 
+import lombok.Getter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
@@ -7,13 +8,15 @@ import org.springframework.stereotype.Component;
  * 安全配置属性类
  * 绑定application.yml中的安全相关配置
  * 
- * @author MyWeb Team
+ * @author MyWeb
  * @since 1.0.0
  */
+@Getter
 @Component
 @ConfigurationProperties(prefix = "app.security")
 public class SecurityProperties {
-    
+
+    // Getters and Setters
     /**
      * 密码策略配置
      */
@@ -38,44 +41,23 @@ public class SecurityProperties {
      * TOTP动态口令配置
      */
     private Totp totp = new Totp();
-    
-    // Getters and Setters
-    public PasswordPolicy getPasswordPolicy() {
-        return passwordPolicy;
-    }
-    
+
     public void setPasswordPolicy(PasswordPolicy passwordPolicy) {
         this.passwordPolicy = passwordPolicy;
     }
-    
-    public AccountLock getAccountLock() {
-        return accountLock;
-    }
-    
+
     public void setAccountLock(AccountLock accountLock) {
         this.accountLock = accountLock;
     }
-    
-    public Captcha getCaptcha() {
-        return captcha;
-    }
-    
+
     public void setCaptcha(Captcha captcha) {
         this.captcha = captcha;
     }
-    
-    public Session getSession() {
-        return session;
-    }
-    
+
     public void setSession(Session session) {
         this.session = session;
     }
-    
-    public Totp getTotp() {
-        return totp;
-    }
-    
+
     public void setTotp(Totp totp) {
         this.totp = totp;
     }

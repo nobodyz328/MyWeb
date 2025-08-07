@@ -28,19 +28,18 @@ import java.io.IOException;
 
 /**
  * TOTP动态口令服务
- * 
+ * <p>
  * 提供TOTP（Time-based One-Time Password）相关功能，包括：
  * - TOTP密钥生成
  * - TOTP验证码验证
  * - 二维码生成
  * - 时间窗口容错机制
- * 
+ * <p>
  * 符合GB/T 22239-2019 7.1.4.1 身份鉴别要求
  * 支持Google Authenticator兼容的TOTP算法
  * 
- * @author MyWeb Security Team
+ * @author MyWeb
  * @version 1.0
- * @since 2025-01-01
  */
 @Slf4j
 @Service

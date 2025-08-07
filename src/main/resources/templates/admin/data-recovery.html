@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据恢复管理 - MyWeb管理后台</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .recovery-card {
+            border: 1px solid #dee2e6;
+            border-radius: 0.375rem;
+            margin-bottom: 1rem;
+        }
+        .recovery-type-badge {
+            font-size: 0.875rem;
+        }
+        .backup-file-item {
+            cursor: pointer;
+            transition: background-color 0.15s ease-in-out;
+        }
+        .backup-file-item:hover {
+            background-color: #f8f9fa;
+        }
+        .backup-file-item.selected {
+            background-color: #e3f2fd;
+            border-color: #2196f3;
+        }
+        .progress-container {
+            display: none;
+        }
+        .recovery-log {
+            max-height: 300px;
+            overflow-y: auto;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 0.375rem;
+            padding: 1rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+        }
+        .status-success { color: #198754; }
+        .status-error { color: #dc3545; }
+        .status-warning { color: #fd7e14; }
+        .status-info { color: #0dcaf0; }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- 侧边栏 -->
+            <nav class="col-md-3 col-lg-2 d-md-block bg-light sidebar">
+                <div class="position-sticky pt-3">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/dashboard">
+                                <i class="bi bi-house"></i> 仪表板
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/users">
+                                <i class="bi bi-people"></i> 用户管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/audit-logs">
+                                <i class="bi bi-journal-text"></i> 审计日志
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="/admin/data-recovery">
+                                <i class="bi bi-arrow-clockwise"></i> 数据恢复
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/settings">
+                                <i class="bi bi-gear"></i> 系统设置
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- 主内容区域 -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">
+                        <i class="bi bi-arrow-clockwise"></i> 数据恢复管理
+                    </h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <button type="button" class="btn btn-outline-secondary" onclick="refreshBackupList()">
+                            <i class="bi bi-arrow-clockwise"></i> 刷新备份列表
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 恢复类型选择 -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="bi bi-gear"></i> 恢复类型选择
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="recovery-card p-3" onclick="selectRecoveryType('FULL')">
+                                            <input type="radio" name="recoveryType" value="FULL" id="recoveryTypeFull" class="form-check-input me-2">
+                                            <label for="recoveryTypeFull" class="form-check-label">
+                                                <h6 class="mb-1">完全恢复</h6>
+                                                <p class="text-muted mb-0 small">恢复整个数据库到指定备份状态</p>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="recovery-card p-3" onclick="selectRecoveryType('POINT_IN_TIME')">
+                                            <input type="radio" name="recoveryType" value="POINT_IN_TIME" id="recoveryTypePointInTime" class="form-check-input me-2">
+                                            <label for="recoveryTypePointInTime" class="form-check-label">
+                                                <h6 class="mb-1">时间点恢复</h6>
+                                                <p class="text-muted mb-0 small">恢复数据库到指定时间点状态</p>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="recovery-card p-3" onclick="selectRecoveryType('SELECTIVE')">
+                                            <input type="radio" name="recoveryType" value="SELECTIVE" id="recoveryTypeSelective" class="form-check-input me-2">
+                                            <label for="recoveryTypeSelective" class="form-check-label">
+                                                <h6 class="mb-1">选择性恢复</h6>
+                                                <p class="text-muted mb-0 small">恢复指定的表或数据</p>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 备份文件选择 -->
+                <div class="row mb-4" id="backupSelectionSection" style="display: none;">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="bi bi-archive"></i> 可用备份文件
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="backupFilesList">
+                                    <!-- 备份文件列表将通过JavaScript动态加载 -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 时间点恢复配置 -->
+                <div class="row mb-4" id="pointInTimeSection" style="display: none;">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="bi bi-clock"></i> 目标时间点设置
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <label for="targetDateTime" class="form-label">目标恢复时间</label>
+                                        <input type="datetime-local" class="form-control" id="targetDateTime" name="targetDateTime">
+                                        <div class="form-text">选择要恢复到的具体时间点</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 选择性恢复配置 -->
+                <div class="row mb-4" id="selectiveRecoverySection" style="display: none;">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="bi bi-list-check"></i> 选择要恢复的表
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" value="users" id="tableUsers">
+                                            <label class="form-check-label" for="tableUsers">users (用户表)</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" value="posts" id="tablePosts">
+                                            <label class="form-check-label" for="tablePosts">posts (帖子表)</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" value="comments" id="tableComments">
+                                            <label class="form-check-label" for="tableComments">comments (评论表)</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" value="audit_logs" id="tableAuditLogs">
+                                            <label class="form-check-label" for="tableAuditLogs">audit_logs (审计日志表)</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" value="roles" id="tableRoles">
+                                            <label class="form-check-label" for="tableRoles">roles (角色表)</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" value="permissions" id="tablePermissions">
+                                            <label class="form-check-label" for="tablePermissions">permissions (权限表)</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 恢复操作控制 -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="bi bi-play-circle"></i> 恢复操作
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <button type="button" class="btn btn-primary me-2" id="validateBtn" onclick="validateRecovery()">
+                                            <i class="bi bi-check-circle"></i> 验证恢复条件
+                                        </button>
+                                        <button type="button" class="btn btn-success me-2" id="startRecoveryBtn" onclick="startRecovery()" disabled>
+                                            <i class="bi bi-play-fill"></i> 开始恢复
+                                        </button>
+                                        <button type="button" class="btn btn-secondary" onclick="resetForm()">
+                                            <i class="bi bi-arrow-counterclockwise"></i> 重置
+                                        </button>
+                                    </div>
+                                    <div class="col-md-4 text-end">
+                                        <div class="progress-container">
+                                            <div class="progress">
+                                                <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                                     role="progressbar" style="width: 0%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 恢复日志 -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="bi bi-terminal"></i> 恢复日志
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="recoveryLog" class="recovery-log">
+                                    <div class="status-info">[系统] 数据恢复管理界面已就绪</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- 确认对话框 -->
+    <div class="modal fade" id="confirmModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">确认恢复操作</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>警告：</strong>数据恢复操作将覆盖当前数据库内容，此操作不可逆！
+                    </div>
+                    <p>您确定要执行以下恢复操作吗？</p>
+                    <ul id="confirmDetails">
+                        <!-- 确认详情将通过JavaScript填充 -->
+                    </ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-danger" onclick="confirmRecovery()">确认恢复</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let selectedRecoveryType = null;
+        let selectedBackupFile = null;
+        let availableBackups = [];
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAvailableBackups();
+        });
+
+        // 选择恢复类型
+        function selectRecoveryType(type) {
+            selectedRecoveryType = type;
+            
+            // 更新UI状态
+            document.querySelectorAll('input[name="recoveryType"]').forEach(radio => {
+                radio.checked = radio.value === type;
+            });
+            
+            // 显示/隐藏相关配置区域
+            document.getElementById('backupSelectionSection').style.display = 
+                (type === 'FULL' || type === 'SELECTIVE') ? 'block' : 'none';
+            document.getElementById('pointInTimeSection').style.display = 
+                type === 'POINT_IN_TIME' ? 'block' : 'none';
+            document.getElementById('selectiveRecoverySection').style.display = 
+                type === 'SELECTIVE' ? 'block' : 'none';
+            
+            logMessage(`[用户] 选择恢复类型: ${getRecoveryTypeDisplayName(type)}`, 'info');
+        }
+
+        // 获取恢复类型显示名称
+        function getRecoveryTypeDisplayName(type) {
+            const names = {
+                'FULL': '完全恢复',
+                'POINT_IN_TIME': '时间点恢复',
+                'SELECTIVE': '选择性恢复'
+            };
+            return names[type] || type;
+        }
+
+        // 加载可用备份列表
+        function loadAvailableBackups() {
+            logMessage('[系统] 正在加载可用备份列表...', 'info');
+            
+            fetch('/api/admin/data-recovery/backups')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        availableBackups = data.data;
+                        renderBackupList();
+                        logMessage(`[系统] 成功加载 ${availableBackups.length} 个备份文件`, 'success');
+                    } else {
+                        logMessage(`[错误] 加载备份列表失败: ${data.message}`, 'error');
+                    }
+                })
+                .catch(error => {
+                    logMessage(`[错误] 网络请求失败: ${error.message}`, 'error');
+                });
+        }
+
+        // 渲染备份文件列表
+        function renderBackupList() {
+            const container = document.getElementById('backupFilesList');
+            
+            if (availableBackups.length === 0) {
+                container.innerHTML = '<div class="alert alert-info">暂无可用的备份文件</div>';
+                return;
+            }
+            
+            let html = '<div class="list-group">';
+            availableBackups.forEach((backup, index) => {
+                const fileSize = formatFileSize(backup.fileSize);
+                const lastModified = new Date(backup.lastModified).toLocaleString('zh-CN');
+                const statusBadge = backup.isValid ? 
+                    '<span class="badge bg-success">完整</span>' : 
+                    '<span class="badge bg-danger">损坏</span>';
+                
+                html += `
+                    <div class="list-group-item backup-file-item" onclick="selectBackupFile(${index})">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">${backup.fileName}</h6>
+                            ${statusBadge}
+                        </div>
+                        <p class="mb-1">大小: ${fileSize} | 修改时间: ${lastModified}</p>
+                        <small class="text-muted">${backup.filePath}</small>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            
+            container.innerHTML = html;
+        }
+
+        // 选择备份文件
+        function selectBackupFile(index) {
+            selectedBackupFile = availableBackups[index];
+            
+            // 更新UI状态
+            document.querySelectorAll('.backup-file-item').forEach((item, i) => {
+                item.classList.toggle('selected', i === index);
+            });
+            
+            logMessage(`[用户] 选择备份文件: ${selectedBackupFile.fileName}`, 'info');
+        }
+
+        // 验证恢复条件
+        function validateRecovery() {
+            if (!selectedRecoveryType) {
+                logMessage('[错误] 请先选择恢复类型', 'error');
+                return;
+            }
+            
+            const request = {
+                recoveryType: selectedRecoveryType,
+                backupFilePath: selectedBackupFile ? selectedBackupFile.filePath : null
+            };
+            
+            if (selectedRecoveryType === 'POINT_IN_TIME') {
+                const targetDateTime = document.getElementById('targetDateTime').value;
+                if (!targetDateTime) {
+                    logMessage('[错误] 请设置目标恢复时间', 'error');
+                    return;
+                }
+            }
+            
+            if (selectedRecoveryType === 'SELECTIVE') {
+                const selectedTables = getSelectedTables();
+                if (selectedTables.length === 0) {
+                    logMessage('[错误] 请至少选择一个要恢复的表', 'error');
+                    return;
+                }
+            }
+            
+            logMessage('[系统] 正在验证恢复条件...', 'info');
+            
+            fetch('/api/admin/data-recovery/validate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(request)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const result = data.data;
+                        if (result.valid) {
+                            logMessage('[系统] 恢复条件验证通过，可以开始恢复', 'success');
+                            document.getElementById('startRecoveryBtn').disabled = false;
+                        } else {
+                            logMessage('[错误] 恢复条件验证失败:', 'error');
+                            result.issues.forEach(issue => {
+                                logMessage(`  - ${issue}`, 'error');
+                            });
+                            document.getElementById('startRecoveryBtn').disabled = true;
+                        }
+                    } else {
+                        logMessage(`[错误] 验证请求失败: ${data.message}`, 'error');
+                    }
+                })
+                .catch(error => {
+                    logMessage(`[错误] 网络请求失败: ${error.message}`, 'error');
+                });
+        }
+
+        // 开始恢复
+        function startRecovery() {
+            // 显示确认对话框
+            showConfirmDialog();
+        }
+
+        // 显示确认对话框
+        function showConfirmDialog() {
+            const details = [];
+            details.push(`恢复类型: ${getRecoveryTypeDisplayName(selectedRecoveryType)}`);
+            
+            if (selectedRecoveryType === 'FULL' || selectedRecoveryType === 'SELECTIVE') {
+                details.push(`备份文件: ${selectedBackupFile.fileName}`);
+            }
+            
+            if (selectedRecoveryType === 'POINT_IN_TIME') {
+                const targetDateTime = document.getElementById('targetDateTime').value;
+                details.push(`目标时间: ${new Date(targetDateTime).toLocaleString('zh-CN')}`);
+            }
+            
+            if (selectedRecoveryType === 'SELECTIVE') {
+                const selectedTables = getSelectedTables();
+                details.push(`恢复表: ${selectedTables.join(', ')}`);
+            }
+            
+            const detailsHtml = details.map(detail => `<li>${detail}</li>`).join('');
+            document.getElementById('confirmDetails').innerHTML = detailsHtml;
+            
+            new bootstrap.Modal(document.getElementById('confirmModal')).show();
+        }
+
+        // 确认恢复
+        function confirmRecovery() {
+            // 隐藏确认对话框
+            bootstrap.Modal.getInstance(document.getElementById('confirmModal')).hide();
+            
+            // 显示进度条
+            document.querySelector('.progress-container').style.display = 'block';
+            document.querySelector('.progress-bar').style.width = '10%';
+            
+            logMessage('[系统] 开始执行数据恢复...', 'info');
+            
+            let request;
+            let endpoint;
+            
+            if (selectedRecoveryType === 'FULL') {
+                endpoint = '/api/admin/data-recovery/full';
+                request = { backupFilePath: selectedBackupFile.filePath };
+            } else if (selectedRecoveryType === 'POINT_IN_TIME') {
+                endpoint = '/api/admin/data-recovery/point-in-time';
+                request = { targetDateTime: document.getElementById('targetDateTime').value };
+            } else if (selectedRecoveryType === 'SELECTIVE') {
+                endpoint = '/api/admin/data-recovery/selective';
+                request = {
+                    backupFilePath: selectedBackupFile.filePath,
+                    tablesToRestore: getSelectedTables()
+                };
+            }
+            
+            // 模拟进度更新
+            let progress = 10;
+            const progressInterval = setInterval(() => {
+                progress += Math.random() * 20;
+                if (progress > 90) progress = 90;
+                document.querySelector('.progress-bar').style.width = progress + '%';
+            }, 1000);
+            
+            fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(request)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    clearInterval(progressInterval);
+                    document.querySelector('.progress-bar').style.width = '100%';
+                    
+                    if (data.success) {
+                        const result = data.data;
+                        if (result.success) {
+                            logMessage(`[系统] 恢复完成! 恢复ID: ${result.recoveryId}`, 'success');
+                            logMessage(`[系统] 耗时: ${result.durationMillis} 毫秒`, 'info');
+                            
+                            setTimeout(() => {
+                                document.querySelector('.progress-container').style.display = 'none';
+                                document.querySelector('.progress-bar').style.width = '0%';
+                            }, 2000);
+                        } else {
+                            logMessage(`[错误] 恢复失败: ${result.errorMessage}`, 'error');
+                        }
+                    } else {
+                        logMessage(`[错误] 恢复请求失败: ${data.message}`, 'error');
+                    }
+                })
+                .catch(error => {
+                    clearInterval(progressInterval);
+                    logMessage(`[错误] 网络请求失败: ${error.message}`, 'error');
+                });
+        }
+
+        // 获取选中的表
+        function getSelectedTables() {
+            const checkboxes = document.querySelectorAll('#selectiveRecoverySection input[type="checkbox"]:checked');
+            return Array.from(checkboxes).map(cb => cb.value);
+        }
+
+        // 刷新备份列表
+        function refreshBackupList() {
+            loadAvailableBackups();
+        }
+
+        // 重置表单
+        function resetForm() {
+            selectedRecoveryType = null;
+            selectedBackupFile = null;
+            
+            document.querySelectorAll('input[name="recoveryType"]').forEach(radio => {
+                radio.checked = false;
+            });
+            
+            document.querySelectorAll('.backup-file-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            
+            document.getElementById('targetDateTime').value = '';
+            
+            document.querySelectorAll('#selectiveRecoverySection input[type="checkbox"]').forEach(cb => {
+                cb.checked = false;
+            });
+            
+            document.getElementById('backupSelectionSection').style.display = 'none';
+            document.getElementById('pointInTimeSection').style.display = 'none';
+            document.getElementById('selectiveRecoverySection').style.display = 'none';
+            document.getElementById('startRecoveryBtn').disabled = true;
+            
+            logMessage('[系统] 表单已重置', 'info');
+        }
+
+        // 记录日志消息
+        function logMessage(message, type = 'info') {
+            const log = document.getElementById('recoveryLog');
+            const timestamp = new Date().toLocaleTimeString('zh-CN');
+            const className = `status-${type}`;
+            
+            const logEntry = document.createElement('div');
+            logEntry.className = className;
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            
+            log.appendChild(logEntry);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        // 格式化文件大小
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+    </script>
+</body>
+</html>

@@ -1,5 +1,6 @@
 package com.myweb.website_core.common.config;
 
+import lombok.Getter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
@@ -7,13 +8,15 @@ import org.springframework.stereotype.Component;
  * 备份配置属性类
  * 管理备份相关配置
  * 
- * @author MyWeb Team
+ * @author MyWeb
  * @since 1.0.0
  */
+@Getter
 @Component
 @ConfigurationProperties(prefix = "app.backup")
 public class BackupProperties {
-    
+
+    // Getters and Setters
     /**
      * 是否启用自动备份
      */
@@ -53,68 +56,35 @@ public class BackupProperties {
      * 通知配置
      */
     private Notification notification = new Notification();
-    
-    // Getters and Setters
-    public boolean isEnabled() {
-        return enabled;
-    }
-    
+
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
     }
-    
-    public String getPath() {
-        return path;
-    }
-    
+
     public void setPath(String path) {
         this.path = path;
     }
-    
-    public int getRetentionDays() {
-        return retentionDays;
-    }
-    
+
     public void setRetentionDays(int retentionDays) {
         this.retentionDays = retentionDays;
     }
-    
-    public Schedule getSchedule() {
-        return schedule;
-    }
-    
+
     public void setSchedule(Schedule schedule) {
         this.schedule = schedule;
     }
-    
-    public Encryption getEncryption() {
-        return encryption;
-    }
-    
+
     public void setEncryption(Encryption encryption) {
         this.encryption = encryption;
     }
-    
-    public Compression getCompression() {
-        return compression;
-    }
-    
+
     public void setCompression(Compression compression) {
         this.compression = compression;
     }
-    
-    public Storage getStorage() {
-        return storage;
-    }
-    
+
     public void setStorage(Storage storage) {
         this.storage = storage;
     }
-    
-    public Notification getNotification() {
-        return notification;
-    }
-    
+
     public void setNotification(Notification notification) {
         this.notification = notification;
     }
@@ -528,5 +498,19 @@ public class BackupProperties {
     public boolean shouldAlertStorage(long usedSpaceBytes, long totalSpaceBytes) {
         double usageRatio = (double) usedSpaceBytes / totalSpaceBytes;
         return usageRatio >= storage.getLocal().getAlertThreshold();
+    }
+    
+    /**
+     * 获取备份路径
+     */
+    public String getBackupPath() {
+        return path;
+    }
+    
+    /**
+     * 获取加密密钥
+     */
+    public String getEncryptionKey() {
+        return encryption.getKey();
     }
 }

@@ -24,10 +24,9 @@ import java.util.Map;
  * @since 2025-01-01
  */
 @Data
-@Builder
+@Builder(toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
-@Setter@Getter
 public class UnifiedSecurityMessage {
 
     // ==================== 消息分类信息 ====================

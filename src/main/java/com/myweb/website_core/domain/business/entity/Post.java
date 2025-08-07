@@ -1,6 +1,8 @@
 package com.myweb.website_core.domain.business.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.myweb.website_core.application.service.security.dataprotect.DataIntegrityService;
+import com.myweb.website_core.infrastructure.config.ApplicationContextProvider;
 import jakarta.persistence.*;
 import lombok.Getter;
 
@@ -36,6 +38,23 @@ public class Post {
     private Integer likeCount = 0;
     private Integer commentCount = 0;
     private Integer collectCount = 0;
+    
+    // ==================== 数据完整性字段 ====================
+    
+    /**
+     * 内容哈希值
+     * 用于验证帖子内容的完整性，防止数据被篡改
+     * 符合GB/T 22239-2019数据完整性保护要求
+     */
+    @Column(name = "content_hash")
+    private String contentHash;
+    
+    /**
+     * 哈希计算时间
+     * 记录最后一次计算内容哈希的时间
+     */
+    @Column(name = "hash_calculated_at")
+    private LocalDateTime hashCalculatedAt;
 
 
     public void setAuthor(User author) { this.author = author; }
@@ -59,6 +78,14 @@ public class Post {
         this.images = images; 
     }
     
+    public void setContentHash(String contentHash) {
+        this.contentHash = contentHash;
+    }
+    
+    public void setHashCalculatedAt(LocalDateTime hashCalculatedAt) {
+        this.hashCalculatedAt = hashCalculatedAt;
+    }
+    
     /**
      * 获取图片ID列表（从关联的图片实体中提取）
      */
@@ -73,6 +100,58 @@ public class Post {
             }
         }
         return imageIds;
+    }
+    
+    // ==================== 数据完整性相关方法 ====================
+    
+    /**
+     * 计算并更新内容哈希值
+     * 在内容变更时自动调用
+     */
+    @PrePersist
+    @PreUpdate
+    public void calculateContentHash() {
+        if (this.content != null) {
+            try {
+                DataIntegrityService integrityService = 
+                    ApplicationContextProvider.getBean(DataIntegrityService.class);
+                this.contentHash = integrityService.calculateHash(this.content);
+                this.hashCalculatedAt = LocalDateTime.now();
+            } catch (Exception e) {
+                // 如果无法获取服务，记录警告但不阻止保存
+                System.err.println("警告: 无法计算内容哈希值 - " + e.getMessage());
+            }
+        }
+    }
+    
+    /**
+     * 验证内容完整性
+     * 
+     * @return 内容是否完整
+     */
+    public boolean verifyContentIntegrity() {
+        if (this.content == null || this.contentHash == null) {
+            return false;
+        }
+        
+        try {
+            DataIntegrityService integrityService = 
+                ApplicationContextProvider.getBean(DataIntegrityService.class);
+            return integrityService.verifyIntegrity(this.content, this.contentHash);
+        } catch (Exception e) {
+            System.err.println("警告: 无法验证内容完整性 - " + e.getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * 检查内容是否需要重新计算哈希
+     * 
+     * @return 是否需要重新计算
+     */
+    public boolean needsHashRecalculation() {
+        return this.contentHash == null || this.hashCalculatedAt == null ||
+               this.hashCalculatedAt.isBefore(LocalDateTime.now().minusDays(30));
     }
 
 

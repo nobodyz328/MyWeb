@@ -99,18 +99,20 @@ spring:
   # ========================
   data:
     redis:
+      host: localhost
+      port: 6379
       connect-timeout: 2000ms
       client-type: lettuce
       client-name: my-redis-client
       database: 0
       password:
       timeout: 2000ms
-#    lettuce:
-#      pool:
-#        max-active: 8
-#        max-wait: -1ms
-#        max-idle: 8
-#        min-idle: 0
+      lettuce:
+        pool:
+          max-active: 8
+          max-wait: -1ms
+          max-idle: 8
+          min-idle: 0
   # ========================
   # MyBatis 配置
   # ========================
@@ -190,5 +192,243 @@ app:
       path: /var/backup/myweb/logs
       # 备份文件保留天数
       retention-days: 365
+  
+  # ========================
+  # 数据完整性配置
+  # ========================
+  data-integrity:
+    # 是否启用数据完整性检查
+    enabled: true
+    # 默认哈希算法
+    default-hash-algorithm: SHA-256
+    # 是否启用定时完整性检查
+    scheduled-check-enabled: true
+    # 完整性检查的cron表达式（每天凌晨4点）
+    check-cron-expression: "0 0 4 * * ?"
+    # 深度检查的cron表达式（每周日凌晨3点）
+    deep-check-cron-expression: "0 0 3 ? * SUN"
+    # 是否启用完整性告警
+    alert-enabled: true
+    # 告警阈值（发现问题数量超过此值时发送告警）
+    alert-threshold: 10
+    # 哈希重新计算的间隔天数
+    hash-recalculation-days: 30
+    # 是否在实体保存时自动计算哈希
+    auto-calculate-hash: true
+    # 是否启用实体完整性验证
+    entity-verification-enabled: true
+
+  # ========================
+  # 文件完整性配置
+  # ========================
+  file-integrity:
+    # 是否启用文件完整性检查
+    enabled: true
+    # 关键文件路径
+    critical-files-path: src/main/resources
+    # 哈希值存储路径
+    hash-storage-path: ${java.io.tmpdir}/myweb/file-hashes
+    # 备份文件存储路径
+    backup-path: ${java.io.tmpdir}/myweb/file-backups
+    # 是否启用告警
+    alert-enabled: true
+    # 检查间隔（小时）
+    check-interval-hours: 1
+    # 是否在系统启动时检查
+    startup-check-enabled: true
+    # 支持的文件扩展名
+    supported-extensions:
+      - yml
+      - yaml
+      - properties
+      - xml
+      - json
+      - p12
+      - jks
+    # 关键文件列表
+    critical-files:
+      - application.yml
+      - application-security.yml
+      - application-security-events.yml
+      - logback-spring.xml
+      - keystore.p12
+    # 关键目录列表
+    critical-directories:
+      - src/main/resources
+      - src/main/java/com/myweb/website_core/infrastructure/config
+
+  # ========================
+  # 数据备份配置
+  # ========================
+  backup:
+    # 是否启用自动备份
+    enabled: true
+    # 备份存储路径
+    path: /var/backups/myweb
+    # 备份文件保留天数
+    retention-days: 30
+    
+    # 备份调度配置
+    schedule:
+      # 全量备份Cron表达式（每天凌晨2点）
+      full-backup-cron: "0 0 2 * * ?"
+      # 增量备份Cron表达式（每4小时）
+      incremental-backup-cron: "0 0 */4 * * ?"
+      # 是否启用增量备份
+      enable-incremental: false
+      # 备份超时时间（分钟）
+      timeout-minutes: 60
+    
+    # 加密配置
+    encryption:
+      # 是否启用加密
+      enabled: true
+      # 加密算法
+      algorithm: "AES-256-GCM"
+      # 加密密钥（生产环境应使用环境变量）
+      key: "myWebBackupEncryptionKey2024!@#$%^&*"
+      # 密钥文件路径
+      key-file-path: 
+    
+    # 压缩配置
+    compression:
+      # 是否启用压缩
+      enabled: true
+      # 压缩算法
+      algorithm: "gzip"
+      # 压缩级别（1-9）
+      level: 6
+    
+    # 存储配置
+    storage:
+      # 本地存储配置
+      local:
+        # 最大存储空间（GB）
+        max-size-gb: 100
+        # 存储空间告警阈值（百分比）
+        alert-threshold: 0.8
+      
+      # 远程存储配置
+      remote:
+        # 是否启用远程存储
+        enabled: false
+        # 存储类型（S3、FTP、SFTP等）
+        type: "S3"
+        # 存储配置
+        endpoint: 
+        access-key: 
+        secret-key: 
+        bucket: 
+        region: 
+    
+    # 通知配置
+    notification:
+      # 是否启用通知
+      enabled: true
+      # 邮件通知配置
+      email:
+        # 是否启用邮件通知
+        enabled: true
+        # 通知接收者
+        recipients:
+          - admin@myweb.com
+        # 是否在备份成功时发送通知
+        notify-on-success: false
+        # 是否在备份失败时发送通知
+        notify-on-failure: true
+
+  # ========================
+  # 访问频率限制配置
+  # ========================
+  rate-limit:
+    # 是否启用访问频率限制
+    enabled: true
+    
+    # 默认限制配置
+    default-limit:
+      # 时间窗口大小（秒）
+      window-size-seconds: 60
+      # 最大请求数
+      max-requests: 100
+      # 限制类型（IP、USER、GLOBAL）
+      limit-type: IP
+    
+    # 特定接口的限制配置
+    endpoints:
+      # 登录接口 - 严格限制
+      "/users/login":
+        window-size-seconds: 300
+        max-requests: 5
+        limit-type: IP
+        enabled: true
+        description: "登录接口限制"
+      
+      # 注册接口 - 严格限制
+      "/users/register":
+        window-size-seconds: 600
+        max-requests: 3
+        limit-type: IP
+        enabled: true
+        description: "注册接口限制"
+      
+      # 发帖接口 - 中等限制
+      "/posts/create":
+        window-size-seconds: 300
+        max-requests: 10
+        limit-type: USER
+        enabled: true
+        description: "发帖接口限制"
+      
+      # 评论接口 - 中等限制
+      "/api/posts/*/comments":
+        window-size-seconds: 300
+        max-requests: 20
+        limit-type: USER
+        enabled: true
+        description: "评论接口限制"
+      
+      # 搜索接口 - 宽松限制
+      "/search":
+        window-size-seconds: 60
+        max-requests: 100
+        limit-type: IP
+        enabled: true
+        description: "搜索接口限制"
+      
+      # 文件上传 - 严格限制
+      "/api/images/upload":
+        window-size-seconds: 300
+        max-requests: 5
+        limit-type: USER
+        enabled: true
+        description: "文件上传限制"
+      
+      # API接口 - 标准限制
+      "/api/**":
+        window-size-seconds: 60
+        max-requests: 60
+        limit-type: IP
+        enabled: true
+        description: "API默认限制"
+    
+    # Redis配置
+    redis:
+      # Redis键前缀
+      key-prefix: "rate_limit:"
+      # 键过期时间（秒）
+      key-expiration-seconds: 3600
+    
+    # 告警配置
+    alert:
+      # 是否启用告警
+      enabled: true
+      # 告警阈值（超过限制的百分比）
+      threshold: 0.8
+      # 告警间隔（分钟）
+      interval-minutes: 5
+      # 告警接收邮箱
+      recipients:
+        - admin@myweb.com
+        - security@myweb.com
 
 

@@ -312,12 +312,7 @@
     // 加载密码验证规则
     async function loadPasswordRules() {
       if (passwordRules) return passwordRules;
-      
-      try {
-        const response = await fetch('/blog/users/password-rules');
-        if (response.ok) {
-          passwordRules = await response.json();
-        } else {
+
           // 使用默认规则
           passwordRules = {
             minLength: 8,
@@ -331,19 +326,6 @@
               "(?i)(qwer|wert|erty|rtyu|tyui|yuio|uiop|asdf|sdfg|dfgh|fghj|ghjk|hjkl|zxcv|xcvb|cvbn|vbnm)"
             ]
           };
-        }
-      } catch (error) {
-        console.error('加载密码规则失败:', error);
-        // 使用默认规则
-        passwordRules = {
-          minLength: 8,
-          maxLength: 50,
-          pattern: "^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d@$!%*#?&]{8,50}$",
-          weakPasswords: [],
-          weakPatterns: []
-        };
-      }
-      
       return passwordRules;
     }
     

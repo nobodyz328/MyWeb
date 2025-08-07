@@ -5,6 +5,8 @@ import com.myweb.website_core.domain.business.entity.Image;
 import com.myweb.website_core.domain.business.entity.Post;
 import com.myweb.website_core.infrastructure.persistence.repository.ImageRepository;
 import com.myweb.website_core.infrastructure.persistence.repository.PostRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,27 +24,19 @@ import java.util.Optional;
 
 /**
  * 图片服务类
- * 
+ * <p>
  * 提供图片相关的业务逻辑：
  * - 保存图片信息到数据库
  * - 根据ID获取图片
  * - 获取图片文件资源
  */
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class ImageService {
-    
-    private static final Logger logger = LoggerFactory.getLogger(ImageService.class);
-    
     private final ImageRepository imageRepository;
     private final FileUploadConfig fileUploadConfig;
     private final PostRepository postRepository;
-    
-    @Autowired
-    public ImageService(ImageRepository imageRepository, FileUploadConfig fileUploadConfig, PostRepository postRepository) {
-        this.imageRepository = imageRepository;
-        this.fileUploadConfig = fileUploadConfig;
-        this.postRepository = postRepository;
-    }
     
     /**
      * 保存图片信息到数据库
@@ -56,9 +50,9 @@ public class ImageService {
             Optional<Post> postOpt = postRepository.findById(postId);
             if (postOpt.isPresent()) {
                 image.setPost(postOpt.get());
-                logger.info("图片关联到帖子: postId={}", postId);
+                log.info("图片关联到帖子: postId={}", postId);
             } else {
-                logger.warn("指定的帖子不存在: postId={}", postId);
+                log.warn("指定的帖子不存在: postId={}", postId);
                 // 可以选择抛出异常或者继续保存图片但不关联帖子
                 // 这里选择继续保存但记录警告
             }
@@ -66,14 +60,7 @@ public class ImageService {
         
         return imageRepository.save(image);
     }
-    
-    /**
-     * 保存图片信息到数据库（兼容旧版本，不关联帖子）
-     */
-    public Image saveImage(String originalFilename, String storedFilename, String filePath, 
-                          String contentType, Long fileSize) {
-        return saveImage(originalFilename, storedFilename, filePath, contentType, fileSize, null);
-    }
+
     
     /**
      * 根据ID获取图片信息
@@ -125,14 +112,14 @@ public class ImageService {
      */
     public void associateImageToPost(Long imageId, Post post) {
         try {
-            logger.info("开始关联图片 {} 到帖子 {}", imageId, post.getId());
+            log.info("开始关联图片 {} 到帖子 {}", imageId, post.getId());
             
             Optional<Image> imageOpt = imageRepository.findById(imageId);
             if (imageOpt.isPresent()) {
                 Image image = imageOpt.get();
                 
                 // 打印图片信息用于调试
-                logger.info("找到图片: id={}, originalFilename={}, contentType={}, fileSize={}", 
+                log.info("找到图片: id={}, originalFilename={}, contentType={}, fileSize={}",
                     image.getId(), image.getOriginalFilename(), image.getContentType(), image.getFileSize());
                 
                 // 设置关联
@@ -140,16 +127,16 @@ public class ImageService {
                 
                 // 保存更新
                 Image savedImage = imageRepository.save(image);
-                logger.info("成功关联图片 {} 到帖子 {}, 保存后的图片ID: {}", 
+                log.info("成功关联图片 {} 到帖子 {}, 保存后的图片ID: {}",
                     imageId, post.getId(), savedImage.getId());
                 
             } else {
-                logger.error("图片不存在: imageId={}", imageId);
+                log.error("图片不存在: imageId={}", imageId);
                 throw new RuntimeException("图片不存在: " + imageId);
             }
             
         } catch (Exception e) {
-            logger.error("关联图片到帖子失败: imageId={}, postId={}, error={}", 
+            log.error("关联图片到帖子失败: imageId={}, postId={}, error={}",
                 imageId, post.getId(), e.getMessage(), e);
             throw new RuntimeException("关联图片失败: " + e.getMessage(), e);
         }
@@ -180,10 +167,10 @@ public class ImageService {
                     
                     // 删除数据库记录
                     imageRepository.delete(image);
-                    logger.info("清理未关联图片: {}", image.getId());
+                    log.info("清理未关联图片: {}", image.getId());
                     
                 } catch (Exception e) {
-                    logger.error("清理图片失败: {}", image.getId(), e);
+                    log.error("清理图片失败: {}", image.getId(), e);
                 }
             }
         }
@@ -210,11 +197,11 @@ public class ImageService {
             // 删除数据库记录
             imageRepository.delete(image);
             
-            logger.info("图片删除成功: {}", id);
+            log.info("图片删除成功: {}", id);
             return true;
             
         } catch (Exception e) {
-            logger.error("删除图片失败: {}", id, e);
+            log.error("删除图片失败: {}", id, e);
             return false;
         }
     }

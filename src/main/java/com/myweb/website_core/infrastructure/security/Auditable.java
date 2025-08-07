@@ -9,18 +9,17 @@ import java.lang.annotation.Target;
 
 /**
  * 审计注解
- * 
+ * <p>
  * 用于标记需要记录审计日志的方法，支持：
  * - 自动记录方法调用的审计日志
  * - 记录请求参数和响应结果
  * - 统计执行时间和性能监控
  * - 处理审计过程中的异常
- * 
+ * <p>
  * 符合GB/T 22239-2019二级等保要求的安全审计机制
  * 
- * @author MyWeb Security Team
+ * @author MyWeb
  * @version 1.0
- * @since 2025-01-01
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)

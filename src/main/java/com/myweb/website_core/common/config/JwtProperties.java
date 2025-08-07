@@ -1,5 +1,6 @@
 package com.myweb.website_core.common.config;
 
+import lombok.Getter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
@@ -10,10 +11,12 @@ import org.springframework.stereotype.Component;
  * @author MyWeb Team
  * @since 1.0.0
  */
+@Getter
 @Component
 @ConfigurationProperties(prefix = "app.jwt")
 public class JwtProperties {
-    
+
+    // Getters and Setters
     /**
      * JWT密钥
      */
@@ -58,76 +61,39 @@ public class JwtProperties {
      * 令牌黑名单配置
      */
     private Blacklist blacklist = new Blacklist();
-    
-    // Getters and Setters
-    public String getSecret() {
-        return secret;
-    }
-    
+
     public void setSecret(String secret) {
         this.secret = secret;
     }
-    
-    public long getAccessTokenExpirationSeconds() {
-        return accessTokenExpirationSeconds;
-    }
-    
+
     public void setAccessTokenExpirationSeconds(long accessTokenExpirationSeconds) {
         this.accessTokenExpirationSeconds = accessTokenExpirationSeconds;
     }
-    
-    public long getRefreshTokenExpirationSeconds() {
-        return refreshTokenExpirationSeconds;
-    }
-    
+
     public void setRefreshTokenExpirationSeconds(long refreshTokenExpirationSeconds) {
         this.refreshTokenExpirationSeconds = refreshTokenExpirationSeconds;
     }
-    
-    public String getIssuer() {
-        return issuer;
-    }
-    
+
     public void setIssuer(String issuer) {
         this.issuer = issuer;
     }
-    
-    public String getAudience() {
-        return audience;
-    }
-    
+
     public void setAudience(String audience) {
         this.audience = audience;
     }
-    
-    public String getTokenPrefix() {
-        return tokenPrefix;
-    }
-    
+
     public void setTokenPrefix(String tokenPrefix) {
         this.tokenPrefix = tokenPrefix;
     }
-    
-    public String getHeaderName() {
-        return headerName;
-    }
-    
+
     public void setHeaderName(String headerName) {
         this.headerName = headerName;
     }
-    
-    public boolean isEnableRefreshToken() {
-        return enableRefreshToken;
-    }
-    
+
     public void setEnableRefreshToken(boolean enableRefreshToken) {
         this.enableRefreshToken = enableRefreshToken;
     }
-    
-    public Blacklist getBlacklist() {
-        return blacklist;
-    }
-    
+
     public void setBlacklist(Blacklist blacklist) {
         this.blacklist = blacklist;
     }
@@ -135,7 +101,9 @@ public class JwtProperties {
     /**
      * JWT令牌黑名单配置
      */
+    @Getter
     public static class Blacklist {
+        // Getters and Setters
         /**
          * 是否启用令牌黑名单
          */
@@ -150,28 +118,15 @@ public class JwtProperties {
          * Redis键前缀
          */
         private String redisKeyPrefix = "jwt:blacklist:";
-        
-        // Getters and Setters
-        public boolean isEnabled() {
-            return enabled;
-        }
-        
+
         public void setEnabled(boolean enabled) {
             this.enabled = enabled;
         }
-        
-        public int getCleanupIntervalMinutes() {
-            return cleanupIntervalMinutes;
-        }
-        
+
         public void setCleanupIntervalMinutes(int cleanupIntervalMinutes) {
             this.cleanupIntervalMinutes = cleanupIntervalMinutes;
         }
-        
-        public String getRedisKeyPrefix() {
-            return redisKeyPrefix;
-        }
-        
+
         public void setRedisKeyPrefix(String redisKeyPrefix) {
             this.redisKeyPrefix = redisKeyPrefix;
         }

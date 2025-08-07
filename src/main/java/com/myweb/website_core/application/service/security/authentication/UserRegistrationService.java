@@ -5,6 +5,7 @@ import com.myweb.website_core.application.service.integration.EmailService;
 import com.myweb.website_core.common.enums.UserRole;
 import com.myweb.website_core.common.exception.RateLimitExceededException;
 import com.myweb.website_core.common.security.exception.ValidationException;
+import com.myweb.website_core.common.util.RedisKey;
 import com.myweb.website_core.domain.business.dto.UserRegistrationDTO;
 import com.myweb.website_core.domain.business.dto.UserRegistrationResult;
 import com.myweb.website_core.domain.business.entity.User;
@@ -49,8 +50,7 @@ public class UserRegistrationService {
     private final EmailService emailService;
     private final RedisTemplate<String, String> redisTemplate;
     
-    // Redis键前缀
-    private static final String REGISTRATION_RATE_LIMIT_PREFIX = "registration:rate_limit:";
+    // 使用统一的Redis键管理 - 已在RedisKey中定义
     
     // 注册频率限制配置
     private static final Duration RATE_LIMIT_WINDOW = Duration.ofMinutes(10);
@@ -216,7 +216,7 @@ public class UserRegistrationService {
         log.debug("检查注册频率限制: clientIp={}", clientIp);
         
         // 检查10分钟内的注册次数
-        String minuteKey = REGISTRATION_RATE_LIMIT_PREFIX + "10min:" + clientIp;
+        String minuteKey = RedisKey.registrationRateLimitKey(clientIp) + ":10min";
         String minuteCount = redisTemplate.opsForValue().get(minuteKey);
         
         if (minuteCount != null && Integer.parseInt(minuteCount) >= MAX_REGISTRATIONS_PER_IP) {
@@ -225,7 +225,7 @@ public class UserRegistrationService {
         }
         
         // 检查24小时内的注册次数
-        String dailyKey = REGISTRATION_RATE_LIMIT_PREFIX + "daily:" + clientIp;
+        String dailyKey = RedisKey.registrationRateLimitKey(clientIp) + ":daily";
         String dailyCount = redisTemplate.opsForValue().get(dailyKey);
         
         if (dailyCount != null && Integer.parseInt(dailyCount) >= MAX_REGISTRATIONS_PER_IP_DAILY) {
@@ -249,7 +249,7 @@ public class UserRegistrationService {
         log.debug("记录注册尝试次数: clientIp={}", clientIp);
         
         // 更新10分钟计数器
-        String minuteKey = REGISTRATION_RATE_LIMIT_PREFIX + "10min:" + clientIp;
+        String minuteKey = RedisKey.registrationRateLimitKey(clientIp) + ":10min";
         String minuteCount = redisTemplate.opsForValue().get(minuteKey);
         
         if (minuteCount == null) {
@@ -259,7 +259,7 @@ public class UserRegistrationService {
         }
         
         // 更新每日计数器
-        String dailyKey = REGISTRATION_RATE_LIMIT_PREFIX + "daily:" + clientIp;
+        String dailyKey = RedisKey.registrationRateLimitKey(clientIp) + ":daily";
         String dailyCount = redisTemplate.opsForValue().get(dailyKey);
         
         if (dailyCount == null) {
@@ -336,12 +336,12 @@ public class UserRegistrationService {
         }
         
         // 获取10分钟内的注册次数
-        String minuteKey = REGISTRATION_RATE_LIMIT_PREFIX + "10min:" + clientIp;
+        String minuteKey = RedisKey.registrationRateLimitKey(clientIp) + ":10min";
         String minuteCount = redisTemplate.opsForValue().get(minuteKey);
         int usedMinute = minuteCount != null ? Integer.parseInt(minuteCount) : 0;
         
         // 获取每日注册次数
-        String dailyKey = REGISTRATION_RATE_LIMIT_PREFIX + "daily:" + clientIp;
+        String dailyKey = RedisKey.registrationRateLimitKey(clientIp) + ":daily";
         String dailyCount = redisTemplate.opsForValue().get(dailyKey);
         int usedDaily = dailyCount != null ? Integer.parseInt(dailyCount) : 0;
         

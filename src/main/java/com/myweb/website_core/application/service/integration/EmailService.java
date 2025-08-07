@@ -28,6 +28,32 @@ public class EmailService {
     }
     
     /**
+     * 发送通用邮件
+     * 
+     * @param to 收件人邮箱
+     * @param subject 邮件主题
+     * @param content 邮件内容
+     */
+    @Async
+    public void sendEmail(String to, String subject, String content) {
+        try {
+            log.info("发送邮件: to={}, subject={}", to, subject);
+            
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo(to);
+            message.setSubject(subject);
+            message.setText(content);
+            
+            mailSender.send(message);
+            log.info("邮件发送成功: to={}, subject={}", to, subject);
+            
+        } catch (Exception e) {
+            log.error("邮件发送失败: to={}, subject={}, error={}", to, subject, e.getMessage(), e);
+            throw new RuntimeException("邮件发送失败: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
      * 发送欢迎邮件
      * 
      * @param user 注册成功的用户

@@ -3,6 +3,7 @@ package com.myweb.website_core.application.service.security.authentication;
 import com.myweb.website_core.domain.business.entity.User;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -14,12 +15,12 @@ import java.util.Map;
 
 /**
  * JWT令牌服务
- * 
+ * <p>
  * 提供JWT令牌的生成、验证和管理功能，包括：
  * - 访问令牌生成和验证
  * - 刷新令牌生成和验证
  * - 令牌解析和信息提取
- * 
+ * <p>
  * 符合GB/T 22239-2019身份鉴别要求
  * 
  * @author MyWeb Security Team
@@ -32,10 +33,24 @@ public class JwtService {
     
     @Value("${app.jwt.secret:mywebsecretkeythatisverylongandcomplex123456789}")
     private String jwtSecret;
-    
+
+    /**
+     * -- GETTER --
+     *  获取访问令牌过期时间（秒）
+     *
+     * @return 访问令牌过期时间
+     */
+    @Getter
     @Value("${app.jwt.access-token-expiration:3600}")
     private Long accessTokenExpiration; // 1小时
-    
+
+    /**
+     * -- GETTER --
+     *  获取刷新令牌过期时间（秒）
+     *
+     * @return 刷新令牌过期时间
+     */
+    @Getter
     @Value("${app.jwt.refresh-token-expiration:604800}")
     private Long refreshTokenExpiration; // 7天
     
@@ -302,25 +317,7 @@ public class JwtService {
             throw new RuntimeException("刷新访问令牌失败", e);
         }
     }
-    
-    /**
-     * 获取访问令牌过期时间（秒）
-     * 
-     * @return 访问令牌过期时间
-     */
-    public Long getAccessTokenExpiration() {
-        return accessTokenExpiration;
-    }
-    
-    /**
-     * 获取刷新令牌过期时间（秒）
-     * 
-     * @return 刷新令牌过期时间
-     */
-    public Long getRefreshTokenExpiration() {
-        return refreshTokenExpiration;
-    }
-    
+
     /**
      * 从Bearer令牌中提取JWT令牌
      * 

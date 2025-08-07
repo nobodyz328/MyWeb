@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>访问频率限制 - MyWeb博客</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .error-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 40px;
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+        }
+        
+        .error-icon {
+            font-size: 80px;
+            color: #ff6b6b;
+            margin-bottom: 20px;
+        }
+        
+        .error-title {
+            font-size: 28px;
+            color: #333;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        
+        .error-message {
+            font-size: 16px;
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+        
+        .error-details {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            text-align: left;
+        }
+        
+        .error-details h4 {
+            color: #333;
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+        
+        .error-details ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        
+        .error-details li {
+            color: #666;
+            margin-bottom: 8px;
+        }
+        
+        .retry-info {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin-bottom: 30px;
+            text-align: left;
+        }
+        
+        .retry-info strong {
+            color: #1976d2;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+        
+        .countdown {
+            font-size: 18px;
+            font-weight: bold;
+            color: #ff6b6b;
+            margin-top: 20px;
+        }
+        
+        @media (max-width: 600px) {
+            .error-container {
+                padding: 30px 20px;
+            }
+            
+            .error-title {
+                font-size: 24px;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="error-icon">⚠️</div>
+        <h1 class="error-title">访问频率限制</h1>
+        <p class="error-message">
+            抱歉，您的访问频率过高，已触发系统安全保护机制。请稍后再试。
+        </p>
+        
+        <div class="error-details">
+            <h4>为什么会出现这个页面？</h4>
+            <ul>
+                <li>您在短时间内发送了过多请求</li>
+                <li>系统检测到异常访问模式</li>
+                <li>为保护服务器稳定性而启用的安全措施</li>
+            </ul>
+        </div>
+        
+        <div class="retry-info">
+            <strong>建议操作：</strong>
+            请等待一分钟后再次尝试访问。如果问题持续存在，请联系网站管理员。
+        </div>
+        
+        <div class="countdown" id="countdown">
+            建议等待时间：<span id="timer">60</span> 秒
+        </div>
+        
+        <div class="action-buttons">
+            <a href="javascript:history.back()" class="btn btn-secondary">返回上页</a>
+            <a href="/blog/view" class="btn btn-primary">返回首页</a>
+            <button onclick="location.reload()" class="btn btn-primary" id="retryBtn" disabled>
+                重试访问
+            </button>
+        </div>
+    </div>
+    
+    <script>
+        // 倒计时功能
+        let timeLeft = 60;
+        const timerElement = document.getElementById('timer');
+        const retryBtn = document.getElementById('retryBtn');
+        
+        const countdown = setInterval(() => {
+            timeLeft--;
+            timerElement.textContent = timeLeft;
+            
+            if (timeLeft <= 0) {
+                clearInterval(countdown);
+                document.getElementById('countdown').innerHTML = 
+                    '<span style="color: #4caf50;">✓ 现在可以重试访问了</span>';
+                retryBtn.disabled = false;
+                retryBtn.style.background = '#4caf50';
+                retryBtn.textContent = '立即重试';
+            }
+        }, 1000);
+        
+        // 自动刷新功能（可选）
+        setTimeout(() => {
+            if (confirm('等待时间已到，是否自动刷新页面？')) {
+                location.reload();
+            }
+        }, 60000);
+        
+        // 键盘快捷键
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !retryBtn.disabled) {
+                location.reload();
+            } else if (e.key === 'Escape') {
+                history.back();
+            }
+        });
+    </script>
+</body>
+</html>

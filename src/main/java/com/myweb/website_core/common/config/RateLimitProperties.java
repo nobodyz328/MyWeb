@@ -1,5 +1,6 @@
 package com.myweb.website_core.common.config;
 
+import lombok.Getter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
@@ -13,10 +14,12 @@ import java.util.Map;
  * @author MyWeb Team
  * @since 1.0.0
  */
+@Getter
 @Component
 @ConfigurationProperties(prefix = "app.rate-limit")
 public class RateLimitProperties {
-    
+
+    // Getters and Setters
     /**
      * 是否启用访问频率限制
      */
@@ -41,44 +44,23 @@ public class RateLimitProperties {
      * 告警配置
      */
     private Alert alert = new Alert();
-    
-    // Getters and Setters
-    public boolean isEnabled() {
-        return enabled;
-    }
-    
+
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
     }
-    
-    public DefaultLimit getDefaultLimit() {
-        return defaultLimit;
-    }
-    
+
     public void setDefaultLimit(DefaultLimit defaultLimit) {
         this.defaultLimit = defaultLimit;
     }
-    
-    public Map<String, EndpointLimit> getEndpoints() {
-        return endpoints;
-    }
-    
+
     public void setEndpoints(Map<String, EndpointLimit> endpoints) {
         this.endpoints = endpoints;
     }
-    
-    public Redis getRedis() {
-        return redis;
-    }
-    
+
     public void setRedis(Redis redis) {
         this.redis = redis;
     }
-    
-    public Alert getAlert() {
-        return alert;
-    }
-    
+
     public void setAlert(Alert alert) {
         this.alert = alert;
     }
@@ -86,7 +68,9 @@ public class RateLimitProperties {
     /**
      * 默认限制配置
      */
+    @Getter
     public static class DefaultLimit {
+        // Getters and Setters
         /**
          * 时间窗口大小（秒）
          */
@@ -101,28 +85,15 @@ public class RateLimitProperties {
          * 限制类型（IP、用户、全局）
          */
         private String limitType = "IP";
-        
-        // Getters and Setters
-        public int getWindowSizeSeconds() {
-            return windowSizeSeconds;
-        }
-        
+
         public void setWindowSizeSeconds(int windowSizeSeconds) {
             this.windowSizeSeconds = windowSizeSeconds;
         }
-        
-        public int getMaxRequests() {
-            return maxRequests;
-        }
-        
+
         public void setMaxRequests(int maxRequests) {
             this.maxRequests = maxRequests;
         }
-        
-        public String getLimitType() {
-            return limitType;
-        }
-        
+
         public void setLimitType(String limitType) {
             this.limitType = limitType;
         }
@@ -131,7 +102,9 @@ public class RateLimitProperties {
     /**
      * 特定接口限制配置
      */
+    @Getter
     public static class EndpointLimit {
+        // Getters and Setters
         /**
          * 时间窗口大小（秒）
          */
@@ -156,44 +129,23 @@ public class RateLimitProperties {
          * 描述
          */
         private String description;
-        
-        // Getters and Setters
-        public int getWindowSizeSeconds() {
-            return windowSizeSeconds;
-        }
-        
+
         public void setWindowSizeSeconds(int windowSizeSeconds) {
             this.windowSizeSeconds = windowSizeSeconds;
         }
-        
-        public int getMaxRequests() {
-            return maxRequests;
-        }
-        
+
         public void setMaxRequests(int maxRequests) {
             this.maxRequests = maxRequests;
         }
-        
-        public String getLimitType() {
-            return limitType;
-        }
-        
+
         public void setLimitType(String limitType) {
             this.limitType = limitType;
         }
-        
-        public boolean isEnabled() {
-            return enabled;
-        }
-        
+
         public void setEnabled(boolean enabled) {
             this.enabled = enabled;
         }
-        
-        public String getDescription() {
-            return description;
-        }
-        
+
         public void setDescription(String description) {
             this.description = description;
         }
@@ -202,7 +154,9 @@ public class RateLimitProperties {
     /**
      * Redis配置
      */
+    @Getter
     public static class Redis {
+        // Getters and Setters
         /**
          * Redis键前缀
          */
@@ -212,20 +166,11 @@ public class RateLimitProperties {
          * 键过期时间（秒）
          */
         private int keyExpirationSeconds = 3600;
-        
-        // Getters and Setters
-        public String getKeyPrefix() {
-            return keyPrefix;
-        }
-        
+
         public void setKeyPrefix(String keyPrefix) {
             this.keyPrefix = keyPrefix;
         }
-        
-        public int getKeyExpirationSeconds() {
-            return keyExpirationSeconds;
-        }
-        
+
         public void setKeyExpirationSeconds(int keyExpirationSeconds) {
             this.keyExpirationSeconds = keyExpirationSeconds;
         }
@@ -234,7 +179,9 @@ public class RateLimitProperties {
     /**
      * 告警配置
      */
+    @Getter
     public static class Alert {
+        // Getters and Setters
         /**
          * 是否启用告警
          */
@@ -254,36 +201,19 @@ public class RateLimitProperties {
          * 告警接收邮箱
          */
         private String[] recipients = {};
-        
-        // Getters and Setters
-        public boolean isEnabled() {
-            return enabled;
-        }
-        
+
         public void setEnabled(boolean enabled) {
             this.enabled = enabled;
         }
-        
-        public double getThreshold() {
-            return threshold;
-        }
-        
+
         public void setThreshold(double threshold) {
             this.threshold = threshold;
         }
-        
-        public int getIntervalMinutes() {
-            return intervalMinutes;
-        }
-        
+
         public void setIntervalMinutes(int intervalMinutes) {
             this.intervalMinutes = intervalMinutes;
         }
-        
-        public String[] getRecipients() {
-            return recipients;
-        }
-        
+
         public void setRecipients(String[] recipients) {
             this.recipients = recipients;
         }

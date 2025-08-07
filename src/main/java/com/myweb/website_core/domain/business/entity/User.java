@@ -40,9 +40,7 @@ public class User {
     
     @Column(unique = false, nullable = true)
     private String email;
-    
-//    @Column(nullable = false)
-//    private String password;
+
     
     private String avatarUrl;
     

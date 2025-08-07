@@ -261,7 +261,7 @@
         WHERE u.id = #{userId}
     </select>
     
-    <!-- 游标分页搜索用户（用于无限滚动） -->
+    <!-- 游标分页搜索用户（用于无限滚动） - 使用安全的参数化查询 -->
     <select id="searchUsersWithCursor" resultMap="UserSearchResultMap">
         SELECT <include refid="Search_Column_List"/>,
         CASE 

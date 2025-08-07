@@ -33,6 +33,17 @@ app:
       time-step-seconds: 30
       allowed-time-skew: 1
       secret-length: 32
+    
+    csrf:
+      enabled: true
+      cookie-name: XSRF-TOKEN
+      header-name: X-XSRF-TOKEN
+      parameter-name: _csrf
+      cookie-path: /blog
+      cookie-max-age: 7200  # 2小时
+      cookie-http-only: false
+      cookie-secure: true
+      token-cache-expiration-hours: 2
 
   # JWT配置
   jwt:
@@ -89,6 +100,16 @@ app:
       enabled: true
       threshold: 0.8
       interval-minutes: 5
+      recipients:
+        - admin@myweb.com
+        - security@myweb.com
+
+  # 依赖安全检查配置
+  dependency-check:
+    report-path: target/dependency-check-report
+    high-severity-threshold: 7.0
+    notification:
+      enabled: true
       recipients:
         - admin@myweb.com
         - security@myweb.com

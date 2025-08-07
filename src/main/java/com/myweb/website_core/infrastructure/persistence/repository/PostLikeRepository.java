@@ -67,4 +67,14 @@ public interface PostLikeRepository extends JpaRepository<PostLike, Long> {
      */
     @Query("SELECT pl.post FROM PostLike pl WHERE pl.user.id = :userId ORDER BY pl.createdAt DESC")
     List<Post> findPostsByUserId(@Param("userId") Long userId);
+    
+    /**
+     * 根据用户ID查找点赞记录
+     */
+    List<PostLike> findByUserId(Long userId);
+    
+    /**
+     * 根据帖子ID查找点赞记录
+     */
+    List<PostLike> findByPostId(Long postId);
 }

@@ -5,6 +5,7 @@ import com.myweb.website_core.domain.security.dto.SecurityEventRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -17,6 +18,7 @@ import java.util.Map;
  * 
  * 提供创建安全事件的便捷方法
  */
+@Component
 public class SecurityEventUtils {
     
     /**
@@ -144,7 +146,7 @@ public class SecurityEventUtils {
     /**
      * 创建访问频率异常事件
      */
-    public static SecurityEventRequest createAbnormalAccessFrequencyEvent(int requestCount, int timeWindowMinutes) {
+    public static SecurityEventRequest createAccessFrequencyEvent(int requestCount, int timeWindowMinutes) {
         String currentUser = getCurrentUsername();
         return SecurityEventRequest.builder()
                 .eventType(SecurityEventType.ABNORMAL_ACCESS_FREQUENCY)

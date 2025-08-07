@@ -3,7 +3,10 @@ package com.myweb.website_core.infrastructure.security;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.myweb.website_core.application.service.security.audit.AuditLogServiceAdapter;
+import com.myweb.website_core.common.constant.SystemConstants;
 import com.myweb.website_core.domain.security.dto.AuditLogRequest;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -23,42 +26,30 @@ import java.util.*;
 
 /**
  * AOP审计切面
- * 
+ * <p>
  * 自动记录标记了@Auditable注解的方法调用的审计日志，包括：
  * - 方法调用信息记录
  * - 请求参数和响应结果序列化
  * - 执行时间统计和性能监控
  * - 异常处理，确保不影响业务流程
- * 
+ * <p>
  * 符合GB/T 22239-2019二级等保要求的安全审计机制
  * 
- * @author MyWeb Security Team
+ * @author MyWeb
  * @version 1.0
- * @since 2025-8-01
  */
 @Slf4j
 @Aspect
 @Component
+@RequiredArgsConstructor
 public class AuditAspect {
     
     private final AuditLogServiceAdapter auditLogServiceAdapter;
     private final ObjectMapper objectMapper;
     
     // 敏感信息关键字，用于参数脱敏
-    private static final Set<String> SENSITIVE_KEYWORDS = Set.of(
-        "password", "pwd", "secret", "token", "key", "credential", 
-        "auth", "authorization", "session", "cookie", "captcha"
-    );
-    
-    // 需要脱敏的参数值模式
-    private static final String MASKED_VALUE = "*********";
-    
-    @Autowired
-    public AuditAspect(AuditLogServiceAdapter auditLogServiceAdapter, ObjectMapper objectMapper) {
-        this.auditLogServiceAdapter = auditLogServiceAdapter;
-        this.objectMapper = objectMapper;
-    }
-    
+    private static final Set<String> SENSITIVE_KEYWORDS = Set.of(SystemConstants.SENSITIVE_PARAM_KEYWORDS);
+
     /**
      * 环绕通知：记录方法调用的审计日志
      * 
@@ -202,19 +193,21 @@ public class AuditAspect {
             // 设置失败结果和错误信息
             logBuilder.result("FAILURE")
                      .errorMessage(getExceptionMessage(exception));
-            
+
             // 提高失败操作的风险级别
-            //int currentRiskLevel = logBuilder.build().getRiskLevel();
-
+            int currentRiskLevel = logBuilder.build().getRiskLevel();
+            if (currentRiskLevel < 3){
                 logBuilder.riskLevel(3); // 失败操作至少为中等风险
-
+            }else {
+                logBuilder.riskLevel(++currentRiskLevel);
+            }
 
             // 添加失败标签
             String currentTags = logBuilder.build().getTags();
             String failureTags = currentTags != null ? currentTags + ",failure" : "failure";
             logBuilder.tags(failureTags);
             
-            // 记录审计日志（使用适配器，同时支持数据库和消息队列）
+            // 记录审计日志
             AuditLogRequest auditRequest = logBuilder.build();
             if (auditable.async()) {
                 auditLogServiceAdapter.logOperation(auditRequest);
@@ -260,8 +253,8 @@ public class AuditAspect {
                 Object paramValue = processedArgs[i];
                 
                 // 检查参数名是否包含敏感信息
-                if (isSensitiveParam(paramName)) {
-                    paramValue = MASKED_VALUE;
+                if (SystemConstants.isSensitiveParam(paramName)) {
+                    paramValue = SystemConstants.MASKED_VALUE;
                 }
                 
                 // 限制参数长度
@@ -315,27 +308,14 @@ public class AuditAspect {
         
         for (int index : sensitiveIndexes) {
             if (index >= 0 && index < processedArgs.length) {
-                processedArgs[index] = MASKED_VALUE;
+                processedArgs[index] = SystemConstants.MASKED_VALUE;
             }
         }
         
         return processedArgs;
     }
     
-    /**
-     * 检查参数名是否为敏感参数
-     * 
-     * @param paramName 参数名
-     * @return 是否为敏感参数
-     */
-    private boolean isSensitiveParam(String paramName) {
-        if (paramName == null) {
-            return false;
-        }
-        
-        String lowerParamName = paramName.toLowerCase();
-        return SENSITIVE_KEYWORDS.stream().anyMatch(lowerParamName::contains);
-    }
+
     
     /**
      * 限制数据长度
@@ -351,16 +331,10 @@ public class AuditAspect {
         
         try {
             String jsonString = objectMapper.writeValueAsString(data);
-            if (jsonString.length() > maxLength) {
-                return jsonString.substring(0, maxLength) + "...[TRUNCATED]";
-            }
-            return data;
+            return SystemConstants.limitStringLength(jsonString, maxLength);
         } catch (JsonProcessingException e) {
             String stringValue = data.toString();
-            if (stringValue.length() > maxLength) {
-                return stringValue.substring(0, maxLength) + "...[TRUNCATED]";
-            }
-            return data;
+            return SystemConstants.limitStringLength(stringValue, maxLength);
         }
     }
     
@@ -376,7 +350,6 @@ public class AuditAspect {
                 !"anonymousUser".equals(authentication.getPrincipal())) {
                 
                 String username = authentication.getName();
-                // 这里可以根据实际情况获取用户ID
                 Long userId = getUserIdFromAuthentication(authentication);
                 
                 return new UserInfo(userId, username);
@@ -396,13 +369,35 @@ public class AuditAspect {
      */
     private Long getUserIdFromAuthentication(Authentication authentication) {
         try {
-            // 如果使用自定义的UserDetails实现，可以从中获取用户ID
             Object principal = authentication.getPrincipal();
-            if (principal instanceof org.springframework.security.core.userdetails.UserDetails) {
-                // 这里需要根据实际的UserDetails实现来获取用户ID
-                // 暂时返回null，后续可以根据实际情况完善
-                return null;
+            
+            // 检查是否为自定义的CustomUserPrincipal实现
+            if (principal instanceof CustomUserDetailsService.CustomUserPrincipal userPrincipal) {
+                return userPrincipal.getUserId();
             }
+            
+            // 兼容其他UserDetails实现
+            if (principal instanceof org.springframework.security.core.userdetails.UserDetails) {
+                // 对于标准UserDetails实现，尝试通过反射获取用户ID
+                try {
+                    java.lang.reflect.Method getUserIdMethod = principal.getClass().getMethod("getUserId");
+                    Object userId = getUserIdMethod.invoke(principal);
+                    if (userId instanceof Long) {
+                        return (Long) userId;
+                    } else if (userId instanceof Number) {
+                        return ((Number) userId).longValue();
+                    }
+                } catch (NoSuchMethodException | IllegalAccessException | 
+                         java.lang.reflect.InvocationTargetException e) {
+                    log.debug("无法通过反射获取用户ID: {}", e.getMessage());
+                }
+            }
+            
+            // 如果principal是字符串类型
+            if (principal instanceof String) {
+                log.debug("Principal为字符串类型，无法获取用户ID: {}", principal);
+            }
+            
         } catch (Exception e) {
             log.debug("从认证信息获取用户ID失败: {}", e.getMessage());
         }
@@ -440,12 +435,7 @@ public class AuditAspect {
      * @return 客户端IP地址
      */
     private String getClientIpAddress(HttpServletRequest request) {
-        String[] headerNames = {
-            "X-Forwarded-For", "X-Real-IP", "Proxy-Client-IP", 
-            "WL-Proxy-Client-IP", "HTTP_CLIENT_IP", "HTTP_X_FORWARDED_FOR"
-        };
-        
-        for (String headerName : headerNames) {
+        for (String headerName : SystemConstants.REAL_IP_HEADERS) {
             String ip = request.getHeader(headerName);
             if (ip != null && !ip.isEmpty() && !"unknown".equalsIgnoreCase(ip)) {
                 // 处理多个IP的情况，取第一个
@@ -465,8 +455,7 @@ public class AuditAspect {
      * @return 请求ID
      */
     private String generateRequestId() {
-        return "REQ-" + System.currentTimeMillis() + "-" + 
-               Integer.toHexString(new Random().nextInt(0xFFFF));
+        return SystemConstants.generateRequestId();
     }
     
     /**
@@ -488,17 +477,13 @@ public class AuditAspect {
         }
         
         // 限制错误信息长度
-        String result = message.toString();
-        if (result.length() > 500) {
-            result = result.substring(0, 500) + "...[TRUNCATED]";
-        }
-        
-        return result;
+        return SystemConstants.limitStringLength(message.toString(), SystemConstants.AUDIT_MAX_ERROR_LENGTH);
     }
 
     /**
      * 用户信息内部类
      */
+    @Getter
     private static class UserInfo {
         private final Long userId;
         private final String username;
@@ -508,18 +493,12 @@ public class AuditAspect {
             this.username = username;
         }
 
-        public Long getUserId() {
-            return userId;
-        }
-
-        public String getUsername() {
-            return username;
-        }
     }
     
     /**
      * 网络信息内部类
      */
+    @Getter
     private static class NetworkInfo {
         private final String ipAddress;
         private final String userAgent;
@@ -531,16 +510,5 @@ public class AuditAspect {
             this.sessionId = sessionId;
         }
 
-        public String getIpAddress() {
-            return ipAddress;
-        }
-
-        public String getUserAgent() {
-            return userAgent;
-        }
-
-        public String getSessionId() {
-            return sessionId;
-        }
     }
 }

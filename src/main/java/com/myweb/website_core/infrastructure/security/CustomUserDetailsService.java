@@ -20,10 +20,10 @@ import java.util.Set;
 
 /**
  * 自定义用户详情服务
- * 
+ * <p>
  * 实现Spring Security的UserDetailsService接口，
  * 提供基于数据库的用户认证和权限加载功能
- * 
+ * <p>
  * 符合GB/T 22239-2019二级等保要求的身份鉴别和访问控制机制
  */
 @Service

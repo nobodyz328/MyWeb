@@ -378,19 +378,7 @@ public class AuditLogRequest {
         return this;
     }
     
-    /**
-     * 设置地理位置信息
-     * 
-     * @param location 地理位置
-     * @param deviceFingerprint 设备指纹
-     * @return 当前对象
-     */
-    public AuditLogRequest withLocation(String location, String deviceFingerprint) {
-        this.location = location;
-        this.deviceFingerprint = deviceFingerprint;
-        return this;
-    }
-    
+
     /**
      * 添加标签
      * 

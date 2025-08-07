@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 
 /**
  * 图片清理服务
- * 
+ * <p>
  * 定期清理未关联到帖子的图片文件
  */
 @Service

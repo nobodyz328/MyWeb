@@ -1,10 +1,7 @@
 package com.myweb.website_core.infrastructure.config;
 
 import com.myweb.website_core.common.constant.SecurityConstants;
-import com.myweb.website_core.infrastructure.security.CustomAccessDecisionVoter;
-import com.myweb.website_core.infrastructure.security.CustomAccessDeniedHandler;
-import com.myweb.website_core.infrastructure.security.CustomPermissionEvaluator;
-import com.myweb.website_core.infrastructure.security.CustomUserDetailsService;
+import com.myweb.website_core.infrastructure.security.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,6 +13,8 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.csrf.CsrfTokenRepository;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler;
 import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
@@ -38,6 +37,12 @@ public class SecurityConfig {
     
     @Autowired
     private CustomPermissionEvaluator permissionEvaluator;
+    
+    @Autowired
+    private CsrfExceptionHandler csrfExceptionHandler;
+    
+    @Autowired
+    private RateLimitingFilter rateLimitingFilter;
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -46,7 +51,7 @@ public class SecurityConfig {
                 .requestMatchers("/login", "/register", "/static/**", "/css/**", "/js/**", "/images/**", 
                                "/", "/view/**", "/users/register", "/users/login", "/users/register/code", 
                                "/post/*", "/api/posts", "/api/posts/*", "/api/images/*", "/posts/top-liked", 
-                               "/search", "/announcements", "/posts/*/comments").permitAll()
+                               "/search", "/announcements", "/posts/*/comments", "/error/**").permitAll()
                 
                 // 需要认证的基本功能
                 .requestMatchers("/posts/new", "/posts/create").hasAuthority("POST_CREATE")
@@ -74,14 +79,27 @@ public class SecurityConfig {
             )
             .userDetailsService(userDetailsService)
             .exceptionHandling(exceptions -> exceptions
-                .accessDeniedHandler(accessDeniedHandler)
+                .accessDeniedHandler(csrfExceptionHandler)
             )
             .logout(logout -> logout
                     .logoutUrl("/user/logout")
                 .logoutSuccessUrl("/view")
                 .permitAll()
             )
-            .csrf(AbstractHttpConfigurer::disable);
+            .csrf(csrf -> csrf
+                .csrfTokenRepository(csrfTokenRepository())
+                .ignoringRequestMatchers(
+                    // 公开访问的资源不需要CSRF保护
+                    "/login", "/register", "/static/**", "/css/**", "/js/**", "/images/**",
+                    "/", "/view/**", "/users/register", "/users/login", "/users/register/code",
+                    "/post/*", "/api/posts", "/api/posts/*", "/api/images/*", "/posts/top-liked",
+                    "/search", "/announcements", "/posts/*/comments", "/error/**",
+                    // CSRF令牌获取接口
+                    "/api/csrf/token"
+                )
+            )
+            // 添加访问频率限制过滤器
+            .addFilterBefore(rateLimitingFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 
@@ -144,5 +162,23 @@ public class SecurityConfig {
         DefaultMethodSecurityExpressionHandler expressionHandler = new DefaultMethodSecurityExpressionHandler();
         expressionHandler.setPermissionEvaluator(permissionEvaluator);
         return expressionHandler;
+    }
+    
+    /**
+     * 配置CSRF令牌存储库
+     * 使用Cookie存储CSRF令牌
+     * 
+     * @return CSRF令牌存储库
+     */
+    @Bean
+    public CsrfTokenRepository csrfTokenRepository() {
+        CookieCsrfTokenRepository repository = CookieCsrfTokenRepository.withHttpOnlyFalse();
+        repository.setCookieName("XSRF-TOKEN");
+        repository.setHeaderName("X-XSRF-TOKEN");
+        repository.setParameterName("_csrf");
+        repository.setCookiePath("/blog");
+        repository.setSecure(true); // HTTPS环境下设置为true
+        repository.setCookieMaxAge(7200); // 2小时
+        return repository;
     }
 }

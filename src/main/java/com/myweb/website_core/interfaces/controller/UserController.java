@@ -117,16 +117,12 @@ public class UserController {
     @Auditable(operation = AuditOperation.USER_LOGIN_SUCCESS, resourceType = "USER", description = "用户登录")
     public ResponseEntity<?> login(@RequestBody LoginRequest req, HttpServletRequest request) {
         String ipAddress = getClientIpAddress(request);
-        String sessionId = request.getSession().getId();
+        //String sessionId = request.getSession().getId();
         
         try {
             UserLoginResponse response = authenticationService.login(req.getUsername(), 
                     req.getPassword(), req.getCode(), ipAddress);
-            
-            // Spring Security会自动管理session
-            request.getSession().setAttribute("SPRING_SECURITY_CONTEXT", 
-                    org.springframework.security.core.context.SecurityContextHolder.getContext());
-            
+
             log.info("用户登录成功: {}", req.getUsername());
             return ResponseEntity.ok(response);
             
@@ -140,8 +136,8 @@ public class UserController {
     @PostMapping("/logout")
     @Auditable(operation = AuditOperation.USER_LOGOUT, resourceType = "USER", description = "用户退出登录")
     public ResponseEntity<?> logout(HttpServletRequest request) {
-        String ipAddress = getClientIpAddress(request);
-        String sessionId = request.getSession().getId();
+//        String ipAddress = getClientIpAddress(request);
+//        String sessionId = request.getSession().getId();
         String username = authenticationService.getCurrentUsername();
         
         try {

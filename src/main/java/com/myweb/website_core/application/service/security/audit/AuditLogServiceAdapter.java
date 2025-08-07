@@ -30,7 +30,7 @@ public class AuditLogServiceAdapter {
     private final MessageProducerService messageProducerService;
     
     /**
-     * 记录审计日志（异步）
+     * 记录审计日志
      * 基于RabbitMQ消息队列，
      */
     public CompletableFuture<Void> logOperation(AuditLogRequest request) {
@@ -60,6 +60,45 @@ public class AuditLogServiceAdapter {
     }
     
     /**
+     * 记录安全事件
+     * 
+     * @param userId 用户ID
+     * @param operation 操作类型
+     * @param eventType 事件类型
+     * @param description 描述
+     * @param ipAddress IP地址
+     * @param success 是否成功
+     */
+    public void logSecurityEvent(String userId, AuditOperation operation, String eventType, 
+                                String description, String ipAddress, boolean success) {
+        try {
+            UnifiedSecurityMessage message = UnifiedSecurityMessage.builder()
+                    .messageType("SECURITY_EVENT")
+                    .isSecurityEvent(true)
+                    .userId(userId != null ? Long.valueOf(userId) : null)
+                    .username(userId) // 简化处理，实际应该查询用户名
+                    .operation(operation)
+                    .resourceType(eventType)
+                    .description(description)
+                    .ipAddress(ipAddress)
+                    .result(success ? "SUCCESS" : "FAILURE")
+                    .timestamp(java.time.LocalDateTime.now())
+                    .riskLevel(success ? 1 : 3)
+                    .build();
+            
+            // 发送安全事件消息
+            messageProducerService.sendSecurityEventMessage(message);
+            
+            log.debug("安全事件记录成功: userId={}, operation={}, eventType={}", 
+                     userId, operation, eventType);
+            
+        } catch (Exception e) {
+            log.error("记录安全事件失败: userId={}, operation={}, eventType={}, error={}", 
+                     userId, operation, eventType, e.getMessage(), e);
+        }
+    }
+    
+    /**
      * 记录审计日志（同步）
      */
     public void logOperationSync(AuditLogRequest request) {
@@ -85,7 +124,7 @@ public class AuditLogServiceAdapter {
             // 不抛出异常，避免影响业务流程
         }
     }
-    
+
     /**
      * 将AuditLogRequest转换为UnifiedSecurityMessage
      */
@@ -129,13 +168,13 @@ public class AuditLogServiceAdapter {
             return "USER_AUTH";
         }
         
-        // 文件上传操作
-        if (operation == AuditOperation.FILE_UPLOAD) {
-            return "FILE_UPLOAD";
+        // 文件相关操作
+        if (isFileOperation(operation)) {
+            return "FILE_OPERATION";
         }
         
-        // 搜索操作
-        if (operation == AuditOperation.SEARCH_OPERATION) {
+        // 搜索相关操作
+        if (isSearchOperation(operation)) {
             return "SEARCH";
         }
         
@@ -144,8 +183,50 @@ public class AuditLogServiceAdapter {
             return "ACCESS_CONTROL";
         }
         
+        // 内容管理操作
+        if (operation.isContentOperation()) {
+            return "CONTENT_OPERATION";
+        }
+        
+        // 管理员操作
+        if (operation.isAdminOperation()) {
+            return "ADMIN_OPERATION";
+        }
+        
+        // 安全相关操作
+        if (operation.isSecurityOperation()) {
+            return "SECURITY_EVENT";
+        }
+        
+        // 系统操作
+        if (operation.isSystemOperation()) {
+            return "SYSTEM_OPERATION";
+        }
+        
         // 默认为审计日志
         return "AUDIT_LOG";
+    }
+    
+    /**
+     * 判断是否为文件操作
+     */
+    private boolean isFileOperation(AuditOperation operation) {
+        return operation == AuditOperation.FILE_UPLOAD ||
+               operation == AuditOperation.FILE_DOWNLOAD ||
+               operation == AuditOperation.FILE_DELETE ||
+               operation == AuditOperation.AVATAR_UPLOAD ||
+               operation == AuditOperation.AVATAR_DELETE ||
+               operation == AuditOperation.FILE_REVIEW ||
+               operation == AuditOperation.MALICIOUS_FILE_DETECTED;
+    }
+    
+    /**
+     * 判断是否为搜索操作
+     */
+    private boolean isSearchOperation(AuditOperation operation) {
+        return operation == AuditOperation.SEARCH_OPERATION ||
+               operation == AuditOperation.ADVANCED_SEARCH ||
+               operation == AuditOperation.SEARCH_CACHE_CLEAR;
     }
     
     /**
@@ -170,7 +251,7 @@ public class AuditLogServiceAdapter {
             case USER_LOGIN_FAILURE:
                 return true;
             case USER_LOGIN_SUCCESS:
-                // 异常登录地点或时间可能是安全事件
+                // 异常登录次数可能是安全事件
                 return isAbnormalLogin(request);
             default:
                 return false;
@@ -233,7 +314,8 @@ public class AuditLogServiceAdapter {
                 // 发送安全事件消息
                 messageProducerService.sendSecurityEventMessage(message);
             }
-                // 根据消息类型发送到不同队列
+            
+            // 根据消息类型发送到不同队列
             switch (message.getMessageType()) {
                 case "USER_AUTH" -> messageProducerService.sendUserAuthAuditMessage(
                         message.getUsername(),
@@ -243,24 +325,8 @@ public class AuditLogServiceAdapter {
                         message.getErrorMessage(),
                         message.getSessionId()
                 );
-                case "FILE_UPLOAD" -> messageProducerService.sendFileUploadAuditMessage(
-                        message.getUserId(),
-                        message.getUsername(),
-                        extractFileName(message.getDescription()),
-                        extractFileType(message.getDescription()),
-                        extractFileSize(message.getDescription()),
-                        message.getResult(),
-                        message.getIpAddress(),
-                        message.getErrorMessage()
-                );
-                case "SEARCH" -> messageProducerService.sendSearchAuditMessage(
-                        message.getUserId(),
-                        message.getUsername(),
-                        extractSearchQuery(message.getDescription()),
-                        extractSearchType(message.getDescription()),
-                        extractResultCount(message.getDescription()),
-                        message.getIpAddress()
-                );
+                case "FILE_OPERATION" -> sendFileOperationMessage(message);
+                case "SEARCH" -> sendSearchMessage(message);
                 case "ACCESS_CONTROL" -> messageProducerService.sendAccessControlAuditMessage(
                         message.getUserId(),
                         message.getUsername(),
@@ -271,23 +337,111 @@ public class AuditLogServiceAdapter {
                         message.getIpAddress(),
                         message.getErrorMessage()
                 );
-                default ->
-                    // 发送通用审计消息
-                        messageProducerService.sendContentOperationAuditMessage(
-                                message.getUserId(),
-                                message.getUsername(),
-                                message.getOperation(),
-                                message.getResourceType(),
-                                message.getResourceId(),
-                                message.getIpAddress(),
-                                message.getResult(),
-                                message.getDescription()
-                        );
+                case "CONTENT_OPERATION" -> sendContentOperationMessage(message);
+                case "ADMIN_OPERATION" -> sendAdminOperationMessage(message);
+                case "SYSTEM_OPERATION" -> sendSystemOperationMessage(message);
+                default -> sendGeneralAuditMessage(message);
             }
         } catch (Exception e) {
             log.error("发送消息到队列失败: messageType={}, error={}", 
                      message.getMessageType(), e.getMessage(), e);
         }
+    }
+    
+    /**
+     * 发送文件操作消息
+     */
+    private void sendFileOperationMessage(UnifiedSecurityMessage message) {
+        AuditOperation operation = message.getOperation();
+        
+        if (operation == AuditOperation.FILE_UPLOAD || operation == AuditOperation.AVATAR_UPLOAD) {
+            messageProducerService.sendFileUploadAuditMessage(
+                    message.getUserId(),
+                    message.getUsername(),
+                    extractFileName(message.getDescription()),
+                    extractFileType(message.getDescription()),
+                    extractFileSize(message.getDescription()),
+                    message.getResult(),
+                    message.getIpAddress(),
+                    message.getErrorMessage()
+            );
+        } else {
+            // 其他文件操作使用通用消息
+            sendGeneralAuditMessage(message);
+        }
+    }
+    
+    /**
+     * 发送搜索消息
+     */
+    private void sendSearchMessage(UnifiedSecurityMessage message) {
+        messageProducerService.sendSearchAuditMessage(
+                message.getUserId(),
+                message.getUsername(),
+                extractSearchQuery(message.getDescription()),
+                extractSearchType(message.getDescription()),
+                extractResultCount(message.getDescription()),
+                message.getIpAddress()
+        );
+    }
+    
+    /**
+     * 发送内容操作消息
+     */
+    private void sendContentOperationMessage(UnifiedSecurityMessage message) {
+        messageProducerService.sendContentOperationAuditMessage(
+                message.getUserId(),
+                message.getUsername(),
+                message.getOperation(),
+                message.getResourceType(),
+                message.getResourceId(),
+                message.getIpAddress(),
+                message.getResult(),
+                message.getDescription()
+        );
+    }
+    
+    /**
+     * 发送管理员操作消息
+     */
+    private void sendAdminOperationMessage(UnifiedSecurityMessage message) {
+        // 管理员操作使用专门的消息格式，包含更多安全信息
+        UnifiedSecurityMessage adminMessage = message.toBuilder()
+                .messageType("ADMIN_OPERATION")
+                .riskLevel(Math.max(message.getRiskLevel(), 4)) // 管理员操作至少为高风险
+                .tags(message.getTags() != null ? message.getTags() + ",admin" : "admin")
+                .build();
+        
+        messageProducerService.sendUnifiedSecurityMessage(adminMessage);
+    }
+    
+    /**
+     * 发送系统操作消息
+     */
+    private void sendSystemOperationMessage(UnifiedSecurityMessage message) {
+        // 系统操作使用专门的消息格式
+        UnifiedSecurityMessage systemMessage = message.toBuilder()
+                .messageType("SYSTEM_OPERATION")
+                .username("SYSTEM")
+                .build();
+        
+        messageProducerService.sendUnifiedSecurityMessage(systemMessage);
+    }
+    
+    /**
+     * 发送通用审计消息
+     */
+    private void sendGeneralAuditMessage(UnifiedSecurityMessage message) {
+        messageProducerService.sendContentOperationAuditMessage(
+                message.getUserId(),
+                message.getUsername(),
+                message.getOperation(),
+                message.getResourceType(),
+                message.getResourceId(),
+                message.getIpAddress(),
+                message.getResult(),
+                message.getDescription()
+        );
     }
     
     // ==================== 辅助方法 ====================

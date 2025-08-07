@@ -39,4 +39,10 @@ public interface PostCollectRepository extends JpaRepository<PostCollect, Long> 
     // 获取用户收藏的帖子列表
     @Query("SELECT pc.post FROM PostCollect pc WHERE pc.user.id = :userId ORDER BY pc.createdAt DESC")
     List<Post> findPostsByUserId(@Param("userId") Long userId);
+    
+    // 根据用户ID查找收藏记录
+    List<PostCollect> findByUserId(Long userId);
+    
+    // 根据帖子ID查找收藏记录
+    List<PostCollect> findByPostId(Long postId);
 }

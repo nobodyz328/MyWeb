@@ -1,0 +1,185 @@
+name: Security Vulnerability Scan
+
+on:
+  # 在推送到主分支时触发
+  push:
+    branches: [ main, master, develop ]
+  # 在创建 Pull Request 时触发
+  pull_request:
+    branches: [ main, master, develop ]
+  # 每周定期扫描
+  schedule:
+    - cron: '0 2 * * 1'  # 每周一凌晨2点
+  # 手动触发
+  workflow_dispatch:
+
+jobs:
+  dependency-check:
+    name: OWASP Dependency Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        
+    - name: Cache Maven dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+        
+    - name: Cache OWASP Dependency Check database
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2/repository/org/owasp/dependency-check-data
+        key: ${{ runner.os }}-owasp-db-${{ github.run_id }}
+        restore-keys: |
+          ${{ runner.os }}-owasp-db-
+          
+    - name: Run OWASP Dependency Check
+      run: |
+        cd website_core
+        mvn org.owasp:dependency-check-maven:check -DfailBuildOnCVSS=7.0
+        
+    - name: Upload dependency check reports
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: dependency-check-report
+        path: website_core/target/dependency-check-report/
+        retention-days: 30
+        
+    - name: Generate security summary
+      if: always()
+      run: |
+        cd website_core
+        echo "## 🔒 安全扫描结果" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [ -f "target/dependency-check-report/dependency-check-report.json" ]; then
+          # 解析 JSON 报告获取统计信息
+          TOTAL_DEPS=$(jq '.dependencies | length' target/dependency-check-report/dependency-check-report.json)
+          VULNERABLE_DEPS=$(jq '[.dependencies[] | select(.vulnerabilities)] | length' target/dependency-check-report/dependency-check-report.json)
+          HIGH_VULNS=$(jq '[.dependencies[].vulnerabilities[]? | select(.severity == "HIGH")] | length' target/dependency-check-report/dependency-check-report.json)
+          MEDIUM_VULNS=$(jq '[.dependencies[].vulnerabilities[]? | select(.severity == "MEDIUM")] | length' target/dependency-check-report/dependency-check-report.json)
+          LOW_VULNS=$(jq '[.dependencies[].vulnerabilities[]? | select(.severity == "LOW")] | length' target/dependency-check-report/dependency-check-report.json)
+          
+          echo "### 📊 扫描统计" >> $GITHUB_STEP_SUMMARY
+          echo "- **总依赖数量**: $TOTAL_DEPS" >> $GITHUB_STEP_SUMMARY
+          echo "- **存在漏洞的依赖**: $VULNERABLE_DEPS" >> $GITHUB_STEP_SUMMARY
+          echo "- **高危漏洞**: $HIGH_VULNS" >> $GITHUB_STEP_SUMMARY
+          echo "- **中危漏洞**: $MEDIUM_VULNS" >> $GITHUB_STEP_SUMMARY
+          echo "- **低危漏洞**: $LOW_VULNS" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "$HIGH_VULNS" -gt 0 ]; then
+            echo "### ⚠️ 高危漏洞详情" >> $GITHUB_STEP_SUMMARY
+            jq -r '.dependencies[].vulnerabilities[]? | select(.severity == "HIGH") | "- **" + .name + "**: " + .description' target/dependency-check-report/dependency-check-report.json >> $GITHUB_STEP_SUMMARY
+          fi
+        else
+          echo "❌ 扫描报告文件未找到" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+    - name: Comment PR with security results
+      if: github.event_name == 'pull_request' && always()
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          const path = 'website_core/target/dependency-check-report/dependency-check-report.json';
+          
+          if (fs.existsSync(path)) {
+            const report = JSON.parse(fs.readFileSync(path, 'utf8'));
+            const totalDeps = report.dependencies.length;
+            const vulnerableDeps = report.dependencies.filter(dep => dep.vulnerabilities).length;
+            const highVulns = report.dependencies.flatMap(dep => dep.vulnerabilities || []).filter(vuln => vuln.severity === 'HIGH').length;
+            
+            const comment = `## 🔒 安全扫描结果
+            
+**扫描完成时间**: ${new Date().toLocaleString('zh-CN')}
+
+### 📊 统计信息
+- 总依赖数量: ${totalDeps}
+- 存在漏洞的依赖: ${vulnerableDeps}
+- 高危漏洞数量: ${highVulns}
+
+${highVulns > 0 ? '⚠️ **发现高危漏洞，请及时处理！**' : '✅ **未发现高危漏洞**'}
+
+详细报告请查看 Actions 中的 artifact。`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+          }
+          
+    - name: Fail build on high severity vulnerabilities
+      if: always()
+      run: |
+        cd website_core
+        if [ -f "target/dependency-check-report/dependency-check-report.json" ]; then
+          HIGH_VULNS=$(jq '[.dependencies[].vulnerabilities[]? | select(.severity == "HIGH")] | length' target/dependency-check-report/dependency-check-report.json)
+          if [ "$HIGH_VULNS" -gt 0 ]; then
+            echo "❌ 发现 $HIGH_VULNS 个高危漏洞，构建失败！"
+            exit 1
+          else
+            echo "✅ 未发现高危漏洞，构建通过。"
+          fi
+        fi
+
+  # 安全报告分发任务
+  distribute-reports:
+    name: Distribute Security Reports
+    needs: dependency-check
+    runs-on: ubuntu-latest
+    if: always() && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    
+    steps:
+    - name: Download dependency check reports
+      uses: actions/download-artifact@v3
+      with:
+        name: dependency-check-report
+        path: ./reports
+        
+    - name: Send email notification
+      if: always()
+      uses: dawidd6/action-send-mail@v3
+      with:
+        server_address: ${{ secrets.MAIL_SERVER }}
+        server_port: ${{ secrets.MAIL_PORT }}
+        username: ${{ secrets.MAIL_USERNAME }}
+        password: ${{ secrets.MAIL_PASSWORD }}
+        subject: "MyWeb 安全扫描报告 - ${{ github.run_number }}"
+        body: |
+          MyWeb 博客系统安全扫描已完成。
+          
+          扫描时间: ${{ github.run_started_at }}
+          分支: ${{ github.ref_name }}
+          提交: ${{ github.sha }}
+          
+          请查看附件中的详细报告。
+          
+          如有高危漏洞，请及时处理。
+        to: ${{ secrets.SECURITY_TEAM_EMAIL }}
+        from: ${{ secrets.MAIL_FROM }}
+        attachments: |
+          ./reports/dependency-check-report.html
+          ./reports/dependency-check-report.json
+          
+    - name: Upload to security dashboard
+      if: always()
+      run: |
+        # 这里可以集成企业的安全仪表板
+        echo "上传安全报告到企业安全仪表板..."
+        # curl -X POST -H "Authorization: Bearer ${{ secrets.SECURITY_DASHBOARD_TOKEN }}" \
+        #      -F "report=@./reports/dependency-check-report.json" \
+        #      "${{ secrets.SECURITY_DASHBOARD_URL }}/api/reports"

@@ -22,14 +22,14 @@ import java.util.stream.Collectors;
 
 /**
  * 会话管理服务
- * 
+ * <p>
  * 提供用户会话的全生命周期管理，包括：
  * - 会话创建和销毁
  * - 会话超时检查和自动清理
  * - 单用户单会话限制
  * - 会话监控和统计
  * - 会话数据清理
- * 
+ * <p>
  * 符合GB/T 22239-2019身份鉴别和剩余信息保护要求
  * 
  * @author MyWeb Security Team
@@ -284,6 +284,41 @@ public class SessionManagementService {
             
             // 终止会话
             return terminateSession(sessionId, "USER_LOGOUT");
+            
+        } catch (Exception e) {
+            log.error("用户退出登录失败: sessionId={}", sessionId, e);
+            return CompletableFuture.completedFuture(false);
+        }
+    }
+    
+    /**
+     * 用户主动退出登录（使用清理服务）
+     * 
+     * @param sessionId 会话ID
+     * @param ipAddress 客户端IP地址
+     * @return 退出是否成功
+     */
+    @Async
+    public CompletableFuture<Boolean> userLogoutWithCleanup(String sessionId, String ipAddress) {
+        try {
+            SessionInfo sessionInfo = getSession(sessionId);
+            if (sessionInfo == null) {
+                return CompletableFuture.completedFuture(false);
+            }
+            
+            // 记录用户主动退出
+            recordSessionActivity(sessionId, "USER_LOGOUT", ipAddress);
+            
+            // 注意：这里不能直接注入SessionCleanupService，因为会造成循环依赖
+            // 改为直接调用清理逻辑
+            cleanupSessionData(sessionId, sessionInfo.getUserId());
+            
+            // 记录审计日志
+            auditLogService.logUserLogout(sessionInfo.getUserId(), sessionInfo.getUsername(), 
+                    sessionInfo.getIpAddress(), "USER_LOGOUT");
+            
+            log.info("用户退出登录成功: sessionId={}, userId={}", sessionId, sessionInfo.getUserId());
+            return CompletableFuture.completedFuture(true);
             
         } catch (Exception e) {
             log.error("用户退出登录失败: sessionId={}", sessionId, e);
