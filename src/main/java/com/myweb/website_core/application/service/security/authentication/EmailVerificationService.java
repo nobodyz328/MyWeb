@@ -310,10 +310,92 @@ public class EmailVerificationService {
     }
     
     /**
+     * 发送邮箱绑定验证码
+     * 
+     * @param email 邮箱地址
+     * @return 异步执行结果
+     */
+    @Async
+    public CompletableFuture<Void> sendEmailBindingVerificationCode(String email) {
+        log.info("发送邮箱绑定验证码到邮箱: {}", email);
+        
+        // 检查频率限制
+        checkRateLimit(email);
+        
+        // 生成验证码
+        String code = generateVerificationCode();
+        
+        // 存储验证码到Redis
+        storeVerificationCode(email, code, VerificationType.EMAIL_BINDING);
+        
+        // 发送邮件
+        sendEmailBindingEmail(email, code);
+        
+        log.info("邮箱绑定验证码已发送到邮箱: {}", email);
+        return CompletableFuture.completedFuture(null);
+    }
+    
+    /**
+     * 验证邮箱绑定验证码
+     * 
+     * @param email 邮箱地址
+     * @param code 验证码
+     * @return 验证是否成功
+     */
+    public boolean verifyEmailBindingCode(String email, String code) {
+        return verifyCode(email, code, VerificationType.EMAIL_BINDING);
+    }
+    
+    /**
+     * 发送邮箱绑定验证邮件
+     * 
+     * @param email 邮箱地址
+     * @param code 验证码
+     */
+    private void sendEmailBindingEmail(String email, String code) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo(email);
+            message.setSubject("MyWeb - 邮箱绑定验证码");
+            message.setText(buildEmailBindingEmailContent(code));
+            
+            mailSender.send(message);
+            log.debug("邮箱绑定验证邮件发送成功: {}", email);
+        } catch (Exception e) {
+            log.error("邮箱绑定验证邮件发送失败: {}", email, e);
+            throw new ValidationException("验证码发送失败，请稍后重试");
+        }
+    }
+    
+    /**
+     * 构建邮箱绑定验证邮件内容
+     * 
+     * @param code 验证码
+     * @return 邮件内容
+     */
+    private String buildEmailBindingEmailContent(String code) {
+        return String.format("""
+            亲爱的用户，
+            
+            您正在进行邮箱绑定操作。
+            
+            您的验证码是：%s
+            
+            验证码有效期为5分钟，请及时使用。
+            如果您没有进行邮箱绑定操作，请忽略此邮件。
+            
+            为了您的账户安全，请不要将验证码告诉他人。
+            
+            MyWeb团队
+            """, code);
+    }
+    
+    /**
      * 验证类型枚举
      */
     public enum VerificationType {
         REGISTRATION,    // 注册验证
-        PASSWORD_RESET   // 密码重置
+        PASSWORD_RESET,  // 密码重置
+        EMAIL_BINDING    // 邮箱绑定
     }
 }

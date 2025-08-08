@@ -251,11 +251,12 @@
                     <nugetconfAnalyzerEnabled>false</nugetconfAnalyzerEnabled>
                     <!-- 跳过测试依赖 -->
                     <skipTestScope>false</skipTestScope>
-                    <!-- 详细日志 -->
+                    <!-- 详细日志
                     <verbose>true</verbose>
-                    <!-- 项目信息 -->
+                     项目信息
                     <name>MyWeb博客系统</name>
                     <applicationName>MyWeb Website Core</applicationName>
+                     -->
                 </configuration>
                 <executions>
                     <execution>
@@ -292,8 +293,9 @@
                             <formats>
                                 <format>ALL</format>
                             </formats>
+                            <!--
                             <verbose>true</verbose>
-                            <!-- 生成详细报告 -->
+                             生成详细报告 -->
                             <prettyPrint>true</prettyPrint>
                         </configuration>
                         <executions>

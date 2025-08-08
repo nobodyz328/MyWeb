@@ -204,6 +204,43 @@ public class SystemConstants {
      */
     public static final int ACCOUNT_LOCK_MINUTES = 30;
     
+    // ========== JWT相关常量 ==========
+    
+    /**
+     * JWT访问令牌默认过期时间（秒）- 1小时
+     */
+    public static final long JWT_ACCESS_TOKEN_EXPIRATION = 3600L;
+    
+    /**
+     * JWT刷新令牌默认过期时间（秒）- 7天
+     */
+    public static final long JWT_REFRESH_TOKEN_EXPIRATION = 604800L;
+    
+    /**
+     * JWT令牌类型
+     */
+    public static final String JWT_TOKEN_TYPE = "Bearer";
+    
+    /**
+     * JWT访问令牌类型标识
+     */
+    public static final String JWT_ACCESS_TOKEN_TYPE = "access";
+    
+    /**
+     * JWT刷新令牌类型标识
+     */
+    public static final String JWT_REFRESH_TOKEN_TYPE = "refresh";
+    
+    /**
+     * Authorization头名称
+     */
+    public static final String AUTHORIZATION_HEADER = "Authorization";
+    
+    /**
+     * Bearer令牌前缀
+     */
+    public static final String BEARER_PREFIX = "Bearer ";
+    
     // ========== 文件上传限制常量 ==========
     
     /**

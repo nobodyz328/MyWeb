@@ -1,0 +1,79 @@
+# 数据备份配置
+app:
+  backup:
+    # 是否启用自动备份
+    enabled: true
+    # 备份存储路径
+    path: /var/backups/myweb
+    # 备份文件保留天数
+    retention-days: 30
+    
+    # 备份调度配置
+    schedule:
+      # 全量备份Cron表达式（每天凌晨2点）
+      full-backup-cron: "0 0 2 * * ?"
+      # 增量备份Cron表达式（每4小时）
+      incremental-backup-cron: "0 0 */4 * * ?"
+      # 是否启用增量备份
+      enable-incremental: false
+      # 备份超时时间（分钟）
+      timeout-minutes: 60
+    
+    # 加密配置
+    encryption:
+      # 是否启用加密
+      enabled: true
+      # 加密算法
+      algorithm: AES-256-GCM
+      # 加密密钥（生产环境应使用环境变量）
+      key: ${BACKUP_ENCRYPTION_KEY:myWebBackupEncryptionKey2024!@#$%^&*}
+      # 密钥文件路径
+      key-file-path: /etc/myweb/backup.key
+    
+    # 压缩配置
+    compression:
+      # 是否启用压缩
+      enabled: true
+      # 压缩算法
+      algorithm: gzip
+      # 压缩级别（1-9）
+      level: 6
+    
+    # 存储配置
+    storage:
+      # 本地存储配置
+      local:
+        # 最大存储空间（GB）
+        max-size-gb: 100
+        # 存储空间告警阈值（百分比）
+        alert-threshold: 0.8
+      
+      # 远程存储配置
+      remote:
+        # 是否启用远程存储
+        enabled: false
+        # 存储类型（S3、FTP、SFTP等）
+        type: S3
+        # 存储配置
+        endpoint: ${S3_ENDPOINT:}
+        access-key: ${S3_ACCESS_KEY:}
+        secret-key: ${S3_SECRET_KEY:}
+        bucket: ${S3_BUCKET:myweb-backups}
+        region: ${S3_REGION:us-east-1}
+    
+    # 通知配置
+    notification:
+      # 是否启用通知
+      enabled: true
+      # 邮件通知配置
+      email:
+        # 是否启用邮件通知
+        enabled: true
+        # 通知接收者
+        recipients:
+          - admin@myweb.com
+          - backup@myweb.com
+        # 是否在备份成功时发送通知
+        notify-on-success: false
+        # 是否在备份失败时发送通知
+        notify-on-failure: true

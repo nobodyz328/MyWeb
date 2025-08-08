@@ -1,0 +1,88 @@
+# 访问频率限制配置
+app:
+  rate-limit:
+    # 是否启用访问频率限制
+    enabled: false
+    
+    # 默认限制配置
+    default-limit:
+      window-size-seconds: 60
+      max-requests: 100
+      limit-type: IP
+    
+    # 特定接口的限制配置
+    endpoints:
+      # 认证相关接口 - 严格限制
+      "/users/login":
+        window-size-seconds: 300  # 5分钟
+        max-requests: 5
+        limit-type: IP
+        enabled: true
+        description: "登录接口限制"
+      
+      "/users/register":
+        window-size-seconds: 600  # 10分钟
+        max-requests: 3
+        limit-type: IP
+        enabled: true
+        description: "注册接口限制"
+      
+      "/users/refresh-token":
+        window-size-seconds: 60
+        max-requests: 10
+        limit-type: USER
+        enabled: true
+        description: "令牌刷新限制"
+      
+      # 内容创建接口 - 中等限制
+      "/posts/create":
+        window-size-seconds: 300
+        max-requests: 10
+        limit-type: USER
+        enabled: true
+        description: "发帖接口限制"
+      
+      "/api/posts/*/comments":
+        window-size-seconds: 300
+        max-requests: 20
+        limit-type: USER
+        enabled: true
+        description: "评论接口限制"
+      
+      # 文件上传 - 严格限制
+      "/api/images/upload":
+        window-size-seconds: 300
+        max-requests: 5
+        limit-type: USER
+        enabled: true
+        description: "文件上传限制"
+      
+      # 搜索接口 - 宽松限制
+      "/search":
+        window-size-seconds: 60
+        max-requests: 100
+        limit-type: IP
+        enabled: true
+        description: "搜索接口限制"
+      
+      # API默认限制
+      "/api/**":
+        window-size-seconds: 60
+        max-requests: 60
+        limit-type: IP
+        enabled: true
+        description: "API默认限制"
+    
+    # Redis配置
+    redis:
+      key-prefix: "rate_limit:"
+      key-expiration-seconds: 3600
+    
+    # 告警配置
+    alert:
+      enabled: true
+      threshold: 0.8
+      interval-minutes: 5
+      recipients:
+        - admin@myweb.com
+        - security@myweb.com

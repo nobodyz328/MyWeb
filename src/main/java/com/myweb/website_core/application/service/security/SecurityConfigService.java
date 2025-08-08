@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.myweb.website_core.application.service.security.audit.AuditLogServiceAdapter;
 import com.myweb.website_core.common.config.BackupProperties;
-import com.myweb.website_core.common.config.JwtProperties;
+import com.myweb.website_core.infrastructure.config.JwtConfig;
 import com.myweb.website_core.common.config.RateLimitProperties;
 import com.myweb.website_core.common.config.SecurityProperties;
 import com.myweb.website_core.common.enums.AuditOperation;
@@ -56,7 +56,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class SecurityConfigService {
     
     private final SecurityProperties securityProperties;
-    private final JwtProperties jwtProperties;
+    private final JwtConfig jwtConfig;
     private final RateLimitProperties rateLimitProperties;
     private final BackupProperties backupProperties;
     private final AuditLogServiceAdapter auditLogService;
@@ -85,7 +85,7 @@ public class SecurityConfigService {
         
         SecurityConfigDTO config = new SecurityConfigDTO();
         config.setSecurityProperties(securityProperties);
-        config.setJwtProperties(jwtProperties);
+        config.setJwtProperties(jwtConfig);
         config.setRateLimitProperties(rateLimitProperties);
         config.setBackupProperties(backupProperties);
         config.setLastModified(LocalDateTime.now());
@@ -355,7 +355,7 @@ public class SecurityConfigService {
                 validateSecurityProperties((SecurityProperties) config);
                 break;
             case "jwt":
-                validateJwtProperties((JwtProperties) config);
+                validateJwtProperties((JwtConfig) config);
                 break;
             case "rateLimit":
                 validateRateLimitProperties((RateLimitProperties) config);
@@ -386,11 +386,11 @@ public class SecurityConfigService {
     /**
      * 验证JWT属性配置
      */
-    private void validateJwtProperties(JwtProperties config) {
+    private void validateJwtProperties(JwtConfig config) {
         if (config.getSecret() == null || config.getSecret().length() < 32) {
             throw new ValidationException("JWT密钥长度不能小于32位");
         }
-        if (config.getAccessTokenExpirationSeconds() < 300) {
+        if (config.getAccessTokenExpirationMillis() < 300) {
             throw new ValidationException("访问令牌过期时间不能小于5分钟");
         }
     }
@@ -429,7 +429,7 @@ public class SecurityConfigService {
                     BeanUtils.copyProperties(newConfig, securityProperties);
                     break;
                 case "jwt":
-                    BeanUtils.copyProperties(newConfig, jwtProperties);
+                    BeanUtils.copyProperties(newConfig, jwtConfig);
                     break;
                 case "rateLimit":
                     BeanUtils.copyProperties(newConfig, rateLimitProperties);
@@ -454,7 +454,7 @@ public class SecurityConfigService {
     private Object getOriginalConfig(String configType) {
         return switch (configType) {
             case "security" -> securityProperties;
-            case "jwt" -> jwtProperties;
+            case "jwt" -> jwtConfig;
             case "rateLimit" -> rateLimitProperties;
             case "backup" -> backupProperties;
             default -> null;
@@ -467,7 +467,7 @@ public class SecurityConfigService {
     private Class<?> getConfigClass(String configType) {
         return switch (configType) {
             case "security" -> SecurityProperties.class;
-            case "jwt" -> JwtProperties.class;
+            case "jwt" -> JwtConfig.class;
             case "rateLimit" -> RateLimitProperties.class;
             case "backup" -> BackupProperties.class;
             default -> Object.class;
@@ -480,7 +480,7 @@ public class SecurityConfigService {
     private Object createDefaultConfig(String configType) {
         return switch (configType) {
             case "security" -> new SecurityProperties();
-            case "jwt" -> new JwtProperties();
+            case "jwt" -> new JwtConfig();
             case "rateLimit" -> new RateLimitProperties();
             case "backup" -> new BackupProperties();
             default -> null;

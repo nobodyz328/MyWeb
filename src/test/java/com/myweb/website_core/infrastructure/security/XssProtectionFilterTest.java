@@ -1,9 +1,9 @@
 package com.myweb.website_core.infrastructure.security;
 
+import com.myweb.website_core.infrastructure.security.filter.XssHttpServletRequestWrapper;
+import com.myweb.website_core.infrastructure.security.filter.XssProtectionFilter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

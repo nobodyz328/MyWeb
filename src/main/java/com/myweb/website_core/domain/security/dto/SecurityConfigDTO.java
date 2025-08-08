@@ -1,7 +1,7 @@
 package com.myweb.website_core.domain.security.dto;
 
 import com.myweb.website_core.common.config.BackupProperties;
-import com.myweb.website_core.common.config.JwtProperties;
+import com.myweb.website_core.infrastructure.config.JwtConfig;
 import com.myweb.website_core.common.config.RateLimitProperties;
 import com.myweb.website_core.common.config.SecurityProperties;
 import lombok.Data;
@@ -28,7 +28,7 @@ public class SecurityConfigDTO {
     /**
      * JWT属性配置
      */
-    private JwtProperties jwtProperties;
+    private JwtConfig jwtProperties;
     
     /**
      * 访问频率限制配置

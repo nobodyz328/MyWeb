@@ -1,12 +1,16 @@
 console.log('Script loaded');
 
 // 获取用户ID
-const userId = localStorage.getItem('userId');
+const userId = AuthUtils.getUserId();
 console.log('User ID:', userId);
 
 // 页面加载完成后初始化
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', async function () {
   console.log('DOMContentLoaded event fired');
+  
+  // 初始化认证状态
+  await AuthUtils.initAuth();
+  
   loadAllPosts();
   initializeUserInterface();
 });
@@ -28,7 +32,7 @@ function loadAllPosts() {
       
       // 如果用户已登录，获取用户的交互状态
       let userInteractions = {};
-      if (userId) {
+      if (AuthUtils.isLoggedIn()) {
         userInteractions = await loadUserInteractionsForPosts(posts.map(p => p.id));
       }
       
@@ -77,7 +81,7 @@ function loadAllPosts() {
 
 // 加载用户对帖子的交互状态
 async function loadUserInteractionsForPosts(postIds) {
-  if (!userId || !postIds || postIds.length === 0) {
+  if (!AuthUtils.isLoggedIn() || !postIds || postIds.length === 0) {
     return {};
   }
 
@@ -121,7 +125,7 @@ async function loadUserInteractionsForPosts(postIds) {
 // 设置交互按钮事件处理
 function setupInteractionButtons() {
   // 如果用户未登录，不需要设置事件处理
-  if (!userId) return;
+  if (!AuthUtils.isLoggedIn()) return;
 
   // 点赞按钮
   document.querySelectorAll('.interaction-preview-btn[data-action="like"]').forEach(btn => {
@@ -136,11 +140,8 @@ function setupInteractionButtons() {
 
       try {
         // 发送请求
-        const response = await fetch(`/blog/api/posts/${postId}/like?userId=${userId}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          }
+        const response = await AuthUtils.authenticatedFetch(`/blog/api/posts/${postId}/like?userId=${userId}`, {
+          method: 'POST'
         });
 
         const data = await response.json();
@@ -194,11 +195,8 @@ function setupInteractionButtons() {
 
       try {
         // 发送请求
-        const response = await fetch(`/blog/api/posts/${postId}/collect?userId=${userId}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          }
+        const response = await AuthUtils.authenticatedFetch(`/blog/api/posts/${postId}/collect?userId=${userId}`, {
+          method: 'POST'
         });
 
         const data = await response.json();
@@ -242,16 +240,16 @@ function setupInteractionButtons() {
 
 // 初始化用户界面
 function initializeUserInterface() {
-  if (userId) {
+  if (AuthUtils.isLoggedIn()) {
     loadUserProfile();
   }
 }
 
 // 加载用户资料
-function loadUserProfile() {
-  fetch('/blog/users/' + userId + '/profile')
-    .then(res => res.json())
-    .then(data => {
+async function loadUserProfile() {
+  try {
+    const response = await AuthUtils.authenticatedFetch('/blog/users/' + userId + '/profile');
+    const data = await response.json();
       const username = data?.username || '用户';
       const followingCount = data?.followingCount || 0;
       const followersCount = data?.followersCount || 0;
@@ -264,14 +262,13 @@ function loadUserProfile() {
       // 更新用户卡片数据
       updateUserCard(username, followingCount, followersCount, likedCount, avatarUrl);
       
-      // 初始化用户卡片交互
-      initializeUserCard();
-    })
-    .catch(error => {
-      console.error('获取用户信息失败:', error);
-      // 处理错误情况，显示默认值
-      updateNavigationForGuest();
-    });
+    // 初始化用户卡片交互
+    initializeUserCard();
+  } catch (error) {
+    console.error('获取用户信息失败:', error);
+    // 处理错误情况，显示默认值
+    updateNavigationForGuest();
+  }
 }
 
 // 更新导航栏
@@ -328,8 +325,7 @@ function initializeUserCard() {
   if (logoutBtn) {
     logoutBtn.addEventListener('click', function () {
       if (confirm('确定要退出登录吗？')) {
-        localStorage.removeItem('userId');
-        window.location.reload();
+        AuthUtils.logout();
       }
     });
   }

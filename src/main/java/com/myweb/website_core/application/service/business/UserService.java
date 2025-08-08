@@ -71,5 +71,13 @@ public class UserService {
             throw new RuntimeException("获取用户资料失败: " + e.getMessage());
         }
     }
+    
+    public User findById(Long id) {
+        return userRepository.findById(id).orElse(null);
+    }
+    
+    public User save(User user) {
+        return userRepository.save(user);
+    }
 }
 

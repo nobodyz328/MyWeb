@@ -1,16 +1,15 @@
 package com.myweb.website_core.application.service.security.authentication;
 
-import com.myweb.website_core.application.service.integration.EmailService;
+import com.myweb.website_core.application.service.security.authentication.JWT.JwtTokenService;
+import com.myweb.website_core.application.service.security.authentication.JWT.TokenPair;
 import com.myweb.website_core.domain.business.dto.UserLoginResponse;
 import com.myweb.website_core.domain.business.entity.User;
 import com.myweb.website_core.infrastructure.persistence.repository.UserRepository;
 import com.myweb.website_core.infrastructure.security.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -21,13 +20,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 认证服务
  * 
- * 使用Spring Security标准流程处理用户认证
+ * 使用JWT令牌和Spring Security标准流程处理用户认证
  * 符合GB/T 22239-2019二级等保要求的身份鉴别机制
  */
 @Slf4j
@@ -39,6 +36,7 @@ public class AuthenticationService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final CustomUserDetailsService userDetailsService;
+    private final JwtTokenService jwtTokenService;
     
 
     
@@ -77,6 +75,9 @@ public class AuthenticationService {
             // 认证成功，设置安全上下文
             SecurityContextHolder.getContext().setAuthentication(authentication);
             
+            // 生成JWT令牌对
+            TokenPair tokenPair = jwtTokenService.generateTokenPair(user);
+            
             // 更新用户登录信息
             user.resetLoginAttempts();
             user.updateLastLoginInfo(LocalDateTime.now(), ipAddress);
@@ -84,8 +85,8 @@ public class AuthenticationService {
             
             log.info("用户登录成功: {}, IP: {}", username, ipAddress);
             
-            // 返回登录响应
-            return createLoginResponse(user);
+            // 返回登录响应（包含JWT令牌）
+            return createLoginResponse(user, tokenPair);
             
         } catch (AuthenticationException e) {
             // 认证失败，增加失败次数
@@ -109,6 +110,12 @@ public class AuthenticationService {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             String username = authentication != null ? authentication.getName() : "unknown";
+            
+            // 获取当前用户并撤销所有令牌
+            User currentUser = getCurrentUser();
+            if (currentUser != null) {
+                jwtTokenService.revokeAllUserTokens(currentUser.getId());
+            }
             
             // 清除安全上下文
             SecurityContextHolder.clearContext();
@@ -156,12 +163,43 @@ public class AuthenticationService {
     }
     
     /**
+     * 刷新访问令牌
+     * 
+     * @param refreshToken 刷新令牌
+     * @return 新的令牌对
+     */
+    public TokenPair refreshAccessToken(String refreshToken) {
+        try {
+            // 从刷新令牌中获取用户信息
+            String username = jwtTokenService.getUsernameFromToken(refreshToken);
+            if (username == null) {
+                throw new RuntimeException("无效的刷新令牌");
+            }
+            
+            // 查找用户
+            User user = userRepository.findByUsernameOrEmail(username, username)
+                    .orElseThrow(() -> new RuntimeException("用户不存在"));
+            
+            // 刷新令牌
+            TokenPair tokenPair = jwtTokenService.refreshToken(refreshToken, user);
+            
+            log.info("刷新访问令牌成功: {}", username);
+            return tokenPair;
+            
+        } catch (Exception e) {
+            log.error("刷新访问令牌失败", e);
+            throw new RuntimeException("刷新令牌失败: " + e.getMessage());
+        }
+    }
+    
+    /**
      * 创建登录响应对象
      * 
      * @param user 用户对象
+     * @param tokenPair JWT令牌对
      * @return 登录响应
      */
-    private UserLoginResponse createLoginResponse(User user) {
+    private UserLoginResponse createLoginResponse(User user, TokenPair tokenPair) {
         UserLoginResponse response = new UserLoginResponse();
         response.setId(user.getId());
         response.setUsername(user.getUsername());
@@ -174,6 +212,13 @@ public class AuthenticationService {
         response.setTotpEnabled(user.getTotpEnabled());
         response.setLastLoginTime(user.getLastLoginTime());
         response.setCreatedAt(user.getCreatedAt());
+        
+        // 设置JWT令牌信息
+        response.setAccessToken(tokenPair.getAccessToken());
+        response.setRefreshToken(tokenPair.getRefreshToken());
+        response.setTokenType(tokenPair.getTokenType());
+        response.setExpiresIn(tokenPair.getExpiresIn());
+        
         return response;
     }
 }

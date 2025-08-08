@@ -1,4 +1,4 @@
-package com.myweb.website_core.application.service.security.authentication;
+package com.myweb.website_core.application.service.security.authentication.JWT;
 
 import com.myweb.website_core.domain.business.entity.User;
 import io.jsonwebtoken.*;
@@ -38,7 +38,6 @@ public class JwtService {
      * -- GETTER --
      *  获取访问令牌过期时间（秒）
      *
-     * @return 访问令牌过期时间
      */
     @Getter
     @Value("${app.jwt.access-token-expiration:3600}")
@@ -48,7 +47,6 @@ public class JwtService {
      * -- GETTER --
      *  获取刷新令牌过期时间（秒）
      *
-     * @return 刷新令牌过期时间
      */
     @Getter
     @Value("${app.jwt.refresh-token-expiration:604800}")

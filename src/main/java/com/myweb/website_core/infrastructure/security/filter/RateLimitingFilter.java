@@ -1,4 +1,4 @@
-package com.myweb.website_core.infrastructure.security;
+package com.myweb.website_core.infrastructure.security.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.myweb.website_core.application.service.security.IPS.ratelimit.RateLimitingService;

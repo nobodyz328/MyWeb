@@ -1,4 +1,4 @@
-package com.myweb.website_core.infrastructure.security;
+package com.myweb.website_core.infrastructure.security.filter;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
@@ -29,7 +29,6 @@ import java.util.regex.Pattern;
  * 
  * @author MyWeb
  * @version 1.0
- * @since 2025-08-01
  */
 public class XssHttpServletRequestWrapper extends HttpServletRequestWrapper {
     

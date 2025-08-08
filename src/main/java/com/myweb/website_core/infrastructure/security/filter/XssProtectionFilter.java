@@ -1,11 +1,10 @@
-package com.myweb.website_core.infrastructure.security;
+package com.myweb.website_core.infrastructure.security.filter;
 
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
@@ -26,11 +25,10 @@ import java.io.IOException;
  * 
  * @author MyWeb
  * @version 1.0
- * @since 2025-08-01
  */
 @Slf4j
-@Component
-@Order(1) // 确保在其他安全过滤器之前执行
+//@Component
+//@Order(Ordered.HIGHEST_PRECEDENCE+1)
 public class XssProtectionFilter implements Filter {
 
     /**
@@ -63,9 +61,9 @@ public class XssProtectionFilter implements Filter {
         
         try {
             // 包装请求以进行XSS过滤
-            XssHttpServletRequestWrapper wrappedRequest = 
+            XssHttpServletRequestWrapper wrappedRequest =
                 new XssHttpServletRequestWrapper(httpRequest);
-            
+
             // 检查是否检测到XSS攻击
             if (wrappedRequest.hasXssAttempt()) {
                 log.warn("检测到XSS攻击尝试 - IP: {}, URI: {}, User-Agent: {}",

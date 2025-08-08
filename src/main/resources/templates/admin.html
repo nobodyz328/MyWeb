@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>管理界面 - MySteam社区</title>
+  <link rel="stylesheet" href="/blog/static/css/profile.css">
+</head>
+<body>
+  <nav class="steam-navbar">
+    <a href="/blog/profile" class="back-btn">🔙 返回个人中心</a>
+    <a href="/blog/view" class="logo">MySteam社区 - 管理界面</a>
+    <div></div>
+  </nav>
+
+  <div class="container">
+    <div class="profile-banner">
+      <div class="profile-info">
+        <h1 class="profile-username">🛡️ 系统管理</h1>
+        <div class="profile-bio">欢迎访问MySteam社区管理界面</div>
+        <div class="profile-stats">
+          <div class="profile-stat">
+            <span>管理权限</span>
+            <span class="profile-stat-number">已验证</span>
+          </div>
+          <div class="profile-stat">
+            <span>安全等级</span>
+            <span class="profile-stat-number">高</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="profile-content">
+      <div class="settings-section">
+        <h3>🎯 快速操作</h3>
+        <div class="totp-actions">
+          <button class="steam-btn" onclick="showNotification('用户管理功能开发中', 'info')">
+            👥 用户管理
+          </button>
+          <button class="steam-btn" onclick="showNotification('内容管理功能开发中', 'info')">
+            📝 内容管理
+          </button>
+          <button class="steam-btn" onclick="showNotification('系统设置功能开发中', 'info')">
+            ⚙️ 系统设置
+          </button>
+          <button class="steam-btn" onclick="showNotification('安全审计功能开发中', 'info')">
+            🔍 安全审计
+          </button>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>📊 系统状态</h3>
+        <div class="security-info">
+          <div class="info-row">
+            <span>系统状态:</span>
+            <span style="color: #4caf50;">正常运行</span>
+          </div>
+          <div class="info-row">
+            <span>在线用户:</span>
+            <span>--</span>
+          </div>
+          <div class="info-row">
+            <span>今日访问:</span>
+            <span>--</span>
+          </div>
+          <div class="info-row">
+            <span>系统版本:</span>
+            <span>v1.0</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>🔒 安全提醒</h3>
+        <div class="info-box">
+          <p>✅ 您已通过TOTP二次验证，可以安全地访问管理功能。</p>
+          <p>⚠️ 请注意保护您的管理权限，不要在公共设备上进行管理操作。</p>
+          <p>📝 所有管理操作都会被记录在审计日志中。</p>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>ℹ️ 功能说明</h3>
+        <div class="security-tips">
+          <ul>
+            <li><strong>用户管理:</strong> 查看和管理系统用户，包括角色分配、账户状态等</li>
+            <li><strong>内容管理:</strong> 审核和管理用户发布的帖子和评论</li>
+            <li><strong>系统设置:</strong> 配置系统参数和安全策略</li>
+            <li><strong>安全审计:</strong> 查看系统操作日志和安全事件</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    © 2025 MySteam社区 - 管理界面
+  </footer>
+
+  <script>
+    // 通知功能
+    function showNotification(message, type = 'info') {
+      // 移除现有通知
+      document.querySelectorAll('.notification').forEach(n => n.remove());
+
+      const notification = document.createElement('div');
+      notification.className = `notification notification-${type}`;
+      notification.textContent = message;
+      notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 12px 20px;
+        border-radius: 6px;
+        color: white;
+        font-size: 14px;
+        z-index: 1000;
+        max-width: 300px;
+        word-wrap: break-word;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      `;
+
+      if (type === 'success') {
+        notification.style.background = '#4caf50';
+        notification.style.border = '1px solid #45a049';
+      } else if (type === 'error') {
+        notification.style.background = '#f44336';
+        notification.style.border = '1px solid #da190b';
+      } else {
+        notification.style.background = '#2196f3';
+        notification.style.border = '1px solid #1976d2';
+      }
+
+      document.body.appendChild(notification);
+
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.remove();
+        }
+      }, 3000);
+    }
+
+    // 页面加载完成后显示欢迎消息
+    document.addEventListener('DOMContentLoaded', function() {
+      showNotification('欢迎访问管理界面！', 'success');
+    });
+  </script>
+</body>
+</html>

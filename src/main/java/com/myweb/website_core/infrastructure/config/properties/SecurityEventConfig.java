@@ -1,4 +1,4 @@
-package com.myweb.website_core.infrastructure.config;
+package com.myweb.website_core.infrastructure.config.properties;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
@@ -8,7 +8,7 @@ import java.util.List;
 
 /**
  * 安全事件配置类
- * 
+ * <p>
  * 管理安全事件监控和告警的配置参数
  */
 @Configuration

@@ -1,5 +1,6 @@
-package com.myweb.website_core.infrastructure.config;
+package com.myweb.website_core.infrastructure.config.properties;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
@@ -20,6 +21,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
  * @version 1.0
  * @since 2025-01-01
  */
+@Getter
 @Slf4j
 @Configuration
 @EnableAsync
@@ -73,77 +75,41 @@ public class VirusScanConfig {
     private AlertConfig alert = new AlertConfig();
     
     // ==================== Getter/Setter ====================
-    
-    public String getEngine() {
-        return engine;
-    }
-    
+
     public void setEngine(String engine) {
         this.engine = engine;
         log.info("病毒扫描引擎设置为: {}", engine);
     }
-    
-    public boolean isEnabled() {
-        return enabled;
-    }
-    
+
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
         log.info("病毒扫描功能{}", enabled ? "已启用" : "已禁用");
     }
-    
-    public int getTimeout() {
-        return timeout;
-    }
-    
+
     public void setTimeout(int timeout) {
         this.timeout = timeout;
     }
-    
-    public String getMaxFileSize() {
-        return maxFileSize;
-    }
-    
+
     public void setMaxFileSize(String maxFileSize) {
         this.maxFileSize = maxFileSize;
     }
-    
-    public boolean isBlockOnScanFailure() {
-        return blockOnScanFailure;
-    }
-    
+
     public void setBlockOnScanFailure(boolean blockOnScanFailure) {
         this.blockOnScanFailure = blockOnScanFailure;
     }
-    
-    public boolean isBlockOnEngineUnavailable() {
-        return blockOnEngineUnavailable;
-    }
-    
+
     public void setBlockOnEngineUnavailable(boolean blockOnEngineUnavailable) {
         this.blockOnEngineUnavailable = blockOnEngineUnavailable;
     }
-    
-    public ClamAVConfig getClamav() {
-        return clamav;
-    }
-    
+
     public void setClamav(ClamAVConfig clamav) {
         this.clamav = clamav;
     }
-    
-    public QuarantineConfig getQuarantine() {
-        return quarantine;
-    }
-    
+
     public void setQuarantine(QuarantineConfig quarantine) {
         this.quarantine = quarantine;
     }
-    
-    public AlertConfig getAlert() {
-        return alert;
-    }
-    
+
     public void setAlert(AlertConfig alert) {
         this.alert = alert;
     }

@@ -1,15 +1,12 @@
 package com.myweb.website_core.application.service.file;
 
-import com.myweb.website_core.infrastructure.config.FileUploadConfig;
+import com.myweb.website_core.infrastructure.config.properties.FileUploadConfig;
 import com.myweb.website_core.domain.business.entity.Image;
 import com.myweb.website_core.domain.business.entity.Post;
 import com.myweb.website_core.infrastructure.persistence.repository.ImageRepository;
 import com.myweb.website_core.infrastructure.persistence.repository.PostRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;

@@ -1,5 +1,6 @@
 package com.myweb.website_core.infrastructure.config;
 
+import lombok.Getter;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -17,23 +18,20 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class ApplicationContextProvider implements ApplicationContextAware {
-    
+
+    /**
+     * -- GETTER --
+     *  获取Spring应用上下文
+     *
+     */
+    @Getter
     private static ApplicationContext applicationContext;
     
     @Override
     public void setApplicationContext(ApplicationContext context) throws BeansException {
         applicationContext = context;
     }
-    
-    /**
-     * 获取Spring应用上下文
-     * 
-     * @return ApplicationContext实例
-     */
-    public static ApplicationContext getApplicationContext() {
-        return applicationContext;
-    }
-    
+
     /**
      * 根据Bean名称获取Bean实例
      * 

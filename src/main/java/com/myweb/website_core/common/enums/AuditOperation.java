@@ -77,6 +77,36 @@ public enum AuditOperation {
      */
     TOTP_DISABLED("TOTP_DISABLED", "TOTP禁用", "用户禁用二次验证"),
     
+    /**
+     * TOTP设置
+     */
+    TOTP_SETUP("TOTP_SETUP", "TOTP设置", "用户设置TOTP二次验证"),
+    
+    /**
+     * TOTP启用
+     */
+    TOTP_ENABLE("TOTP_ENABLE", "TOTP启用", "用户启用TOTP二次验证"),
+    
+    /**
+     * TOTP禁用
+     */
+    TOTP_DISABLE("TOTP_DISABLE", "TOTP禁用", "用户禁用TOTP二次验证"),
+    
+    /**
+     * TOTP验证
+     */
+    TOTP_VERIFY("TOTP_VERIFY", "TOTP验证", "用户验证TOTP代码"),
+    
+    /**
+     * 密码修改
+     */
+    PASSWORD_CHANGE("PASSWORD_CHANGE", "密码修改", "用户修改登录密码"),
+    
+    /**
+     * 管理员访问
+     */
+    ADMIN_ACCESS("ADMIN_ACCESS", "管理员访问", "管理员访问管理界面"),
+    
     // ========== 内容管理相关操作 ==========
     
     /**

@@ -1,0 +1,35 @@
+# JWT令牌服务配置
+app:
+  jwt:
+    # JWT签名密钥（生产环境请使用环境变量）
+    secret: ${JWT_SECRET:myWebSecretKeyForJWTTokenGenerationAndValidation2024CompliantWithGB22239}
+    
+    # 访问令牌过期时间（秒）- 1小时
+    access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRATION:3600}
+    
+    # 刷新令牌过期时间（秒）- 7天
+    refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRATION:604800}
+    
+    # 令牌发行者
+    issuer: ${JWT_ISSUER:MyWeb}
+    
+    # 是否启用JWT认证
+    enabled: ${JWT_ENABLED:true}
+    
+    # 令牌黑名单配置
+    blacklist:
+      enabled: true
+      cleanup-interval-minutes: 60
+      redis-key-prefix: "jwt:blacklist:"
+
+# Spring Security配置
+spring:
+  security:
+    # JWT无状态认证
+    sessions: stateless
+
+# 日志配置
+logging:
+  level:
+    com.myweb.website_core.infrastructure.security: DEBUG
+    com.myweb.website_core.application.service.security.authentication: DEBUG

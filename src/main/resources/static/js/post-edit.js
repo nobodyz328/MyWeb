@@ -1,6 +1,6 @@
 // 获取URL参数中的帖子ID（用于编辑模式）
 const postId = location.pathname.match(/\/edit\/(\d+)/)?.[1];
-const userId = localStorage.getItem('userId');
+const userId = AuthUtils.getUserId();
 const isEditMode = !!postId;
 
 console.log('Post ID:', postId);
@@ -8,8 +8,15 @@ console.log('User ID:', userId);
 console.log('Edit Mode:', isEditMode);
 
 // 页面加载完成后初始化
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', async function () {
   // 检查用户登录状态
+  if (!AuthUtils.requireAuth()) {
+    return;
+  }
+  
+  // 初始化认证状态
+  await AuthUtils.initAuth();
+  
   if (!userId) {
     showNotification('请先登录', 'error');
     setTimeout(() => {
@@ -20,7 +27,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // 如果是编辑模式，加载帖子数据
   if (isEditMode) {
-    loadPostForEdit();
+    await loadPostForEdit();
   }
 
   // 初始化表单事件
@@ -31,7 +38,7 @@ document.addEventListener('DOMContentLoaded', function () {
 // 加载帖子数据用于编辑
 async function loadPostForEdit() {
   try {
-    const response = await fetch(`/blog/api/posts/${postId}`);
+    const response = await AuthUtils.authenticatedFetch(`/blog/api/posts/${postId}`);
     if (!response.ok) {
       throw new Error('帖子不存在');
     }
@@ -134,7 +141,7 @@ async function handleFormSubmit(e) {
     const url = isEditMode ? `/blog/api/posts/${postId}` : '/blog/api/posts';
     const method = isEditMode ? 'PUT' : 'POST';
     
-    const response = await fetch(url, {
+    const response = await AuthUtils.authenticatedFetch(url, {
       method: method,
       headers: {
         'Content-Type': 'application/json'
@@ -155,10 +162,10 @@ async function handleFormSubmit(e) {
       throw new Error('请求失败');
     }
     
-  } catch (error) {
+  }catch (error){
     console.error('提交失败:', error);
     showNotification(isEditMode ? '更新失败，请重试' : '发布失败，请重试', 'error');
-  } finally {
+  }finally {
     submitBtn.textContent = originalText;
     submitBtn.disabled = false;
   }
@@ -270,14 +277,14 @@ async function uploadImageToServer(file) {
   progressDiv.className = 'upload-progress';
   progressDiv.innerHTML = `
     <div class="progress-bar">
-      <div class="progress-fill" style="width: 0%"></div>
+      <div class="progress-fill" style="width: 0"></div>
     </div>
     <div class="progress-text">上传中... 0%</div>
   `;
   document.getElementById('imagePreviewContainer').appendChild(progressDiv);
   
   try {
-    const response = await fetch('/blog/api/upload/image', {
+    const response = await AuthUtils.authenticatedFetch('/blog/api/upload/image', {
       method: 'POST',
       body: formData
     });
@@ -323,12 +330,13 @@ function removeImagePreview(button) {
 // 从服务器删除图片
 async function deleteImageFromServer(imageUrl) {
   try {
-    await fetch('/blog/api/upload/image', {
+    await AuthUtils.authenticatedFetch('/blog/api/upload/image', {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: `url=${encodeURIComponent(imageUrl)}`
+
     });
   } catch (error) {
     console.error('删除图片失败:', error);

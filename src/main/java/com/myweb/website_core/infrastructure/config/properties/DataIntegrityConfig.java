@@ -1,5 +1,6 @@
-package com.myweb.website_core.infrastructure.config;
+package com.myweb.website_core.infrastructure.config.properties;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
@@ -16,6 +17,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * @version 1.0
  * @since 2025-08-01
  */
+@Getter
 @Slf4j
 @Configuration
 @EnableAsync
@@ -74,92 +76,52 @@ public class DataIntegrityConfig {
     private boolean entityVerificationEnabled = true;
     
     // Getters and Setters
-    
-    public boolean isEnabled() {
-        return enabled;
-    }
-    
+
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
         log.info("数据完整性检查功能{}", enabled ? "已启用" : "已禁用");
     }
-    
-    public String getDefaultHashAlgorithm() {
-        return defaultHashAlgorithm;
-    }
-    
+
     public void setDefaultHashAlgorithm(String defaultHashAlgorithm) {
         this.defaultHashAlgorithm = defaultHashAlgorithm;
         log.info("默认哈希算法设置为: {}", defaultHashAlgorithm);
     }
-    
-    public boolean isScheduledCheckEnabled() {
-        return scheduledCheckEnabled;
-    }
-    
+
     public void setScheduledCheckEnabled(boolean scheduledCheckEnabled) {
         this.scheduledCheckEnabled = scheduledCheckEnabled;
         log.info("定时完整性检查功能{}", scheduledCheckEnabled ? "已启用" : "已禁用");
     }
-    
-    public String getCheckCronExpression() {
-        return checkCronExpression;
-    }
-    
+
     public void setCheckCronExpression(String checkCronExpression) {
         this.checkCronExpression = checkCronExpression;
         log.info("完整性检查定时任务设置为: {}", checkCronExpression);
     }
-    
-    public String getDeepCheckCronExpression() {
-        return deepCheckCronExpression;
-    }
-    
+
     public void setDeepCheckCronExpression(String deepCheckCronExpression) {
         this.deepCheckCronExpression = deepCheckCronExpression;
         log.info("深度完整性检查定时任务设置为: {}", deepCheckCronExpression);
     }
-    
-    public boolean isAlertEnabled() {
-        return alertEnabled;
-    }
-    
+
     public void setAlertEnabled(boolean alertEnabled) {
         this.alertEnabled = alertEnabled;
         log.info("完整性告警功能{}", alertEnabled ? "已启用" : "已禁用");
     }
-    
-    public int getAlertThreshold() {
-        return alertThreshold;
-    }
-    
+
     public void setAlertThreshold(int alertThreshold) {
         this.alertThreshold = alertThreshold;
         log.info("完整性告警阈值设置为: {}", alertThreshold);
     }
-    
-    public int getHashRecalculationDays() {
-        return hashRecalculationDays;
-    }
-    
+
     public void setHashRecalculationDays(int hashRecalculationDays) {
         this.hashRecalculationDays = hashRecalculationDays;
         log.info("哈希重新计算间隔设置为: {}天", hashRecalculationDays);
     }
-    
-    public boolean isAutoCalculateHash() {
-        return autoCalculateHash;
-    }
-    
+
     public void setAutoCalculateHash(boolean autoCalculateHash) {
         this.autoCalculateHash = autoCalculateHash;
         log.info("自动计算哈希功能{}", autoCalculateHash ? "已启用" : "已禁用");
     }
-    
-    public boolean isEntityVerificationEnabled() {
-        return entityVerificationEnabled;
-    }
-    
+
     public void setEntityVerificationEnabled(boolean entityVerificationEnabled) {
         this.entityVerificationEnabled = entityVerificationEnabled;
         log.info("实体完整性验证功能{}", entityVerificationEnabled ? "已启用" : "已禁用");

@@ -1,4 +1,4 @@
-package com.myweb.website_core.infrastructure.config;
+package com.myweb.website_core.infrastructure.config.properties;
 
 import lombok.Getter;
 import org.springframework.boot.context.properties.ConfigurationProperties;

@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -146,8 +147,7 @@ public class RateLimitingService {
         long now = System.currentTimeMillis();
         
         try {
-            @SuppressWarnings("unchecked")
-            java.util.List<Long> result = (java.util.List<Long>) redisTemplate.execute(
+            Object result = redisTemplate.execute(
                 slidingWindowScript,
                 Collections.singletonList(key),
                 limit.getWindowSizeSeconds(),
@@ -155,17 +155,22 @@ public class RateLimitingService {
                 now
             );
             
-            if (result != null && result.size() >= 3) {
-                long currentCount = result.get(0);
-                long maxRequests = result.get(1);
-                long allowed = result.get(2);
+            if (result instanceof java.util.List) {
+                @SuppressWarnings("unchecked")
+                java.util.List<Object> resultList = (java.util.List<Object>) result;
                 
-                // 检查是否需要告警
-                if (rateLimitProperties.shouldAlert((int) currentCount, (int) maxRequests)) {
-                    sendRateLimitAlert(key, currentCount, maxRequests);
+                if (resultList.size() >= 3) {
+                    long currentCount = ((Number) resultList.get(0)).longValue();
+                    long maxRequests = ((Number) resultList.get(1)).longValue();
+                    long allowed = ((Number) resultList.get(2)).longValue();
+                    
+                    // 检查是否需要告警
+                    if (rateLimitProperties.shouldAlert((int) currentCount, (int) maxRequests)) {
+                        sendRateLimitAlert(key, currentCount, maxRequests);
+                    }
+                    
+                    return allowed == 1;
                 }
-                
-                return allowed == 1;
             }
             
             return true;

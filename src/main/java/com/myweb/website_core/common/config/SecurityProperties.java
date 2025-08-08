@@ -65,7 +65,9 @@ public class SecurityProperties {
     /**
      * 密码策略配置
      */
+    @Getter
     public static class PasswordPolicy {
+        // Getters and Setters
         /**
          * 最小长度
          */
@@ -100,60 +102,31 @@ public class SecurityProperties {
          * BCrypt加密强度
          */
         private int bcryptStrength = 12;
-        
-        // Getters and Setters
-        public int getMinLength() {
-            return minLength;
-        }
-        
+
         public void setMinLength(int minLength) {
             this.minLength = minLength;
         }
-        
-        public int getMaxLength() {
-            return maxLength;
-        }
-        
+
         public void setMaxLength(int maxLength) {
             this.maxLength = maxLength;
         }
-        
-        public boolean isRequireUppercase() {
-            return requireUppercase;
-        }
-        
+
         public void setRequireUppercase(boolean requireUppercase) {
             this.requireUppercase = requireUppercase;
         }
-        
-        public boolean isRequireLowercase() {
-            return requireLowercase;
-        }
-        
+
         public void setRequireLowercase(boolean requireLowercase) {
             this.requireLowercase = requireLowercase;
         }
-        
-        public boolean isRequireDigit() {
-            return requireDigit;
-        }
-        
+
         public void setRequireDigit(boolean requireDigit) {
             this.requireDigit = requireDigit;
         }
-        
-        public boolean isRequireSpecialChar() {
-            return requireSpecialChar;
-        }
-        
+
         public void setRequireSpecialChar(boolean requireSpecialChar) {
             this.requireSpecialChar = requireSpecialChar;
         }
-        
-        public int getBcryptStrength() {
-            return bcryptStrength;
-        }
-        
+
         public void setBcryptStrength(int bcryptStrength) {
             this.bcryptStrength = bcryptStrength;
         }
@@ -162,7 +135,9 @@ public class SecurityProperties {
     /**
      * 账户锁定配置
      */
+    @Getter
     public static class AccountLock {
+        // Getters and Setters
         /**
          * 最大登录失败次数
          */
@@ -177,28 +152,15 @@ public class SecurityProperties {
          * 需要验证码的失败次数阈值
          */
         private int captchaThreshold = 3;
-        
-        // Getters and Setters
-        public int getMaxFailedAttempts() {
-            return maxFailedAttempts;
-        }
-        
+
         public void setMaxFailedAttempts(int maxFailedAttempts) {
             this.maxFailedAttempts = maxFailedAttempts;
         }
-        
-        public int getLockDurationMinutes() {
-            return lockDurationMinutes;
-        }
-        
+
         public void setLockDurationMinutes(int lockDurationMinutes) {
             this.lockDurationMinutes = lockDurationMinutes;
         }
-        
-        public int getCaptchaThreshold() {
-            return captchaThreshold;
-        }
-        
+
         public void setCaptchaThreshold(int captchaThreshold) {
             this.captchaThreshold = captchaThreshold;
         }
@@ -207,7 +169,9 @@ public class SecurityProperties {
     /**
      * 验证码配置
      */
+    @Getter
     public static class Captcha {
+        // Getters and Setters
         /**
          * 验证码长度
          */
@@ -222,28 +186,15 @@ public class SecurityProperties {
          * 验证码类型（数字、字母、混合）
          */
         private String type = "mixed";
-        
-        // Getters and Setters
-        public int getLength() {
-            return length;
-        }
-        
+
         public void setLength(int length) {
             this.length = length;
         }
-        
-        public int getExpirationMinutes() {
-            return expirationMinutes;
-        }
-        
+
         public void setExpirationMinutes(int expirationMinutes) {
             this.expirationMinutes = expirationMinutes;
         }
-        
-        public String getType() {
-            return type;
-        }
-        
+
         public void setType(String type) {
             this.type = type;
         }
@@ -252,7 +203,9 @@ public class SecurityProperties {
     /**
      * 会话管理配置
      */
+    @Getter
     public static class Session {
+        // Getters and Setters
         /**
          * 会话超时时间（分钟）
          */
@@ -267,28 +220,15 @@ public class SecurityProperties {
          * 会话清理间隔（分钟）
          */
         private int cleanupIntervalMinutes = 10;
-        
-        // Getters and Setters
-        public int getTimeoutMinutes() {
-            return timeoutMinutes;
-        }
-        
+
         public void setTimeoutMinutes(int timeoutMinutes) {
             this.timeoutMinutes = timeoutMinutes;
         }
-        
-        public boolean isSingleSession() {
-            return singleSession;
-        }
-        
+
         public void setSingleSession(boolean singleSession) {
             this.singleSession = singleSession;
         }
-        
-        public int getCleanupIntervalMinutes() {
-            return cleanupIntervalMinutes;
-        }
-        
+
         public void setCleanupIntervalMinutes(int cleanupIntervalMinutes) {
             this.cleanupIntervalMinutes = cleanupIntervalMinutes;
         }
@@ -297,7 +237,9 @@ public class SecurityProperties {
     /**
      * TOTP动态口令配置
      */
+    @Getter
     public static class Totp {
+        // Getters and Setters
         /**
          * 发行者名称
          */
@@ -317,36 +259,19 @@ public class SecurityProperties {
          * 密钥长度
          */
         private int secretLength = 32;
-        
-        // Getters and Setters
-        public String getIssuer() {
-            return issuer;
-        }
-        
+
         public void setIssuer(String issuer) {
             this.issuer = issuer;
         }
-        
-        public int getTimeStepSeconds() {
-            return timeStepSeconds;
-        }
-        
+
         public void setTimeStepSeconds(int timeStepSeconds) {
             this.timeStepSeconds = timeStepSeconds;
         }
-        
-        public int getAllowedTimeSkew() {
-            return allowedTimeSkew;
-        }
-        
+
         public void setAllowedTimeSkew(int allowedTimeSkew) {
             this.allowedTimeSkew = allowedTimeSkew;
         }
-        
-        public int getSecretLength() {
-            return secretLength;
-        }
-        
+
         public void setSecretLength(int secretLength) {
             this.secretLength = secretLength;
         }

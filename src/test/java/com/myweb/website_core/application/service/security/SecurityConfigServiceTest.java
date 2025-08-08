@@ -3,7 +3,7 @@ package com.myweb.website_core.application.service.security;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.myweb.website_core.application.service.security.audit.AuditLogServiceAdapter;
 import com.myweb.website_core.common.config.BackupProperties;
-import com.myweb.website_core.common.config.JwtProperties;
+import com.myweb.website_core.infrastructure.config.JwtConfig;
 import com.myweb.website_core.common.config.RateLimitProperties;
 import com.myweb.website_core.common.config.SecurityProperties;
 import com.myweb.website_core.common.exception.ValidationException;
@@ -43,7 +43,7 @@ class SecurityConfigServiceTest {
     private SecurityProperties securityProperties;
     
     @Mock
-    private JwtProperties jwtProperties;
+    private JwtConfig jwtConfig;
     
     @Mock
     private RateLimitProperties rateLimitProperties;
@@ -78,7 +78,7 @@ class SecurityConfigServiceTest {
     void testGetSecurityConfig() {
         // Given
         when(securityProperties.getPasswordPolicy()).thenReturn(new SecurityProperties.PasswordPolicy());
-        when(jwtProperties.getSecret()).thenReturn("test-secret");
+        when(jwtConfig.getSecret()).thenReturn("test-secret");
         when(rateLimitProperties.isEnabled()).thenReturn(true);
         when(backupProperties.isEnabled()).thenReturn(true);
         
@@ -152,7 +152,7 @@ class SecurityConfigServiceTest {
         // Given
         Map<String, Object> configUpdates = new HashMap<>();
         configUpdates.put("security", new SecurityProperties());
-        configUpdates.put("jwt", new JwtProperties());
+        configUpdates.put("jwt", new JwtConfig());
         String operator = "admin";
         
         when(valueOperations.setIfAbsent(anyString(), anyString(), any())).thenReturn(true);
@@ -253,9 +253,9 @@ class SecurityConfigServiceTest {
     @Test
     void testValidateJwtPropertiesSuccess() {
         // Given
-        JwtProperties validConfig = new JwtProperties();
+        JwtConfig validConfig = new JwtConfig();
         validConfig.setSecret("this-is-a-very-long-secret-key-for-jwt-token-generation");
-        validConfig.setAccessTokenExpirationSeconds(3600);
+        validConfig.setAccessTokenExpiration(3600L);
         
         // When & Then
         assertDoesNotThrow(() -> {
@@ -268,7 +268,7 @@ class SecurityConfigServiceTest {
     @Test
     void testValidateJwtPropertiesFailure() {
         // Given
-        JwtProperties invalidConfig = new JwtProperties();
+        JwtConfig invalidConfig = new JwtConfig();
         invalidConfig.setSecret("short"); // 密钥太短
         
         // When & Then

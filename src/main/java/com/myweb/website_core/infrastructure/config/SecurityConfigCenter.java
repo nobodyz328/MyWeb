@@ -7,7 +7,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 
 /**
  * 安全配置中心配置类
- * 
+ * <p>
  * 启用安全配置中心相关功能：
  * - 配置属性绑定
  * - 异步事件处理
@@ -22,13 +22,13 @@ import org.springframework.scheduling.annotation.EnableAsync;
 @EnableAsync
 @EnableConfigurationProperties({
     com.myweb.website_core.common.config.SecurityProperties.class,
-    com.myweb.website_core.common.config.JwtProperties.class,
+    com.myweb.website_core.infrastructure.config.JwtConfig.class,
     com.myweb.website_core.common.config.RateLimitProperties.class,
     com.myweb.website_core.common.config.BackupProperties.class
 })
-public class SecurityConfigCenterConfig {
+public class SecurityConfigCenter {
     
-    public SecurityConfigCenterConfig() {
+    public SecurityConfigCenter() {
         log.info("安全配置中心已启用 - 支持动态配置管理、实时变更生效、配置备份恢复");
     }
 }

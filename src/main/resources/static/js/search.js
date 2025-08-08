@@ -10,12 +10,16 @@ let isLoading = false;
 let hasMoreResults = true;
 
 // 获取用户ID
-const userId = localStorage.getItem('userId');
+const userId = AuthUtils.getUserId();
 console.log('User ID:', userId);
 
 // 页面加载完成后初始化
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', async function () {
   console.log('DOMContentLoaded event fired');
+  
+  // 初始化认证状态
+  await AuthUtils.initAuth();
+  
   initializeSearchPage();
   initializeUserInterface();
   loadHotKeywords();
@@ -85,7 +89,7 @@ function initializeUserInterface() {
 
 // 加载用户资料
 function loadUserProfile() {
-  fetch('/blog/users/' + userId + '/profile')
+  AuthUtils.authenticatedFetch('/blog/users/' + userId + '/profile')
       .then(res => res.json())
       .then(data => {
         const username = data?.username || '用户';
@@ -163,8 +167,7 @@ function initializeUserCard() {
   if (logoutBtn) {
     logoutBtn.addEventListener('click', function () {
       if (confirm('确定要退出登录吗？')) {
-        localStorage.removeItem('userId');
-        window.location.reload();
+        AuthUtils.logout();
       }
     });
   }
@@ -186,7 +189,7 @@ function initializeUserCard() {
 // 加载热门搜索关键词
 async function loadHotKeywords() {
   try {
-    const response = await fetch('/blog/api/search/hot-keywords?limit=10');
+    const response = await fetch('/blog/api/search/hot-keywords?limit=10'); // Public endpoint
     if (response.ok) {
       const result = await response.json();
       if (result.success && result.data && result.data.length > 0) {
@@ -282,7 +285,7 @@ async function loadSearchResults() {
         break;
     }
 
-    const response = await fetch(url);
+    const response = await fetch(url); // Public search endpoint
     const result = await response.json();
 
     if (result.success && result.data) {

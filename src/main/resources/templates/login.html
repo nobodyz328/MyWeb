@@ -577,7 +577,14 @@
         const data = await response.json();
         
         if (response.ok && data.id) {
+          // Store JWT tokens and user info
+          localStorage.setItem('accessToken', data.accessToken);
+          localStorage.setItem('refreshToken', data.refreshToken);
           localStorage.setItem('userId', data.id);
+          localStorage.setItem('username', data.username);
+          localStorage.setItem('tokenType', data.tokenType || 'Bearer');
+          localStorage.setItem('expiresIn', data.expiresIn);
+          
           window.location.href = '/blog/view';
         } else {
           const errorMsg = typeof data === 'string' ? data : '登录失败，请检查用户名和密码';
@@ -757,6 +764,16 @@
     // 页面加载时初始化密码规则
     document.addEventListener('DOMContentLoaded', function() {
       loadPasswordRules();
+      
+      // 清理旧的认证信息（如果只有userId而没有JWT令牌）
+      const userId = localStorage.getItem('userId');
+      const accessToken = localStorage.getItem('accessToken');
+      
+      if (userId && !accessToken) {
+        console.log('检测到旧的认证信息，清理中...');
+        localStorage.removeItem('userId');
+        localStorage.removeItem('username');
+      }
     });
   </script>
 </body>

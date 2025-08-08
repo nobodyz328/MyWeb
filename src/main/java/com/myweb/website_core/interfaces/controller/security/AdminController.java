@@ -2,6 +2,7 @@ package com.myweb.website_core.interfaces.controller.security;
 
 import com.myweb.website_core.application.service.security.audit.AuditLogService;
 import com.myweb.website_core.application.service.security.audit.SecurityEventService;
+import com.myweb.website_core.application.service.security.authentication.AuthenticationService;
 import com.myweb.website_core.application.service.security.authorization.AuthorizationService;
 import com.myweb.website_core.application.service.security.authorization.RoleService;
 import com.myweb.website_core.application.service.business.UserService;
@@ -35,7 +36,7 @@ import java.util.Map;
 
 /**
  * 管理员控制器
- * 
+ * <p>
  * 提供管理员界面和API，整合所有管理员功能：
  * - 审计日志查看
  * - 安全事件监控
@@ -43,9 +44,8 @@ import java.util.Map;
  * - 角色权限管理
  * - 系统统计
  * 
- * @author MyWeb Team
+ * @author MyWeb
  * @version 1.0
- * @since 2025-01-01
  */
 @Slf4j
 @Controller
@@ -60,11 +60,28 @@ public class AdminController {
     private final RoleService roleService;
     private final UserService userService;
     private final UserRepository userRepository;
+    private final AuthenticationService authenticationService;
+
+    @GetMapping
+    @Auditable(operation = AuditOperation.ADMIN_ACCESS, resourceType = "ADMIN", description = "访问管理界面")
+    public String adminIndex() {
+        User currentUser = authenticationService.getCurrentUser();
+
+        // 检查用户是否有管理权限
+        if (currentUser == null || !currentUser.hasManagementPermission()) {
+            log.warn("非管理员用户尝试访问管理界面: {}",
+                    currentUser != null ? currentUser.getUsername() : "anonymous");
+            return "redirect:/blog/view";
+        }
+
+        log.info("管理员 {} 访问管理界面", currentUser.getUsername());
+        return "admin";
+    }
 
     /**
      * 管理员主页
      */
-    @GetMapping
+    @GetMapping("/admin-dashboard")
     @Auditable(operation = AuditOperation.ADMIN_LOGIN, resourceType = "ADMIN")
     public String adminDashboard(Model model, Authentication authentication) {
         try {

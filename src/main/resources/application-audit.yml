@@ -1,0 +1,95 @@
+# 审计日志配置
+app:
+  audit:
+    # 日志保留天数
+    retention-days: 90
+    # 批量处理大小
+    batch-size: 1000
+    # 导出记录数限制
+    export-limit: 10000
+    # 异步队列大小
+    queue-size: 1000
+    
+    # 存储管理配置
+    storage:
+      # 日志存储路径
+      path: /var/log/myweb
+      # 存储空间告警阈值（百分比）
+      warning-threshold: 70
+      # 存储空间严重告警阈值（百分比）
+      critical-threshold: 90
+      # 日志文件保留天数
+      retention-days: 90
+      # 压缩阈值（MB）
+      compression-threshold: 100
+      # 是否启用自动压缩
+      auto-compression: true
+      # 是否启用完整性校验
+      integrity-check: true
+    
+    # 备份管理配置
+    backup:
+      # 备份存储路径
+      path: /var/backup/myweb/logs
+      # 备份文件保留天数
+      retention-days: 365
+
+  # 数据完整性配置
+  data-integrity:
+    # 是否启用数据完整性检查
+    enabled: true
+    # 默认哈希算法
+    default-hash-algorithm: SHA-256
+    # 是否启用定时完整性检查
+    scheduled-check-enabled: true
+    # 完整性检查的cron表达式（每天凌晨4点）
+    check-cron-expression: "0 0 4 * * ?"
+    # 深度检查的cron表达式（每周日凌晨3点）
+    deep-check-cron-expression: "0 0 3 ? * SUN"
+    # 是否启用完整性告警
+    alert-enabled: true
+    # 告警阈值（发现问题数量超过此值时发送告警）
+    alert-threshold: 10
+    # 哈希重新计算的间隔天数
+    hash-recalculation-days: 30
+    # 是否在实体保存时自动计算哈希
+    auto-calculate-hash: true
+    # 是否启用实体完整性验证
+    entity-verification-enabled: true
+
+  # 文件完整性配置
+  file-integrity:
+    # 是否启用文件完整性检查
+    enabled: true
+    # 关键文件路径
+    critical-files-path: src/main/resources
+    # 哈希值存储路径
+    hash-storage-path: ${java.io.tmpdir}/myweb/file-hashes
+    # 备份文件存储路径
+    backup-path: ${java.io.tmpdir}/myweb/file-backups
+    # 是否启用告警
+    alert-enabled: true
+    # 检查间隔（小时）
+    check-interval-hours: 1
+    # 是否在系统启动时检查
+    startup-check-enabled: true
+    # 支持的文件扩展名
+    supported-extensions:
+      - yml
+      - yaml
+      - properties
+      - xml
+      - json
+      - p12
+      - jks
+    # 关键文件列表
+    critical-files:
+      - application.yml
+      - application-security.yml
+      - application-jwt.yml
+      - logback-spring.xml
+      - keystore.p12
+    # 关键目录列表
+    critical-directories:
+      - src/main/resources
+      - src/main/java/com/myweb/website_core/infrastructure/config

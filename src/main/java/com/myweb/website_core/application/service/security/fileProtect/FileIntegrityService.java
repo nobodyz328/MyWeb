@@ -69,9 +69,6 @@ public class FileIntegrityService {
     // 关键文件列表
     private static final Set<String> CRITICAL_FILES = Set.of(
         "application.yml",
-        "application-security.yml", 
-        "application-security-events.yml",
-        "logback-spring.xml",
         "keystore.p12"
     );
     

@@ -511,4 +511,348 @@ footer {
     flex-direction: column;
     align-items: stretch;
   }
+}/* ===
+================= 新增设置页面样式 ==================== */
+
+.form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.form-row label {
+  color: #c7d5e0;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.form-row .form-input {
+  width: 100%;
+}
+
+.form-row textarea.form-input {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.current-info {
+  background: rgba(102, 192, 244, 0.1);
+  border: 1px solid rgba(102, 192, 244, 0.2);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+  color: #c7d5e0;
+}
+
+.verified-badge {
+  color: #4caf50;
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+
+.info-box {
+  background: rgba(102, 192, 244, 0.1);
+  border: 1px solid rgba(102, 192, 244, 0.2);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  color: #c7d5e0;
+  line-height: 1.5;
+}
+
+.info-box.success {
+  background: rgba(76, 175, 80, 0.1);
+  border-color: rgba(76, 175, 80, 0.2);
+  color: #4caf50;
+}
+
+.info-box.error {
+  background: rgba(244, 67, 54, 0.1);
+  border-color: rgba(244, 67, 54, 0.2);
+  color: #f44336;
+}
+
+.warning-box {
+  background: rgba(255, 152, 0, 0.1);
+  border: 1px solid rgba(255, 152, 0, 0.2);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  color: #ff9800;
+  line-height: 1.5;
+}
+
+/* TOTP相关样式 */
+.totp-status {
+  margin-bottom: 20px;
+}
+
+.setup-steps {
+  background: rgba(27, 40, 56, 0.5);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+  border: 1px solid rgba(102, 192, 244, 0.1);
+}
+
+.setup-steps h4 {
+  color: #66c0f4;
+  margin: 0 0 12px 0;
+  font-size: 1.1rem;
+}
+
+.setup-steps ol {
+  color: #c7d5e0;
+  margin: 0;
+  padding-left: 20px;
+  line-height: 1.6;
+}
+
+.setup-steps li {
+  margin-bottom: 8px;
+}
+
+.qr-code-section {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.qr-code-container {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+  display: inline-block;
+  border: 2px solid rgba(102, 192, 244, 0.3);
+}
+
+.qr-code-container img {
+  display: block;
+  border-radius: 8px;
+}
+
+.manual-key {
+  background: rgba(27, 40, 56, 0.8);
+  border: 1px solid rgba(102, 192, 244, 0.2);
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 12px;
+}
+
+.manual-key code {
+  background: rgba(102, 192, 244, 0.1);
+  color: #66c0f4;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  word-break: break-all;
+}
+
+.totp-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+/* 安全信息样式 */
+.security-info {
+  background: rgba(27, 40, 56, 0.5);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(102, 192, 244, 0.1);
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(102, 192, 244, 0.1);
+  color: #c7d5e0;
+}
+
+.info-row:last-child {
+  border-bottom: none;
+}
+
+.info-row span:first-child {
+  color: #8f98a0;
+  font-size: 0.95rem;
+}
+
+.info-row span:last-child {
+  color: #66c0f4;
+  font-weight: 500;
+}
+
+.security-tips {
+  margin-top: 16px;
+}
+
+.security-tips h4 {
+  color: #66c0f4;
+  margin: 0 0 12px 0;
+  font-size: 1.1rem;
+}
+
+.security-tips ul {
+  color: #c7d5e0;
+  margin: 0;
+  padding-left: 20px;
+  line-height: 1.6;
+}
+
+.security-tips li {
+  margin-bottom: 8px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .form-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .form-group .form-input {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+  
+  .totp-actions {
+    flex-direction: column;
+  }
+  
+  .totp-actions .steam-btn {
+    width: 100%;
+  }
+  
+  .info-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .qr-code-container {
+    padding: 16px;
+  }
+  
+  .manual-key code {
+    font-size: 0.8rem;
+  }
+}
+
+/* 通知样式增强 */
+.notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  z-index: 1000;
+  max-width: 300px;
+  word-wrap: break-word;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.notification-success {
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.9), rgba(56, 142, 60, 0.9));
+  border-color: rgba(76, 175, 80, 0.3);
+}
+
+.notification-error {
+  background: linear-gradient(135deg, rgba(244, 67, 54, 0.9), rgba(211, 47, 47, 0.9));
+  border-color: rgba(244, 67, 54, 0.3);
+}
+
+.notification-info {
+  background: linear-gradient(135deg, rgba(102, 192, 244, 0.9), rgba(74, 158, 255, 0.9));
+  border-color: rgba(102, 192, 244, 0.3);
+}
+
+/* 加载状态样式 */
+.loading-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(102, 192, 244, 0.3);
+  border-radius: 50%;
+  border-top-color: #66c0f4;
+  animation: spin 1s ease-in-out infinite;
+  margin-right: 8px;
+}
+
+/* 按钮禁用状态 */
+.steam-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.steam-btn:disabled:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* 表单验证样式 */
+.form-input:invalid {
+  border-color: rgba(244, 67, 54, 0.5);
+  box-shadow: 0 0 0 2px rgba(244, 67, 54, 0.2);
+}
+
+.form-input:valid {
+  border-color: rgba(76, 175, 80, 0.5);
+}
+
+/* 动画效果 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.settings-section {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* 高对比度模式支持 */
+@media (prefers-contrast: high) {
+  .form-input {
+    border-width: 2px;
+  }
+  
+  .steam-btn {
+    border: 2px solid currentColor;
+  }
+  
+  .info-box, .warning-box {
+    border-width: 2px;
+  }
+}
+
+/* 减少动画模式支持 */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .loading-spinner {
+    animation: none;
+    border-top-color: transparent;
+  }
 }

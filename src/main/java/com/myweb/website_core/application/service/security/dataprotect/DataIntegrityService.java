@@ -29,9 +29,8 @@ import java.util.concurrent.CompletableFuture;
  * <p>
  * 符合GB/T 22239-2019数据完整性保护要求 7.1, 7.2, 7.4, 7.5
  * 
- * @author MyWeb Security Team
+ * @author MyWeb
  * @version 1.0
- * @since 2025-08-01
  */
 @Slf4j
 @Service

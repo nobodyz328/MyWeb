@@ -74,6 +74,7 @@ public class RedisKey {
     // ========== 认证相关键 ==========
     public static final String JWT_BLACKLIST_PREFIX = AUTH_MODULE + SEPARATOR + "jwt" + SEPARATOR + "blacklist" + SEPARATOR;
     public static final String AUTH_TOKEN_PREFIX = AUTH_MODULE + SEPARATOR + "token" + SEPARATOR;
+    public static final String USER_ACTIVE_TOKENS_PREFIX = AUTH_MODULE + SEPARATOR + "user" + SEPARATOR + "tokens" + SEPARATOR;
     public static final String TOTP_SECRET_PREFIX = AUTH_MODULE + SEPARATOR + "totp" + SEPARATOR + "secret" + SEPARATOR;
     public static final String PASSWORD_RESET_PREFIX = AUTH_MODULE + SEPARATOR + "password_reset" + SEPARATOR;
     public static final String REGISTRATION_RATE_LIMIT_PREFIX = AUTH_MODULE + SEPARATOR + "registration" + SEPARATOR + "rate_limit" + SEPARATOR;
@@ -308,6 +309,20 @@ public class RedisKey {
      */
     public static String jwtBlacklistKey(String jti) {
         return JWT_BLACKLIST_PREFIX + jti;
+    }
+    
+    /**
+     * 黑名单令牌键
+     */
+    public static String getBlacklistedToken(String token) {
+        return JWT_BLACKLIST_PREFIX + token.hashCode();
+    }
+    
+    /**
+     * 用户活跃令牌键
+     */
+    public static String getUserActiveTokens(Long userId) {
+        return USER_ACTIVE_TOKENS_PREFIX + userId;
     }
     
     /**

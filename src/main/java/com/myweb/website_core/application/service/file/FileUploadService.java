@@ -1,6 +1,6 @@
 package com.myweb.website_core.application.service.file;
 
-import com.myweb.website_core.infrastructure.config.FileUploadConfig;
+import com.myweb.website_core.infrastructure.config.properties.FileUploadConfig;
 import com.myweb.website_core.domain.business.entity.Image;
 import com.myweb.website_core.common.exception.FileUploadException;
 import org.apache.commons.io.FilenameUtils;

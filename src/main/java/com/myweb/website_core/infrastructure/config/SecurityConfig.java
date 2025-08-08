@@ -2,20 +2,22 @@ package com.myweb.website_core.infrastructure.config;
 
 import com.myweb.website_core.common.constant.SecurityConstants;
 import com.myweb.website_core.infrastructure.security.*;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.myweb.website_core.infrastructure.security.filter.ContentCachingFilter;
+import com.myweb.website_core.infrastructure.security.filter.JwtAuthenticationFilter;
+import com.myweb.website_core.infrastructure.security.filter.RateLimitingFilter;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-
 import org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler;
 import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -27,29 +29,29 @@ import org.springframework.security.config.annotation.authentication.configurati
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true, securedEnabled = true, jsr250Enabled = true)
+@RequiredArgsConstructor
 public class SecurityConfig {
-    
-    @Autowired
-    private CustomUserDetailsService userDetailsService;
-    
-    @Autowired
-    private CustomAccessDeniedHandler accessDeniedHandler;
-    
-    @Autowired
-    private CustomPermissionEvaluator permissionEvaluator;
-    
-    @Autowired
-    private CsrfExceptionHandler csrfExceptionHandler;
-    
-    @Autowired
-    private RateLimitingFilter rateLimitingFilter;
+    private final CustomUserDetailsService userDetailsService;
+    private final UnifiedAccessDeniedHandler unifiedAccessDeniedHandler;
+    private final CustomPermissionEvaluator permissionEvaluator;
+    private final RateLimitingFilter rateLimitingFilter;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+    //private final ContentCachingFilter contentCachingFilter;
+
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+            // 配置会话管理为无状态（JWT模式）
+            .sessionManagement(session -> session
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            )
             .authorizeHttpRequests(authz -> authz
                 // 公开访问的资源
                 .requestMatchers("/login", "/register", "/static/**", "/css/**", "/js/**", "/images/**", 
                                "/", "/view/**", "/users/register", "/users/login", "/users/register/code", 
+                               "/users/refresh-token", "/users/check-username", "/users/check-email",
                                "/post/*", "/api/posts", "/api/posts/*", "/api/images/*", "/posts/top-liked", 
                                "/search", "/announcements", "/posts/*/comments", "/error/**").permitAll()
                 
@@ -79,30 +81,37 @@ public class SecurityConfig {
             )
             .userDetailsService(userDetailsService)
             .exceptionHandling(exceptions -> exceptions
-                .accessDeniedHandler(csrfExceptionHandler)
+                .authenticationEntryPoint(jwtAuthenticationEntryPoint)
+                .accessDeniedHandler(unifiedAccessDeniedHandler)
             )
             .logout(logout -> logout
-                    .logoutUrl("/user/logout")
+                .logoutUrl("/users/logout")
                 .logoutSuccessUrl("/view")
                 .permitAll()
             )
             .csrf(csrf -> csrf
                 .csrfTokenRepository(csrfTokenRepository())
                 .ignoringRequestMatchers(
+                    // API接口不需要CSRF保护（使用JWT）
+                    "/api/**",
                     // 公开访问的资源不需要CSRF保护
                     "/login", "/register", "/static/**", "/css/**", "/js/**", "/images/**",
                     "/", "/view/**", "/users/register", "/users/login", "/users/register/code",
+                    "/users/refresh-token", "/users/logout", "/users/check-username", "/users/check-email",
                     "/post/*", "/api/posts", "/api/posts/*", "/api/images/*", "/posts/top-liked",
                     "/search", "/announcements", "/posts/*/comments", "/error/**",
                     // CSRF令牌获取接口
                     "/api/csrf/token"
                 )
             )
-            // 添加访问频率限制过滤器
-            .addFilterBefore(rateLimitingFilter, UsernamePasswordAuthenticationFilter.class);
+            // 添加过滤器
+                //.addFilterBefore(contentCachingFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(rateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 
+    
     /**
      * 配置BCrypt密码编码器
      * 使用强度12，符合GB/T 22239-2019身份鉴别要求
@@ -115,7 +124,7 @@ public class SecurityConfig {
     }
     
     /**
-     * 配置BCrypt密码编码器Bean（用于依赖注入）
+     * 配置BCrypt密码编码器Bean
      * 
      * @return BCrypt密码编码器
      */

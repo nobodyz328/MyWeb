@@ -1,5 +1,6 @@
 package com.myweb.website_core.infrastructure.security;
 
+import com.myweb.website_core.infrastructure.security.filter.XssHttpServletRequestWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JWT前端集成测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        button { margin: 5px; padding: 8px 16px; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>JWT前端集成测试</h1>
+    
+    <div class="test-section">
+        <h2>认证状态检查</h2>
+        <button onclick="checkAuthStatus()">检查认证状态</button>
+        <div id="authStatus"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>令牌信息</h2>
+        <button onclick="showTokenInfo()">显示令牌信息</button>
+        <div id="tokenInfo"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>API测试</h2>
+        <button onclick="testPublicAPI()">测试公开API</button>
+        <button onclick="testProtectedAPI()">测试受保护API</button>
+        <div id="apiResults"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>令牌刷新测试</h2>
+        <button onclick="testTokenRefresh()">测试令牌刷新</button>
+        <div id="refreshResults"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>清理操作</h2>
+        <button onclick="clearAuth()">清除认证信息</button>
+        <button onclick="simulateLogin()">模拟登录</button>
+        <div id="cleanupResults"></div>
+    </div>
+
+    <script src="/blog/static/js/auth-utils.js"></script>
+    <script>
+        function log(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const className = type === 'success' ? 'success' : type === 'error' ? 'error' : 'info';
+            element.innerHTML += `<div class="${className}">[${new Date().toLocaleTimeString()}] ${message}</div>`;
+        }
+        
+        function checkAuthStatus() {
+            const statusDiv = document.getElementById('authStatus');
+            statusDiv.innerHTML = '';
+            
+            const isLoggedIn = AuthUtils.isLoggedIn();
+            const userId = AuthUtils.getUserId();
+            const username = AuthUtils.getUsername();
+            const accessToken = AuthUtils.getAccessToken();
+            const refreshToken = AuthUtils.getRefreshToken();
+            
+            log('authStatus', `登录状态: ${isLoggedIn}`, isLoggedIn ? 'success' : 'error');
+            log('authStatus', `用户ID: ${userId || '无'}`);
+            log('authStatus', `用户名: ${username || '无'}`);
+            log('authStatus', `访问令牌: ${accessToken ? '存在' : '无'}`, accessToken ? 'success' : 'error');
+            log('authStatus', `刷新令牌: ${refreshToken ? '存在' : '无'}`, refreshToken ? 'success' : 'error');
+            
+            if (accessToken) {
+                const isExpired = AuthUtils.isTokenExpired();
+                log('authStatus', `令牌是否过期: ${isExpired}`, isExpired ? 'error' : 'success');
+            }
+        }
+        
+        function showTokenInfo() {
+            const tokenDiv = document.getElementById('tokenInfo');
+            tokenDiv.innerHTML = '';
+            
+            const accessToken = AuthUtils.getAccessToken();
+            if (!accessToken) {
+                log('tokenInfo', '没有访问令牌', 'error');
+                return;
+            }
+            
+            try {
+                // 解析JWT令牌
+                const parts = accessToken.split('.');
+                const header = JSON.parse(atob(parts[0]));
+                const payload = JSON.parse(atob(parts[1]));
+                
+                log('tokenInfo', '令牌头部:');
+                tokenDiv.innerHTML += `<pre>${JSON.stringify(header, null, 2)}</pre>`;
+                
+                log('tokenInfo', '令牌载荷:');
+                tokenDiv.innerHTML += `<pre>${JSON.stringify(payload, null, 2)}</pre>`;
+                
+                const now = Math.floor(Date.now() / 1000);
+                const timeUntilExpiry = payload.exp - now;
+                log('tokenInfo', `距离过期还有: ${timeUntilExpiry}秒`, timeUntilExpiry > 0 ? 'success' : 'error');
+                
+            } catch (error) {
+                log('tokenInfo', `解析令牌失败: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testPublicAPI() {
+            const resultsDiv = document.getElementById('apiResults');
+            resultsDiv.innerHTML = '';
+            
+            try {
+                log('apiResults', '测试公开API...');
+                const response = await fetch('/blog/api/posts');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    log('apiResults', `公开API调用成功，获取到${data.length || 0}条数据`, 'success');
+                } else {
+                    log('apiResults', `公开API调用失败: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                log('apiResults', `公开API调用异常: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testProtectedAPI() {
+            const resultsDiv = document.getElementById('apiResults');
+            
+            if (!AuthUtils.isLoggedIn()) {
+                log('apiResults', '用户未登录，无法测试受保护API', 'error');
+                return;
+            }
+            
+            try {
+                log('apiResults', '测试受保护API...');
+                const userId = AuthUtils.getUserId();
+                const response = await AuthUtils.authenticatedFetch(`/blog/users/${userId}/profile`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    log('apiResults', `受保护API调用成功，用户: ${data.username}`, 'success');
+                } else {
+                    log('apiResults', `受保护API调用失败: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                log('apiResults', `受保护API调用异常: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testTokenRefresh() {
+            const resultsDiv = document.getElementById('refreshResults');
+            resultsDiv.innerHTML = '';
+            
+            if (!AuthUtils.getRefreshToken()) {
+                log('refreshResults', '没有刷新令牌', 'error');
+                return;
+            }
+            
+            try {
+                log('refreshResults', '测试令牌刷新...');
+                const newToken = await AuthUtils.refreshAccessToken();
+                log('refreshResults', '令牌刷新成功', 'success');
+                log('refreshResults', `新令牌: ${newToken.substring(0, 50)}...`);
+            } catch (error) {
+                log('refreshResults', `令牌刷新失败: ${error.message}`, 'error');
+            }
+        }
+        
+        function clearAuth() {
+            const resultsDiv = document.getElementById('cleanupResults');
+            resultsDiv.innerHTML = '';
+            
+            AuthUtils.clearAuth();
+            log('cleanupResults', '认证信息已清除', 'success');
+        }
+        
+        function simulateLogin() {
+            const resultsDiv = document.getElementById('cleanupResults');
+            
+            // 模拟登录数据（仅用于测试）
+            const mockLoginData = {
+                id: '123',
+                username: 'testuser',
+                accessToken: 'mock.access.token',
+                refreshToken: 'mock.refresh.token',
+                tokenType: 'Bearer',
+                expiresIn: 3600
+            };
+            
+            localStorage.setItem('accessToken', mockLoginData.accessToken);
+            localStorage.setItem('refreshToken', mockLoginData.refreshToken);
+            localStorage.setItem('userId', mockLoginData.id);
+            localStorage.setItem('username', mockLoginData.username);
+            localStorage.setItem('tokenType', mockLoginData.tokenType);
+            localStorage.setItem('expiresIn', mockLoginData.expiresIn);
+            
+            log('cleanupResults', '模拟登录数据已设置', 'success');
+        }
+        
+        // 页面加载时自动检查状态
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuthStatus();
+        });
+    </script>
+</body>
+</html>

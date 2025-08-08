@@ -163,8 +163,8 @@ class TOTPServiceTest {
                 () -> totpService.validateTOTP(TEST_SECRET, wrongCode, TEST_USERNAME),
                 "错误的代码应该抛出验证异常");
         
-        assertEquals(wrongCode, exception.getTotpCode(), "异常应该包含提供的代码");
-        assertNotNull(exception.getReason(), "异常应该包含失败原因");
+        assertEquals(wrongCode, exception.getCode(), "异常应该包含提供的代码");
+        assertNotNull(exception.getMessage(), "异常应该包含失败原因");
     }
     
     @Test

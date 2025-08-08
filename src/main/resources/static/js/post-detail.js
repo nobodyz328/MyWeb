@@ -1,12 +1,17 @@
 // 获取帖子ID和用户ID
 const postId = location.pathname.match(/\/post\/(\d+)/)?.[1];
-const userId = localStorage.getItem('userId');
+const userId = AuthUtils.getUserId();
 
 console.log('Post ID:', postId);
 console.log('User ID:', userId);
 
 // 页面加载完成后初始化
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', async function () {
+  // 初始化认证状态（如果用户已登录）
+  if (AuthUtils.isLoggedIn()) {
+    await AuthUtils.initAuth();
+  }
+  
   if (postId) {
     loadPostDetail();
   } else {
@@ -17,7 +22,7 @@ document.addEventListener('DOMContentLoaded', function () {
 // 加载帖子详情
 async function loadPostDetail() {
   try {
-    const response = await fetch(`/blog/api/posts/${postId}`);
+    const response = await fetch(`/blog/api/posts/${postId}`); // Public endpoint, no auth needed
     if (!response.ok) {
       throw new Error('帖子不存在');
     }
@@ -139,7 +144,7 @@ async function handleLike(e) {
   updateLikeButton(button, !wasLiked, null);
 
   try {
-    const response = await fetch(`/blog/api/posts/${postId}/like?userId=${userId}`, {
+    const response = await AuthUtils.authenticatedFetch(`/blog/api/posts/${postId}/like?userId=${userId}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -176,7 +181,7 @@ async function handleBookmark(e) {
   updateBookmarkButton(button, !wasBookmarked);
 
   try {
-    const response = await fetch(`/blog/api/posts/${postId}/collect?userId=${userId}`, {
+    const response = await AuthUtils.authenticatedFetch(`/blog/api/posts/${postId}/collect?userId=${userId}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -221,9 +226,8 @@ async function handleCommentSubmit(e) {
   submitBtn.disabled = true;
 
   try {
-    const response = await fetch(`/blog/api/posts/${postId}/comments`, {
+    const response = await AuthUtils.authenticatedFetch(`/blog/api/posts/${postId}/comments`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         content: content,
         postId: postId,
@@ -255,7 +259,7 @@ async function handleCommentSubmit(e) {
 // 加载评论列表
 async function loadComments() {
   try {
-    const response = await fetch(`/blog/api/posts/${postId}/comments`);
+    const response = await fetch(`/blog/api/posts/${postId}/comments`); // Public endpoint, no auth needed
     const data = await response.json();
 
     const commentsList = document.getElementById('commentsList');
@@ -356,9 +360,8 @@ async function submitReply(commentId, button) {
   button.disabled = true;
 
   try {
-    const response = await fetch(`/blog/api/posts/${postId}/comments/${commentId}/replies`, {
+    const response = await AuthUtils.authenticatedFetch(`/blog/api/posts/${postId}/comments/${commentId}/replies`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         content: content,
         parentCommentId: commentId,
@@ -399,7 +402,7 @@ async function loadUserInteractionStatus() {
 
   try {
     // 获取点赞状态
-    const likeResponse = await fetch(`/blog/api/posts/${postId}/like-status?userId=${userId}`);
+    const likeResponse = await fetch(`/blog/api/posts/${postId}/like-status?userId=${userId}`); // Public endpoint
     if (likeResponse.ok) {
       const likeData = await likeResponse.json();
       if (likeData.success) {
@@ -412,7 +415,7 @@ async function loadUserInteractionStatus() {
     }
 
     // 获取收藏状态
-    const collectResponse = await fetch(`/blog/api/posts/${postId}/collect-status?userId=${userId}`);
+    const collectResponse = await fetch(`/blog/api/posts/${postId}/collect-status?userId=${userId}`); // Public endpoint
     if (collectResponse.ok) {
       const collectData = await collectResponse.json();
       if (collectData.success) {
@@ -482,7 +485,7 @@ async function deletePost(id) {
   }
 
   try {
-    const response = await fetch(`/blog/api/posts/${id}?userId=${userId}`, {
+    const response = await AuthUtils.authenticatedFetch(`/blog/api/posts/${id}?userId=${userId}`, {
       method: 'DELETE'
     });
 

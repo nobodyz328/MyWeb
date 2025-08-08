@@ -9,7 +9,7 @@ import java.util.List;
 /**
  * 用户登录响应DTO
  * 
- * 用于返回登录成功后的用户信息，避免直接序列化实体类导致的循环引用问题
+ * 用于返回登录成功后的用户信息和JWT令牌，避免直接序列化实体类导致的循环引用问题
  */
 @Data
 public class UserLoginResponse {
@@ -32,4 +32,10 @@ public class UserLoginResponse {
     private Integer followersCount;
     private Integer followingCount;
     private Integer postsCount;
+    
+    // JWT令牌信息
+    private String accessToken;
+    private String refreshToken;
+    private String tokenType;
+    private Long expiresIn;
 }

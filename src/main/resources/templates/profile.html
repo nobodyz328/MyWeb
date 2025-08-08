@@ -83,8 +83,44 @@
 
       <!-- 设置标签页 -->
       <div id="settingsTabContent" class="tab-content">
+        <!-- 个人信息设置 -->
+        <div class="settings-section">
+          <h3>👤 个人信息</h3>
+          <form id="basicInfoForm" class="form-group">
+            <div class="form-row">
+              <label for="userBio">个人简介</label>
+              <textarea 
+                id="userBio" 
+                class="form-input" 
+                placeholder="介绍一下自己吧..." 
+                maxlength="500"
+                rows="3"
+              ></textarea>
+            </div>
+            <div class="form-row">
+              <label for="userAvatar">头像URL</label>
+              <input 
+                type="url" 
+                id="userAvatar" 
+                class="form-input" 
+                placeholder="输入头像图片链接"
+              >
+            </div>
+            <button type="submit" class="steam-btn">
+              保存信息
+            </button>
+          </form>
+          <div id="basicInfoStatus" class="status-message" style="display: none;"></div>
+        </div>
+
+        <!-- 邮箱绑定 -->
         <div class="settings-section">
           <h3>📧 邮箱绑定</h3>
+          <div id="currentEmailInfo" class="current-info" style="display: none;">
+            <p>当前邮箱: <span id="currentEmail"></span> 
+              <span id="emailVerifiedBadge" class="verified-badge" style="display: none;">✅ 已验证</span>
+            </p>
+          </div>
           <form id="emailBindForm" class="form-group">
             <input 
               type="email" 
@@ -100,6 +136,13 @@
               placeholder="验证码" 
               style="width: 120px;"
             >
+            <input 
+              type="text" 
+              id="bindEmailTotpCode" 
+              class="form-input" 
+              placeholder="TOTP验证码(如已启用)" 
+              style="width: 150px;"
+            >
             <button type="button" id="getBindCodeBtn" class="steam-btn steam-btn-secondary">
               获取验证码
             </button>
@@ -110,15 +153,239 @@
           <div id="emailBindStatus" class="status-message" style="display: none;"></div>
         </div>
 
+        <!-- 密码修改 -->
         <div class="settings-section">
-          <h3>🔒 账户安全</h3>
-          <div style="color: #8f98a0; line-height: 1.6;">
-            <p>• 定期更换密码，确保账户安全</p>
-            <p>• 不要在公共设备上保存登录状态</p>
-            <p>• 发现异常登录请及时联系管理员</p>
+          <h3>🔐 修改密码</h3>
+          <form id="changePasswordForm" class="form-group">
+            <div class="form-row">
+              <label for="currentPassword">当前密码</label>
+              <input 
+                type="password" 
+                id="currentPassword" 
+                class="form-input" 
+                placeholder="输入当前密码"
+                required
+              >
+            </div>
+            <div class="form-row">
+              <label for="newPassword">新密码</label>
+              <input 
+                type="password" 
+                id="newPassword" 
+                class="form-input" 
+                placeholder="输入新密码(至少8位，包含大小写字母、数字和特殊字符)"
+                required
+              >
+            </div>
+            <div class="form-row">
+              <label for="confirmPassword">确认新密码</label>
+              <input 
+                type="password" 
+                id="confirmPassword" 
+                class="form-input" 
+                placeholder="再次输入新密码"
+                required
+              >
+            </div>
+            <div class="form-row" id="passwordTotpRow" style="display: none;">
+              <label for="passwordTotpCode">TOTP验证码</label>
+              <input 
+                type="text" 
+                id="passwordTotpCode" 
+                class="form-input" 
+                placeholder="输入TOTP验证码"
+              >
+            </div>
+            <button type="submit" class="steam-btn">
+              修改密码
+            </button>
+          </form>
+          <div id="passwordChangeStatus" class="status-message" style="display: none;"></div>
+        </div>
+
+        <!-- TOTP二次验证设置 -->
+        <div class="settings-section">
+          <h3>🔒 二次验证(TOTP)</h3>
+          <div id="totpStatus" class="totp-status">
+            <div class="loading-spinner"></div> 正在加载TOTP状态...
+          </div>
+          
+          <!-- TOTP未启用状态 -->
+          <div id="totpDisabledSection" style="display: none;">
+            <div class="info-box">
+              <p>二次验证可以为您的账户提供额外的安全保护。</p>
+              <p id="totpRequiredNotice" style="display: none; color: #ff6b6b;">
+                ⚠️ 管理员账户必须启用二次验证才能访问管理功能。
+              </p>
+            </div>
+            <button id="setupTotpBtn" class="steam-btn">
+              设置二次验证
+            </button>
+          </div>
+
+          <!-- TOTP设置过程 -->
+          <div id="totpSetupSection" style="display: none;">
+            <div class="setup-steps">
+              <h4>设置步骤：</h4>
+              <ol>
+                <li>在手机上安装Google Authenticator或类似应用</li>
+                <li>扫描下方二维码或手动输入密钥</li>
+                <li>输入应用生成的6位验证码</li>
+                <li>点击启用完成设置</li>
+              </ol>
+            </div>
+            
+            <div class="qr-code-section">
+              <div id="totpQrCode" class="qr-code-container">
+                <div class="loading-spinner"></div> 正在生成二维码...
+              </div>
+              <div class="manual-key">
+                <p>手动输入密钥: <code id="totpSecret"></code></p>
+              </div>
+            </div>
+            
+            <form id="enableTotpForm" class="form-group">
+              <input 
+                type="text" 
+                id="totpVerificationCode" 
+                class="form-input" 
+                placeholder="输入6位验证码"
+                maxlength="6"
+                pattern="[0-9]{6}"
+                required
+              >
+              <button type="submit" class="steam-btn">
+                启用二次验证
+              </button>
+              <button type="button" id="cancelTotpSetup" class="steam-btn steam-btn-secondary">
+                取消
+              </button>
+            </form>
+            <div id="totpSetupStatus" class="status-message" style="display: none;"></div>
+          </div>
+
+          <!-- TOTP已启用状态 -->
+          <div id="totpEnabledSection" style="display: none;">
+            <div class="info-box success">
+              <p>✅ 二次验证已启用，您的账户更加安全！</p>
+              <p>剩余时间: <span id="totpRemainingTime">--</span>秒</p>
+            </div>
+            <div class="totp-actions">
+              <button id="testTotpBtn" class="steam-btn steam-btn-secondary">
+                测试验证码
+              </button>
+              <button id="resetTotpBtn" class="steam-btn steam-btn-secondary">
+                重置密钥
+              </button>
+              <button id="disableTotpBtn" class="steam-btn steam-btn-danger" style="display: none;">
+                禁用二次验证
+              </button>
+            </div>
+            
+            <!-- 测试TOTP -->
+            <div id="testTotpSection" style="display: none;">
+              <form id="testTotpForm" class="form-group">
+                <input 
+                  type="text" 
+                  id="testTotpCode" 
+                  class="form-input" 
+                  placeholder="输入6位验证码"
+                  maxlength="6"
+                  pattern="[0-9]{6}"
+                  required
+                >
+                <button type="submit" class="steam-btn steam-btn-secondary">
+                  验证
+                </button>
+                <button type="button" id="cancelTestTotp" class="steam-btn steam-btn-secondary">
+                  取消
+                </button>
+              </form>
+              <div id="testTotpStatus" class="status-message" style="display: none;"></div>
+            </div>
+            
+            <!-- 禁用TOTP -->
+            <div id="disableTotpSection" style="display: none;">
+              <div class="warning-box">
+                <p>⚠️ 禁用二次验证会降低账户安全性，确定要继续吗？</p>
+              </div>
+              <form id="disableTotpForm" class="form-group">
+                <input 
+                  type="text" 
+                  id="disableTotpCode" 
+                  class="form-input" 
+                  placeholder="输入当前TOTP验证码"
+                  maxlength="6"
+                  pattern="[0-9]{6}"
+                  required
+                >
+                <button type="submit" class="steam-btn steam-btn-danger">
+                  确认禁用
+                </button>
+                <button type="button" id="cancelDisableTotp" class="steam-btn steam-btn-secondary">
+                  取消
+                </button>
+              </form>
+              <div id="disableTotpStatus" class="status-message" style="display: none;"></div>
+            </div>
           </div>
         </div>
 
+        <!-- 管理员访问 -->
+        <div class="settings-section" id="adminAccessSection" style="display: none;">
+          <h3>⚙️ 管理功能</h3>
+          <div class="info-box">
+            <p>您拥有管理权限，可以访问系统管理界面。</p>
+            <p id="adminTotpNotice" style="display: none; color: #ff6b6b;">
+              ⚠️ 访问管理界面需要TOTP验证。
+            </p>
+          </div>
+          <form id="adminAccessForm" class="form-group">
+            <input 
+              type="text" 
+              id="adminTotpCode" 
+              class="form-input" 
+              placeholder="输入TOTP验证码"
+              maxlength="6"
+              pattern="[0-9]{6}"
+              style="display: none;"
+            >
+            <button type="submit" class="steam-btn">
+              进入管理界面
+            </button>
+          </form>
+          <div id="adminAccessStatus" class="status-message" style="display: none;"></div>
+        </div>
+
+        <!-- 账户安全信息 -->
+        <div class="settings-section">
+          <h3>🛡️ 账户安全</h3>
+          <div class="security-info">
+            <div class="info-row">
+              <span>账户创建时间:</span>
+              <span id="accountCreatedAt">--</span>
+            </div>
+            <div class="info-row">
+              <span>最后登录时间:</span>
+              <span id="lastLoginTime">--</span>
+            </div>
+            <div class="info-row">
+              <span>最后登录IP:</span>
+              <span id="lastLoginIp">--</span>
+            </div>
+          </div>
+          <div class="security-tips">
+            <h4>安全建议:</h4>
+            <ul>
+              <li>定期更换密码，确保账户安全</li>
+              <li>启用二次验证，提高账户安全性</li>
+              <li>不要在公共设备上保存登录状态</li>
+              <li>发现异常登录请及时联系管理员</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- 关于信息 -->
         <div class="settings-section">
           <h3>ℹ️ 关于</h3>
           <div style="color: #8f98a0; line-height: 1.6;">
@@ -135,6 +402,7 @@
     © 2025 MySteam社区
   </footer>
 
+  <script src="/blog/static/js/auth-utils.js"></script>
   <script src="/blog/static/js/profile.js"></script>
 </body>
 </html>

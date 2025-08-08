@@ -1,9 +1,7 @@
-# 安全增强配置示例
-# 此文件展示了如何配置安全相关的属性
-
+# 安全策略配置
 app:
-  # 安全配置
   security:
+    # 密码策略
     password-policy:
       min-length: 8
       max-length: 128
@@ -12,28 +10,36 @@ app:
       require-digit: true
       require-special-char: true
       bcrypt-strength: 12
+      special-chars: "!@#$%^&*()_+-=[]{}|;:,.<>?"
+      history-count: 5
     
+    # 账户锁定策略
     account-lock:
       max-failed-attempts: 5
       lock-duration-minutes: 15
       captcha-threshold: 3
     
+    # 验证码配置
     captcha:
       length: 6
       expiration-minutes: 5
       type: mixed
     
+    # 会话管理
     session:
       timeout-minutes: 30
       single-session: true
       cleanup-interval-minutes: 10
+      max-concurrent-sessions: 1
     
+    # TOTP配置
     totp:
       issuer: MyWeb
       time-step-seconds: 30
       allowed-time-skew: 1
       secret-length: 32
     
+    # CSRF配置
     csrf:
       enabled: true
       cookie-name: XSRF-TOKEN
@@ -45,152 +51,9 @@ app:
       cookie-secure: true
       token-cache-expiration-hours: 2
 
-  # JWT配置
-  jwt:
-    secret: ${JWT_SECRET:myWebSecretKeyForJWTTokenGenerationAndValidation2024}
-    access-token-expiration-seconds: 3600  # 1小时
-    refresh-token-expiration-seconds: 604800  # 7天
-    issuer: MyWeb
-    audience: MyWeb-Users
-    token-prefix: "Bearer "
-    header-name: Authorization
-    enable-refresh-token: true
-    
-    blacklist:
-      enabled: true
-      cleanup-interval-minutes: 60
-      redis-key-prefix: "jwt:blacklist:"
-
-  # 访问频率限制配置
-  rate-limit:
-    enabled: true
-    
-    default-limit:
-      window-size-seconds: 60
-      max-requests: 100
-      limit-type: IP
-    
-    endpoints:
-      "/api/auth/login":
-        window-size-seconds: 300  # 5分钟
-        max-requests: 5
-        limit-type: IP
-        enabled: true
-        description: "登录接口限制"
-      
-      "/api/auth/register":
-        window-size-seconds: 3600  # 1小时
-        max-requests: 3
-        limit-type: IP
-        enabled: true
-        description: "注册接口限制"
-      
-      "/api/posts":
-        window-size-seconds: 60
-        max-requests: 10
-        limit-type: USER
-        enabled: true
-        description: "发帖接口限制"
-    
-    redis:
-      key-prefix: "rate_limit:"
-      key-expiration-seconds: 3600
-    
-    alert:
-      enabled: true
-      threshold: 0.8
-      interval-minutes: 5
-      recipients:
-        - admin@myweb.com
-        - security@myweb.com
-
-  # 依赖安全检查配置
-  dependency-check:
-    report-path: target/dependency-check-report
-    high-severity-threshold: 7.0
-    notification:
-      enabled: true
-      recipients:
-        - admin@myweb.com
-        - security@myweb.com
-
-  # 备份配置
-  backup:
-    enabled: true
-    path: /var/backups/myweb
-    retention-days: 30
-    
-    schedule:
-      full-backup-cron: "0 0 2 * * ?"  # 每天凌晨2点
-      incremental-backup-cron: "0 0 */4 * * ?"  # 每4小时
-      enable-incremental: false
-      timeout-minutes: 60
-    
-    encryption:
-      enabled: true
-      algorithm: AES-256-GCM
-      key: ${BACKUP_ENCRYPTION_KEY:myWebBackupEncryptionKey2024!@#$%^&*}
-      key-file-path: /etc/myweb/backup.key
-    
-    compression:
-      enabled: true
-      algorithm: gzip
-      level: 6
-    
-    storage:
-      local:
-        max-size-gb: 100
-        alert-threshold: 0.8
-      
-      remote:
-        enabled: false
-        type: S3
-        endpoint: ${S3_ENDPOINT:}
-        access-key: ${S3_ACCESS_KEY:}
-        secret-key: ${S3_SECRET_KEY:}
-        bucket: ${S3_BUCKET:myweb-backups}
-        region: ${S3_REGION:us-east-1}
-    
-    notification:
-      enabled: true
-      email:
-        enabled: true
-        recipients:
-          - admin@myweb.com
-          - backup@myweb.com
-        notify-on-success: false
-        notify-on-failure: true
-
-# Spring配置
-spring:
-  profiles:
-    active: security
-  
-  # 数据库配置（用于备份）
-  datasource:
-    url: jdbc:postgresql://localhost:5432/postgres
-    username: postgres
-    password: 123456
-  
-  # Redis配置（用于缓存和限流）
-  data:
-    redis:
-      host: localhost
-      port: 6379
-      password: 
-      database: 0
-      timeout: 2000ms
-      lettuce:
-        pool:
-          max-active: 8
-          max-idle: 8
-          min-idle: 0
-
 # 日志配置
 logging:
   level:
-    com.myweb.website_core.common.config: DEBUG
     org.springframework.security: DEBUG
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
-    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
