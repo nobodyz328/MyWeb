@@ -1,5 +1,6 @@
 package com.myweb.website_core.infrastructure.security;
 
+import com.myweb.website_core.infrastructure.security.Authentication.CookieCsrfTokenRepository;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

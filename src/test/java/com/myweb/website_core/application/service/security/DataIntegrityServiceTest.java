@@ -1,7 +1,7 @@
 package com.myweb.website_core.application.service.security;
 
 import com.myweb.website_core.application.service.security.audit.AuditLogService;
-import com.myweb.website_core.application.service.security.dataprotect.DataIntegrityService;
+import com.myweb.website_core.application.service.security.integeration.dataManage.DataIntegrityService;
 import com.myweb.website_core.common.exception.DataIntegrityException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

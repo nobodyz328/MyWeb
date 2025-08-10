@@ -1,6 +1,6 @@
 package com.myweb.website_core.application.service;
 
-import com.myweb.website_core.common.security.exception.AuthorizationException;
+import com.myweb.website_core.common.exception.security.AuthorizationException;
 import com.myweb.website_core.domain.business.entity.Comment;
 import com.myweb.website_core.domain.business.entity.Post;
 import com.myweb.website_core.domain.security.entity.Role;
@@ -484,9 +484,7 @@ class AuthorizationServiceTest {
         when(testUser.hasPermission("ADMIN_MANAGE")).thenReturn(false);
         
         // When & Then
-        assertThrows(AuthorizationException.class, () -> {
-            authorizationService.requirePermission(1L, "ADMIN_MANAGE");
-        });
+        assertThrows(AuthorizationException.class, () -> authorizationService.requirePermission(1L, "ADMIN_MANAGE"));
         
         // 验证审计日志被记录
         verify(auditLogService).logSecurityEvent(any(), anyString(), anyString());
@@ -502,9 +500,7 @@ class AuthorizationServiceTest {
         when(testUser.hasPermission("POST_DELETE")).thenReturn(false);
         
         // When & Then
-        assertThrows(AuthorizationException.class, () -> {
-            authorizationService.requireResourceAccess(1L, "POST", 1L, "DELETE");
-        });
+        assertThrows(AuthorizationException.class, () -> authorizationService.requireResourceAccess(1L, "POST", 1L, "DELETE"));
         
         // 验证审计日志被记录
         verify(auditLogService).logSecurityEvent(any(), anyString(), anyString());
@@ -520,9 +516,7 @@ class AuthorizationServiceTest {
         when(testUser.hasRoleName("ADMIN")).thenReturn(false);
         
         // When & Then
-        assertThrows(AuthorizationException.class, () -> {
-            authorizationService.requireRole("testuser", "ADMIN");
-        });
+        assertThrows(AuthorizationException.class, () -> authorizationService.requireRole("testuser", "ADMIN"));
         
         // 验证审计日志被记录
         verify(auditLogService).logSecurityEvent(any(), anyString(), anyString());

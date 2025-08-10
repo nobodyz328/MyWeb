@@ -12,7 +12,7 @@ import java.util.Map;
 
 /**
  * 安全审计消息DTO
- * 
+ * <p>
  * 用于在RabbitMQ中传输安全审计相关的消息
  * 符合GB/T 22239-2019二级等保要求的安全审计机制
  * 
@@ -119,17 +119,7 @@ public class SecurityAuditMessage {
      * 风险级别
      */
     private Integer riskLevel;
-    
-    /**
-     * 地理位置信息
-     */
-    private String location;
-    
-    /**
-     * 设备指纹
-     */
-    private String deviceFingerprint;
-    
+
     /**
      * 标签
      */

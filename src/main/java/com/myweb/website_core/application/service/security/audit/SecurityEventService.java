@@ -10,6 +10,8 @@ import com.myweb.website_core.domain.security.dto.SecurityEventRequest;
 import com.myweb.website_core.domain.security.dto.SecurityEventStatistics;
 import com.myweb.website_core.domain.security.entity.SecurityEvent;
 import com.myweb.website_core.infrastructure.persistence.repository.SecurityEventRepository;
+import com.myweb.website_core.infrastructure.persistence.mapper.SecurityEventMapper;
+import com.myweb.website_core.infrastructure.persistence.mapper.SecurityEventMapperService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -39,15 +41,21 @@ import java.util.stream.Collectors;
 public class SecurityEventService {
     
     private final SecurityEventRepository securityEventRepository;
+    private final SecurityEventMapper securityEventMapper;
+    private final SecurityEventMapperService securityEventMapperService;
     private final SecurityAlertService securityAlertService;
     private final RedisTemplate<String, String> redisTemplate;
     private final ObjectMapper objectMapper;
     
     public SecurityEventService(SecurityEventRepository securityEventRepository,
+                               SecurityEventMapper securityEventMapper,
+                               SecurityEventMapperService securityEventMapperService,
                                SecurityAlertService securityAlertService,
                                RedisTemplate<String, String> redisTemplate,
                                ObjectMapper objectMapper) {
         this.securityEventRepository = securityEventRepository;
+        this.securityEventMapper = securityEventMapper;
+        this.securityEventMapperService = securityEventMapperService;
         this.securityAlertService = securityAlertService;
         this.redisTemplate = redisTemplate;
         this.objectMapper = objectMapper;
@@ -145,21 +153,7 @@ public class SecurityEventService {
     public Page<SecurityEvent> findEvents(SecurityEventQuery query, Pageable pageable) {
         log.debug("查询安全事件: query={}", query);
         
-        return securityEventRepository.findByComplexQuery(
-                query.getEventTypes(),
-                query.getSeverities(),
-                query.getUserId(),
-                query.getUsername(),
-                query.getSourceIp(),
-                query.getStatuses(),
-                query.getAlerted(),
-                query.getStartTime(),
-                query.getEndTime(),
-                query.getMinRiskScore(),
-                query.getMaxRiskScore(),
-                query.getKeyword(),
-                pageable
-        );
+        return securityEventMapperService.findByComplexQuery(query, pageable);
     }
     
     /**
@@ -172,33 +166,27 @@ public class SecurityEventService {
     public SecurityEventStatistics getEventStatistics(LocalDateTime startTime, LocalDateTime endTime) {
         log.debug("获取安全事件统计: startTime={}, endTime={}", startTime, endTime);
         
-        // 基础统计
-        Long totalEvents = securityEventRepository.countByTimeRange(startTime, endTime);
-        Long highRiskEvents = securityEventRepository.countHighRiskByTimeRange(startTime, endTime);
-        Long mediumRiskEvents = securityEventRepository.countMediumRiskByTimeRange(startTime, endTime);
-        Long lowRiskEvents = securityEventRepository.countLowRiskByTimeRange(startTime, endTime);
-        Long unhandledEvents = securityEventRepository.countUnhandledByTimeRange(startTime, endTime);
-        Long alertedEvents = securityEventRepository.countAlertedByTimeRange(startTime, endTime);
+        // 基础统计 - 使用MyBatis避免null参数问题
+        Long totalEvents = securityEventMapperService.countByTimeRange(startTime, endTime);
+        Long highRiskEvents = securityEventMapperService.countHighRiskByTimeRange(startTime, endTime);
+        Long mediumRiskEvents = securityEventMapperService.countMediumRiskByTimeRange(startTime, endTime);
+        Long lowRiskEvents = securityEventMapperService.countLowRiskByTimeRange(startTime, endTime);
+        Long unhandledEvents = securityEventMapperService.countUnhandledByTimeRange(startTime, endTime);
+        Long alertedEvents = securityEventMapperService.countAlertedByTimeRange(startTime, endTime);
         
-        // 分类统计
-        Map<String, Long> eventTypeStats = convertToMap(
-                securityEventRepository.countByEventTypeInTimeRange(startTime, endTime));
-        Map<Integer, Long> severityStats = convertToIntegerMap(
-                securityEventRepository.countBySeverityInTimeRange(startTime, endTime));
-        Map<String, Long> statusStats = convertToMap(
-                securityEventRepository.countByStatusInTimeRange(startTime, endTime));
-        Map<Integer, Long> hourlyStats = convertToIntegerMap(
-                securityEventRepository.countByHourInTimeRange(startTime, endTime));
+        // 分类统计 - 使用MyBatis处理复杂统计查询
+        Map<String, Long> eventTypeStats = securityEventMapperService.countByEventTypeInTimeRange(startTime, endTime);
+        Map<Integer, Long> severityStats = securityEventMapperService.countBySeverityInTimeRange(startTime, endTime);
+        Map<String, Long> statusStats = securityEventMapperService.countByStatusInTimeRange(startTime, endTime);
+        Map<Integer, Long> hourlyStats = securityEventMapperService.countByHourInTimeRange(startTime, endTime);
         
         // Top 10统计
-        Map<String, Long> ipStats = convertToMap(
-                securityEventRepository.countByIpInTimeRange(startTime, endTime, PageRequest.of(0, 10)));
-        Map<String, Long> userStats = convertToMap(
-                securityEventRepository.countByUserInTimeRange(startTime, endTime, PageRequest.of(0, 10)));
+        Map<String, Long> ipStats = securityEventMapperService.countByIpInTimeRange(startTime, endTime, 10);
+        Map<String, Long> userStats = securityEventMapperService.countByUserInTimeRange(startTime, endTime, 10);
         
         // 风险评分统计
-        Double averageRiskScore = securityEventRepository.getAverageRiskScoreInTimeRange(startTime, endTime);
-        Integer maxRiskScore = securityEventRepository.getMaxRiskScoreInTimeRange(startTime, endTime);
+        Double averageRiskScore = securityEventMapperService.getAverageRiskScoreInTimeRange(startTime, endTime);
+        Integer maxRiskScore = securityEventMapperService.getMaxRiskScoreInTimeRange(startTime, endTime);
         
         // 计算比率
         Double handlingRate = totalEvents > 0 ? ((totalEvents - unhandledEvents) * 100.0) / totalEvents : 0.0;
@@ -208,7 +196,7 @@ public class SecurityEventService {
         Duration period = Duration.between(startTime, endTime);
         LocalDateTime prevStartTime = startTime.minus(period);
         LocalDateTime prevEndTime = startTime;
-        Long prevTotalEvents = securityEventRepository.countByTimeRange(prevStartTime, prevEndTime);
+        Long prevTotalEvents = securityEventMapperService.countByTimeRange(prevStartTime, prevEndTime);
         Double trendPercentage = prevTotalEvents > 0 ? 
                 ((totalEvents - prevTotalEvents) * 100.0) / prevTotalEvents : 0.0;
         
@@ -269,7 +257,7 @@ public class SecurityEventService {
         
         // 检查用户异常模式
         if (userId != null) {
-            Long userEventCount = securityEventRepository.countByUserAndTypeInTimeWindow(
+            Long userEventCount = securityEventMapper.countByUserAndTypeInTimeWindow(
                     userId, eventType, windowStart, now);
             if (userEventCount >= SecurityConstants.SECURITY_EVENT_ALERT_THRESHOLD) {
                 log.warn("检测到用户异常模式: userId={}, eventType={}, count={}", 
@@ -280,7 +268,7 @@ public class SecurityEventService {
         
         // 检查IP异常模式
         if (sourceIp != null) {
-            Long ipEventCount = securityEventRepository.countByIpInTimeWindow(
+            Long ipEventCount = securityEventMapper.countByIpInTimeWindow(
                     sourceIp, windowStart, now);
             if (ipEventCount >= SecurityConstants.SECURITY_EVENT_ALERT_THRESHOLD) {
                 log.warn("检测到IP异常模式: sourceIp={}, count={}", sourceIp, ipEventCount);
@@ -312,7 +300,7 @@ public class SecurityEventService {
     @Scheduled(fixedDelay = 300000) // 每5分钟检查一次
     public void checkUnalertedHighRiskEvents() {
         try {
-            List<SecurityEvent> unalertedEvents = securityEventRepository.findUnalertedHighRiskEvents();
+            List<SecurityEvent> unalertedEvents = securityEventMapper.findUnalertedHighRiskEvents();
             if (!unalertedEvents.isEmpty()) {
                 log.warn("发现未告警的高危事件: count={}", unalertedEvents.size());
                 securityAlertService.sendBatchAlert(unalertedEvents);
@@ -367,7 +355,7 @@ public class SecurityEventService {
         // 计算相关事件数量
         if (event.getUserId() != null && event.getEventType() != null) {
             LocalDateTime windowStart = event.getEventTime().minusHours(SecurityConstants.SECURITY_EVENT_WINDOW_HOURS);
-            Long relatedCount = securityEventRepository.countByUserAndTypeInTimeWindow(
+            Long relatedCount = securityEventMapper.countByUserAndTypeInTimeWindow(
                     event.getUserId(), event.getEventType(), windowStart, event.getEventTime());
             event.setRelatedEventCount(relatedCount.intValue());
         }
@@ -436,27 +424,5 @@ public class SecurityEventService {
         }
     }
     
-    /**
-     * 转换查询结果为Map
-     */
-    private Map<String, Long> convertToMap(List<Object[]> results) {
-        return results.stream()
-                .collect(Collectors.toMap(
-                        row -> row[0].toString(),
-                        row -> ((Number) row[1]).longValue(),
-                        (existing, replacement) -> existing
-                ));
-    }
-    
-    /**
-     * 转换查询结果为Integer Map
-     */
-    private Map<Integer, Long> convertToIntegerMap(List<Object[]> results) {
-        return results.stream()
-                .collect(Collectors.toMap(
-                        row -> ((Number) row[0]).intValue(),
-                        row -> ((Number) row[1]).longValue(),
-                        (existing, replacement) -> existing
-                ));
-    }
+
 }

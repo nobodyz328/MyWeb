@@ -4,7 +4,7 @@ import com.myweb.website_core.application.service.security.audit.AuditLogService
 import com.myweb.website_core.common.enums.AuditOperation;
 import com.myweb.website_core.domain.security.dto.AuditLogQuery;
 import com.myweb.website_core.domain.security.entity.AuditLog;
-import com.myweb.website_core.infrastructure.security.Auditable;
+import com.myweb.website_core.infrastructure.security.audit.Auditable;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;

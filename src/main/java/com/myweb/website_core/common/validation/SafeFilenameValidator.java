@@ -1,7 +1,7 @@
 package com.myweb.website_core.common.validation;
 
 import com.myweb.website_core.application.service.security.IPS.virusprotect.InputValidationService;
-import com.myweb.website_core.common.exception.ValidationException;
+import com.myweb.website_core.common.exception.security.ValidationException;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,9 +9,9 @@ import org.springframework.stereotype.Component;
 
 /**
  * 安全文件名验证器
- * 
+ * <p>
  * 实现SafeFilename注解的验证逻辑，使用InputValidationService进行验证。
- * 
+ * <p>
  * 符合需求：4.4, 4.5 - 入侵防范机制
  * 
  * @author MyWeb Security Team

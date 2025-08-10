@@ -6,7 +6,7 @@ import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
 import com.myweb.website_core.common.constant.SecurityConstants;
-import com.myweb.website_core.common.security.exception.TOTPValidationException;
+import com.myweb.website_core.common.exception.security.TokenException;
 import dev.samstevens.totp.code.CodeGenerator;
 import dev.samstevens.totp.code.CodeVerifier;
 import dev.samstevens.totp.code.DefaultCodeGenerator;
@@ -97,7 +97,7 @@ public class TOTPService {
      * @param secret TOTP密钥
      * @param code 用户提供的6位数字代码
      * @return 验证是否成功
-     * @throws TOTPValidationException 如果验证失败
+     * @throws TokenException 如果验证失败
      */
     public boolean validateTOTP(String secret, String code) {
         return validateTOTP(secret, code, null);
@@ -112,7 +112,7 @@ public class TOTPService {
      * @param code 用户提供的6位数字代码
      * @param username 用户名（用于日志记录）
      * @return 验证是否成功
-     * @throws TOTPValidationException 如果验证失败
+     * @throws TokenException 如果验证失败
      */
     public boolean validateTOTP(String secret, String code, String username) {
         String logPrefix = username != null ? "用户 " + username : "TOTP";
@@ -121,18 +121,18 @@ public class TOTPService {
             // 验证输入参数
             if (secret == null || secret.trim().isEmpty()) {
                 log.warn("{} TOTP验证失败: 密钥为空", logPrefix);
-                throw TOTPValidationException.invalidCode(username);
+                throw TokenException.invalidCode(username);
             }
             
             if (code == null || code.trim().isEmpty()) {
                 log.warn("{} TOTP验证失败: 验证码为空", logPrefix);
-                throw TOTPValidationException.invalidCode(username);
+                throw TokenException.invalidCode(username);
             }
             
             // 验证代码格式（6位数字）
             if (!code.matches("^\\d{6}$")) {
                 log.warn("{} TOTP验证失败: 验证码格式不正确 - {}", logPrefix, code);
-                throw TOTPValidationException.invalidCode(username);
+                throw TokenException.invalidCode(username);
             }
             
             // 使用容错窗口验证代码
@@ -143,15 +143,15 @@ public class TOTPService {
                 return true;
             } else {
                 log.warn("{} TOTP验证失败: 代码不匹配 - {}", logPrefix, code);
-                throw TOTPValidationException.codeNotMatch(username, code);
+                throw TokenException.codeNotMatch(username, code);
             }
             
-        } catch (TOTPValidationException e) {
+        } catch (TokenException e) {
             // 重新抛出TOTP验证异常
             throw e;
         } catch (Exception e) {
             log.error("{} TOTP验证过程中发生异常", logPrefix, e);
-            throw new TOTPValidationException("TOTP验证失败: " + e.getMessage(), e);
+            throw new TokenException("TOTP验证失败: " + e.getMessage(), e);
         }
     }
     

@@ -4,7 +4,7 @@ import com.myweb.website_core.application.service.security.UserDataManagementSer
 import com.myweb.website_core.common.enums.AuditOperation;
 import com.myweb.website_core.domain.business.dto.UserDataExportDTO;
 import com.myweb.website_core.domain.business.dto.UserDataUpdateDTO;
-import com.myweb.website_core.infrastructure.security.Auditable;
+import com.myweb.website_core.infrastructure.security.audit.Auditable;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;

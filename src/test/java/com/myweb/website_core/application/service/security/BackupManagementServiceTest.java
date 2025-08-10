@@ -2,8 +2,8 @@ package com.myweb.website_core.application.service.security;
 
 import com.myweb.website_core.application.service.integration.EmailService;
 import com.myweb.website_core.application.service.security.audit.AuditLogServiceAdapter;
-import com.myweb.website_core.application.service.security.dataprotect.BackupManagementService;
-import com.myweb.website_core.application.service.security.dataprotect.BackupService;
+import com.myweb.website_core.application.service.security.integeration.dataManage.BackupManagementService;
+import com.myweb.website_core.application.service.security.integeration.dataManage.BackupService;
 import com.myweb.website_core.common.config.BackupProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

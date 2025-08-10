@@ -222,6 +222,15 @@
         </div>
       </div>
       
+      <div class="input-group" style="display:none;" id="loginTotpRow">
+        <label for="loginTotp">TOTP验证码</label>
+        <input type="text" id="loginTotp" placeholder="请输入6位TOTP验证码" maxlength="6" pattern="[0-9]{6}">
+        <div class="error" id="loginTotpError"></div>
+        <div style="font-size: 0.8rem; color: #66c0f4; margin-top: 5px;">
+          🔐 管理员登录需要提供TOTP验证码
+        </div>
+      </div>
+      
       <button type="submit" class="steam-btn" id="loginBtn">登录</button>
     </form>
     
@@ -540,19 +549,71 @@
       }, 1000);
     }
     
+    // 检查是否为管理员账户
+    async function checkIfAdminAccount(username) {
+      if (!username || username.trim().length === 0) {
+        return false;
+      }
+      
+      try {
+        const response = await fetch(`/blog/users/check-admin?username=${encodeURIComponent(username)}`);
+        if (response.ok) {
+          const data = await response.json();
+          return data.isAdmin || false;
+        }
+      } catch (error) {
+        console.debug('检查管理员账户失败:', error);
+      }
+      return false;
+    }
+    
+    // 用户名输入框失焦事件 - 检查是否为管理员
+    document.getElementById('loginUsername').addEventListener('blur', async function() {
+      const username = this.value.trim();
+      const totpRow = document.getElementById('loginTotpRow');
+      
+      if (username) {
+        const isAdmin = await checkIfAdminAccount(username);
+        if (isAdmin) {
+          totpRow.style.display = 'block';
+        } else {
+          totpRow.style.display = 'none';
+          document.getElementById('loginTotp').value = ''; // 清空TOTP输入
+        }
+      } else {
+        totpRow.style.display = 'none';
+        document.getElementById('loginTotp').value = '';
+      }
+    });
+    
+    // TOTP输入框只允许数字
+    document.getElementById('loginTotp').addEventListener('input', function() {
+      this.value = this.value.replace(/[^0-9]/g, '');
+      if (this.value.length > 6) {
+        this.value = this.value.slice(0, 6);
+      }
+      
+      // 清除错误信息
+      if (this.value.length > 0) {
+        hideError('loginTotpError');
+      }
+    });
+    
     // 登录表单提交
     document.getElementById('loginForm').onsubmit = async function(e) {
       e.preventDefault();
       
       const username = document.getElementById('loginUsername').value;
       const password = document.getElementById('loginPassword').value;
-      const code = document.getElementById('loginCaptcha').value || '';
+      const captchaCode = document.getElementById('loginCaptcha').value || '';
+      const totpCode = document.getElementById('loginTotp').value || '';
       const loginBtn = document.getElementById('loginBtn');
       
       // 清除之前的错误信息
       hideError('loginUsernameError');
       hideError('loginPasswordError');
       hideError('loginCaptchaError');
+      hideError('loginTotpError');
       
       if (!username) {
         showError('loginUsernameError', '请输入用户名或邮箱');
@@ -564,9 +625,19 @@
         return;
       }
       
+      // 检查管理员是否提供了TOTP验证码
+      const isAdmin = await checkIfAdminAccount(username);
+      if (isAdmin && (!totpCode || totpCode.length !== 6)) {
+        showError('loginTotpError', '管理员登录需要提供6位TOTP验证码');
+        return;
+      }
+      
       try {
         loginBtn.disabled = true;
         loginBtn.innerHTML = '<div class="loading"></div> 登录中...';
+        
+        // 使用TOTP验证码作为code参数
+        const code = isAdmin ? totpCode : captchaCode;
         
         const response = await fetch('/blog/users/login', {
           method: 'POST',
@@ -588,7 +659,11 @@
           window.location.href = '/blog/view';
         } else {
           const errorMsg = typeof data === 'string' ? data : '登录失败，请检查用户名和密码';
-          showError('loginPasswordError', errorMsg);
+          if (isAdmin && errorMsg.includes('TOTP')) {
+            showError('loginTotpError', errorMsg);
+          } else {
+            showError('loginPasswordError', errorMsg);
+          }
         }
       } catch (error) {
         console.error('登录失败:', error);

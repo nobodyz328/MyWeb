@@ -1,9 +1,10 @@
 package com.myweb.website_core.application.service.security.authentication;
 
 import com.myweb.website_core.common.enums.UserRole;
-import com.myweb.website_core.common.security.exception.TOTPValidationException;
+import com.myweb.website_core.common.exception.security.TokenException;
 import com.myweb.website_core.domain.business.entity.User;
 import com.myweb.website_core.infrastructure.persistence.repository.UserRepository;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -61,27 +62,7 @@ public class TOTPManagementService {
                 .build();
     }
     
-    /**
-     * 生成TOTP二维码图片
-     * 
-     * @param userId 用户ID
-     * @param width 二维码宽度
-     * @param height 二维码高度
-     * @return 二维码图片字节数组
-     */
-    @Transactional(readOnly = true)
-    public byte[] generateTOTPQRCode(Long userId, int width, int height) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("用户不存在"));
-        
-        String secret = user.getTotpSecret();
-        if (secret == null || secret.isEmpty()) {
-            throw new RuntimeException("用户尚未设置TOTP密钥");
-        }
-        
-        return totpService.generateQRCode(user.getUsername(), secret, width, height);
-    }
-    
+
     /**
      * 启用TOTP
      * 
@@ -96,7 +77,7 @@ public class TOTPManagementService {
         
         // 验证TOTP代码
         if (!totpService.validateTOTP(secret, verificationCode, user.getUsername())) {
-            throw new TOTPValidationException("TOTP验证码不正确");
+            throw new TokenException("TOTP验证码不正确");
         }
         
         // 保存TOTP密钥并启用
@@ -126,7 +107,7 @@ public class TOTPManagementService {
         // 验证当前TOTP代码
         if (user.getTotpSecret() != null && user.getTotpEnabled()) {
             if (!totpService.validateTOTP(user.getTotpSecret(), verificationCode, user.getUsername())) {
-                throw new TOTPValidationException("TOTP验证码不正确");
+                throw new TokenException("TOTP验证码不正确");
             }
         }
         
@@ -152,7 +133,7 @@ public class TOTPManagementService {
         // 如果已启用TOTP，需要验证当前代码
         if (user.getTotpEnabled() && user.getTotpSecret() != null) {
             if (!totpService.validateTOTP(user.getTotpSecret(), currentVerificationCode, user.getUsername())) {
-                throw new TOTPValidationException("当前TOTP验证码不正确");
+                throw new TokenException("当前TOTP验证码不正确");
             }
         }
         
@@ -214,6 +195,44 @@ public class TOTPManagementService {
     }
     
     /**
+     * 生成TOTP二维码图片
+     * 
+     * @param userId 用户ID
+     * @param width 二维码宽度
+     * @param height 二维码高度
+     * @return 二维码图片字节数组
+     */
+    @Transactional(readOnly = true)
+    public byte[] generateTOTPQRCode(Long userId, int width, int height) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("用户不存在"));
+        
+        // 如果用户没有TOTP密钥，先生成一个
+        String secret = user.getTotpSecret();
+        if (secret == null || secret.isEmpty()) {
+            secret = totpService.generateSecret();
+            user.setTotpSecret(secret);
+            userRepository.save(user);
+        }
+        
+        return totpService.generateQRCode(user.getUsername(), secret, width, height);
+    }
+
+//    @Transactional(readOnly = true)
+//    public byte[] generateTOTPQRCode(Long userId, int width, int height) {
+//        User user = userRepository.findById(userId)
+//                .orElseThrow(() -> new RuntimeException("用户不存在"));
+//
+//        String secret = user.getTotpSecret();
+//        if (secret == null || secret.isEmpty()) {
+//            throw new RuntimeException("用户尚未设置TOTP密钥");
+//        }
+//
+//        return totpService.generateQRCode(user.getUsername(), secret, width, height);
+//    }
+//
+    
+    /**
      * 检查用户是否需要强制启用TOTP
      * 
      * @param user 用户对象
@@ -226,7 +245,9 @@ public class TOTPManagementService {
     /**
      * TOTP设置信息
      */
+    @Getter
     public static class TOTPSetupInfo {
+        // Getters
         private String secret;
         private String qrCodeUri;
         private Boolean enabled;
@@ -263,18 +284,15 @@ public class TOTPManagementService {
                 return info;
             }
         }
-        
-        // Getters
-        public String getSecret() { return secret; }
-        public String getQrCodeUri() { return qrCodeUri; }
-        public Boolean getEnabled() { return enabled; }
-        public Boolean getRequired() { return required; }
+
     }
     
     /**
      * TOTP状态信息
      */
+    @Getter
     public static class TOTPStatusInfo {
+        // Getters
         private Boolean enabled;
         private Boolean configured;
         private Boolean required;
@@ -311,11 +329,6 @@ public class TOTPManagementService {
                 return info;
             }
         }
-        
-        // Getters
-        public Boolean getEnabled() { return enabled; }
-        public Boolean getConfigured() { return configured; }
-        public Boolean getRequired() { return required; }
-        public Integer getRemainingTime() { return remainingTime; }
+
     }
 }

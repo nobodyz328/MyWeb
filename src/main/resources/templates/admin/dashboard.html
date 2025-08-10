@@ -3,10 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>管理员面板 - MyWeb</title>
+    <title>安全监控面板 - MyWeb</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js" rel="stylesheet">
     <link href="/blog/static/css/admin.css" rel="stylesheet">
+    <style>
+        .security-status-card {
+            border-left: 4px solid;
+            transition: all 0.3s ease;
+        }
+        .security-status-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .status-healthy { border-left-color: #28a745; }
+        .status-warning { border-left-color: #ffc107; }
+        .status-danger { border-left-color: #dc3545; }
+        .status-critical { border-left-color: #6f42c1; }
+        
+        .threat-level-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .threat-level-1 { background-color: #28a745; }
+        .threat-level-2 { background-color: #17a2b8; }
+        .threat-level-3 { background-color: #ffc107; }
+        .threat-level-4 { background-color: #fd7e14; }
+        .threat-level-5 { background-color: #dc3545; }
+        
+        .realtime-indicator {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 20px 0;
+        }
+        
+        .alert-item {
+            border-left: 4px solid;
+            margin-bottom: 10px;
+            padding: 10px 15px;
+            border-radius: 4px;
+        }
+        .alert-high { border-left-color: #dc3545; background-color: #f8d7da; }
+        .alert-medium { border-left-color: #ffc107; background-color: #fff3cd; }
+        .alert-low { border-left-color: #17a2b8; background-color: #d1ecf1; }
+    </style>
 </head>
 <body>
     <div class="container-fluid">
@@ -33,7 +87,7 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="blog/admin_security_events">
+                            <a class="nav-link" href="/blog/admin_security_events">
                                 <i class="bi bi-shield-exclamation"></i>
                                 安全事件
                             </a>
@@ -44,13 +98,13 @@
                                 用户管理
                             </a>
                         </li>
-                        <li class="nav-item" th:if="${currentUser.hasRole('ADMIN')}">
+                        <li class="nav-item">
                             <a class="nav-link" href="/blog/admin_roles">
                                 <i class="bi bi-person-badge"></i>
                                 角色权限
                             </a>
                         </li>
-                        <li class="nav-item" th:if="${currentUser.hasRole('ADMIN')}">
+                        <li class="nav-item" >
                             <a class="nav-link" href="/blog/admin_settings">
                                 <i class="bi bi-gear"></i>
                                 系统设置
@@ -79,92 +133,117 @@
             <!-- 主内容区 -->
             <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                    <h1 class="h2">系统概览</h1>
+                    <h1 class="h2">
+                        <i class="bi bi-shield-check text-primary"></i> 
+                        安全监控面板
+                        <span class="realtime-indicator badge bg-success ms-2">实时</span>
+                    </h1>
                     <div class="btn-toolbar mb-2 mb-md-0">
                         <div class="btn-group me-2">
                             <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshData()">
                                 <i class="bi bi-arrow-clockwise"></i> 刷新
                             </button>
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="exportSecurityReport()">
+                                <i class="bi bi-download"></i> 导出报告
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-warning" onclick="toggleAutoRefresh()">
+                                <i class="bi bi-play-circle" id="auto-refresh-icon"></i> 
+                                <span id="auto-refresh-text">自动刷新</span>
+                            </button>
                         </div>
                     </div>
                 </div>
                 
-                <!-- 系统状态卡片 -->
+                <!-- 安全状态概览 -->
                 <div class="row mb-4">
+                    <!-- 系统安全状态 -->
                     <div class="col-xl-3 col-md-6 mb-4">
-                        <div class="card border-left-primary shadow h-100 py-2">
-                            <div class="card-body">
-                                <div class="row no-gutters align-items-center">
-                                    <div class="col mr-2">
-                                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                            今日审计日志
-                                        </div>
-                                        <div class="h5 mb-0 font-weight-bold text-gray-800" th:text="${systemHealth.todayAuditLogs}">
-                                            0
-                                        </div>
-                                    </div>
-                                    <div class="col-auto">
-                                        <i class="bi bi-journal-text fa-2x text-gray-300"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="col-xl-3 col-md-6 mb-4">
-                        <div class="card border-left-warning shadow h-100 py-2">
-                            <div class="card-body">
-                                <div class="row no-gutters align-items-center">
-                                    <div class="col mr-2">
-                                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                            今日失败操作
-                                        </div>
-                                        <div class="h5 mb-0 font-weight-bold text-gray-800" th:text="${systemHealth.todayFailures}">
-                                            0
-                                        </div>
-                                    </div>
-                                    <div class="col-auto">
-                                        <i class="bi bi-exclamation-triangle fa-2x text-gray-300"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="col-xl-3 col-md-6 mb-4">
-                        <div class="card border-left-danger shadow h-100 py-2">
-                            <div class="card-body">
-                                <div class="row no-gutters align-items-center">
-                                    <div class="col mr-2">
-                                        <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
-                                            安全事件
-                                        </div>
-                                        <div class="h5 mb-0 font-weight-bold text-gray-800" th:text="${systemHealth.todaySecurityEvents}">
-                                            0
-                                        </div>
-                                    </div>
-                                    <div class="col-auto">
-                                        <i class="bi bi-shield-exclamation fa-2x text-gray-300"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="col-xl-3 col-md-6 mb-4">
-                        <div class="card border-left-success shadow h-100 py-2">
+                        <div class="card security-status-card status-healthy shadow h-100 py-2">
                             <div class="card-body">
                                 <div class="row no-gutters align-items-center">
                                     <div class="col mr-2">
                                         <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                            活跃用户
+                                            系统安全状态
                                         </div>
-                                        <div class="h5 mb-0 font-weight-bold text-gray-800" th:text="${systemHealth.activeUsers}">
-                                            0
+                                        <div class="h6 mb-0 font-weight-bold" id="system-security-status">
+                                            <span class="threat-level-indicator threat-level-1"></span>
+                                            正常
                                         </div>
+                                        <small class="text-muted" id="security-status-detail">所有系统运行正常</small>
                                     </div>
                                     <div class="col-auto">
-                                        <i class="bi bi-people fa-2x text-gray-300"></i>
+                                        <i class="bi bi-shield-check fa-2x text-success"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 威胁等级 -->
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="card security-status-card status-warning shadow h-100 py-2">
+                            <div class="card-body">
+                                <div class="row no-gutters align-items-center">
+                                    <div class="col mr-2">
+                                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                            当前威胁等级
+                                        </div>
+                                        <div class="h5 mb-0 font-weight-bold" id="threat-level">
+                                            <span class="threat-level-indicator threat-level-2"></span>
+                                            低危
+                                        </div>
+                                        <small class="text-muted" id="threat-level-detail">检测到轻微异常</small>
+                                    </div>
+                                    <div class="col-auto">
+                                        <i class="bi bi-exclamation-triangle fa-2x text-warning"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 今日安全事件 -->
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="card security-status-card border-left-danger shadow h-100 py-2">
+                            <div class="card-body">
+                                <div class="row no-gutters align-items-center">
+                                    <div class="col mr-2">
+                                        <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                            今日安全事件
+                                        </div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="today-security-events">
+                                            <span th:text="${systemHealth.todaySecurityEvents}">0</span>
+                                        </div>
+                                        <small class="text-muted">
+                                            高危: <span id="high-risk-events" th:text="${systemHealth.highRiskEvents}">0</span>
+                                        </small>
+                                    </div>
+                                    <div class="col-auto">
+                                        <i class="bi bi-shield-exclamation fa-2x text-danger"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 在线用户 -->
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="card security-status-card border-left-success shadow h-100 py-2">
+                            <div class="card-body">
+                                <div class="row no-gutters align-items-center">
+                                    <div class="col mr-2">
+                                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                            在线用户
+                                        </div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="online-users">
+                                            <span th:text="${systemHealth.activeUsers}">0</span>
+                                        </div>
+                                        <small class="text-muted">
+                                            总用户: <span id="total-users" th:text="${systemHealth.totalUsers}">0</span>
+                                        </small>
+                                    </div>
+                                    <div class="col-auto">
+                                        <i class="bi bi-people fa-2x text-success"></i>
                                     </div>
                                 </div>
                             </div>
@@ -172,21 +251,102 @@
                     </div>
                 </div>
                 
-                <!-- 图表和详细信息 -->
-                <div class="row">
-                    <!-- 最近审计日志 -->
+                <!-- 实时监控指标 -->
+                <div class="row mb-4">
+                    <div class="col-md-4 mb-3">
+                        <div class="card shadow">
+                            <div class="card-body text-center">
+                                <h6 class="card-title text-primary">今日审计日志</h6>
+                                <h3 class="text-primary" id="today-audit-logs" th:text="${systemHealth.todayAuditLogs}">0</h3>
+                                <small class="text-muted">
+                                    失败: <span class="text-danger" id="today-failures" th:text="${systemHealth.todayFailures}">0</span>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card shadow">
+                            <div class="card-body text-center">
+                                <h6 class="card-title text-info">今日登录次数</h6>
+                                <h3 class="text-info" id="today-logins">0</h3>
+                                <small class="text-muted">
+                                    失败: <span class="text-danger" id="today-login-failures">0</span>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card shadow">
+                            <div class="card-body text-center">
+                                <h6 class="card-title text-warning">系统负载</h6>
+                                <h3 class="text-warning" id="system-load">正常</h3>
+                                <small class="text-muted">
+                                    CPU: <span id="cpu-usage">45%</span> | 内存: <span id="memory-usage">68%</span>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 安全趋势分析图表 -->
+                <div class="row mb-4">
+                    <div class="col-lg-8 mb-4">
+                        <div class="card shadow">
+                            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                                <h6 class="m-0 font-weight-bold text-primary">
+                                    <i class="bi bi-graph-up"></i> 安全事件趋势分析
+                                </h6>
+                                <div class="btn-group btn-group-sm">
+                                    <button type="button" class="btn btn-outline-secondary active" onclick="loadTrendChart('7d')">7天</button>
+                                    <button type="button" class="btn btn-outline-secondary" onclick="loadTrendChart('30d')">30天</button>
+                                    <button type="button" class="btn btn-outline-secondary" onclick="loadTrendChart('90d')">90天</button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container">
+                                    <canvas id="securityTrendChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 威胁类型分布 -->
+                    <div class="col-lg-4 mb-4">
+                        <div class="card shadow">
+                            <div class="card-header py-3">
+                                <h6 class="m-0 font-weight-bold text-warning">
+                                    <i class="bi bi-pie-chart"></i> 威胁类型分布
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container">
+                                    <canvas id="threatTypeChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 实时告警和事件 -->
+                <div class="row mb-4">
+                    <!-- 实时安全告警 -->
                     <div class="col-lg-6 mb-4">
                         <div class="card shadow">
                             <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                                <h6 class="m-0 font-weight-bold text-primary">最近审计日志</h6>
-                                <a href="/blog/admin_audit_logs" class="btn btn-sm btn-primary">查看全部</a>
+                                <h6 class="m-0 font-weight-bold text-danger">
+                                    <i class="bi bi-exclamation-triangle-fill"></i> 
+                                    实时安全告警
+                                    <span class="realtime-indicator badge bg-danger ms-2">实时</span>
+                                </h6>
+                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearAllAlerts()">
+                                    <i class="bi bi-x-circle"></i> 清除全部
+                                </button>
                             </div>
-                            <div class="card-body">
-                                <div id="recent-audit-logs">
-                                    <div class="text-center">
-                                        <div class="spinner-border" role="status">
-                                            <span class="visually-hidden">加载中...</span>
-                                        </div>
+                            <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                                <div id="realtime-alerts">
+                                    <div class="text-center text-muted">
+                                        <i class="bi bi-shield-check fa-2x"></i>
+                                        <p class="mt-2">暂无安全告警</p>
                                     </div>
                                 </div>
                             </div>
@@ -197,11 +357,86 @@
                     <div class="col-lg-6 mb-4">
                         <div class="card shadow">
                             <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                                <h6 class="m-0 font-weight-bold text-danger">最近安全事件</h6>
-                                <a href="/blog/admin_security_events" class="btn btn-sm btn-danger">查看全部</a>
+                                <h6 class="m-0 font-weight-bold text-info">
+                                    <i class="bi bi-clock-history"></i> 最近安全事件
+                                </h6>
+                                <a href="/blog/admin_security_events" class="btn btn-sm btn-outline-info">查看全部</a>
+                            </div>
+                            <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                                <div id="recent-security-events">
+                                    <div class="text-center">
+                                        <div class="spinner-border" role="status">
+                                            <span class="visually-hidden">加载中...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 用户行为分析和热点IP -->
+                <div class="row mb-4">
+                    <!-- 用户行为分析 -->
+                    <div class="col-lg-6 mb-4">
+                        <div class="card shadow">
+                            <div class="card-header py-3">
+                                <h6 class="m-0 font-weight-bold text-success">
+                                    <i class="bi bi-person-lines-fill"></i> 用户行为分析
+                                </h6>
                             </div>
                             <div class="card-body">
-                                <div id="recent-security-events">
+                                <div class="row">
+                                    <div class="col-6 text-center">
+                                        <h4 class="text-success" id="active-sessions">0</h4>
+                                        <small class="text-muted">活跃会话</small>
+                                    </div>
+                                    <div class="col-6 text-center">
+                                        <h4 class="text-warning" id="suspicious-users">0</h4>
+                                        <small class="text-muted">可疑用户</small>
+                                    </div>
+                                </div>
+                                <hr>
+                                <div id="user-behavior-chart" class="chart-container">
+                                    <canvas id="userBehaviorChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 热点IP地址 -->
+                    <div class="col-lg-6 mb-4">
+                        <div class="card shadow">
+                            <div class="card-header py-3">
+                                <h6 class="m-0 font-weight-bold text-secondary">
+                                    <i class="bi bi-geo-alt-fill"></i> 热点IP地址
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div id="hot-ip-addresses">
+                                    <div class="text-center">
+                                        <div class="spinner-border spinner-border-sm" role="status">
+                                            <span class="visually-hidden">加载中...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 最近审计日志 -->
+                <div class="row">
+                    <div class="col-12 mb-4">
+                        <div class="card shadow">
+                            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                                <h6 class="m-0 font-weight-bold text-primary">
+                                    <i class="bi bi-journal-text"></i> 最近审计日志
+                                </h6>
+                                <a href="/blog/admin_audit_logs" class="btn btn-sm btn-outline-primary">查看全部</a>
+                            </div>
+                            <div class="card-body">
+                                <div id="recent-audit-logs">
                                     <div class="text-center">
                                         <div class="spinner-border" role="status">
                                             <span class="visually-hidden">加载中...</span>
@@ -262,6 +497,8 @@
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
     <script src="/blog/static/js/admin-dashboard.js"></script>
+    <script src="/blog/static/js/security-monitoring.js"></script>
 </body>
 </html>

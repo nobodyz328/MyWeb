@@ -2,10 +2,10 @@ package com.myweb.website_core.infrastructure.config;
 
 import com.myweb.website_core.application.service.security.*;
 import com.myweb.website_core.application.service.security.authentication.SessionCleanupService;
-import com.myweb.website_core.application.service.security.dataprotect.BackupService;
-import com.myweb.website_core.application.service.security.dataprotect.DataDeletionService;
-import com.myweb.website_core.application.service.security.dataprotect.DataRecoveryService;
-import com.myweb.website_core.application.service.security.fileProtect.FileIntegrityService;
+import com.myweb.website_core.application.service.security.integeration.dataManage.BackupService;
+import com.myweb.website_core.application.service.security.integeration.dataManage.DataDeletionService;
+import com.myweb.website_core.application.service.security.integeration.dataManage.DataRecoveryService;
+import com.myweb.website_core.application.service.security.integeration.FileIntegrityService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;

@@ -70,7 +70,7 @@ class SecurityAlertServiceTest {
         
         highRiskEvent = SecurityEvent.builder()
                 .id(2L)
-                .eventType(SecurityEventType.UNAUTHORIZED_ACCESS)
+                .eventType(SecurityEventType.ACCESS_DENIED)
                 .title("未授权访问尝试")
                 .description("检测到未授权访问尝试")
                 .severity(4)

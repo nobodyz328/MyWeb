@@ -5,11 +5,12 @@ import com.myweb.website_core.application.service.security.authentication.Authen
 import com.myweb.website_core.application.service.security.authentication.TOTPManagementService;
 import com.myweb.website_core.common.enums.AuditOperation;
 import com.myweb.website_core.domain.business.entity.User;
-import com.myweb.website_core.infrastructure.security.Auditable;
+import com.myweb.website_core.infrastructure.security.audit.Auditable;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -19,19 +20,19 @@ import java.util.Map;
 
 /**
  * 用户设置控制器
- * 
+ * <p>
  * 提供用户设置相关的API接口，包括：
  * - 个人信息管理
  * - 密码修改
  * - 邮箱绑定
  * - TOTP设置
  * - 管理员访问验证
- * 
+ * <p>
  * 符合GB/T 22239-2019身份鉴别和访问控制要求
  */
 @Slf4j
 @RestController
-@RequestMapping("/users/{userId}/settings")
+@RequestMapping("/api/users/{userId}/settings")
 @RequiredArgsConstructor
 public class UserSettingsController {
     
@@ -155,21 +156,31 @@ public class UserSettingsController {
     /**
      * 获取TOTP设置信息
      */
-    @GetMapping("/totp")
+    @GetMapping("/totp/setup")
     @Auditable(operation = AuditOperation.TOTP_SETUP, resourceType = "USER", description = "查看TOTP设置")
     public ResponseEntity<?> getTOTPSetup(@PathVariable Long userId) {
         try {
             // 验证用户权限
             if (!validateUserAccess(userId)) {
-                return ResponseEntity.status(403).body("无权限访问此用户TOTP设置");
+                return ResponseEntity.status(403).body(Map.of(
+                    "success", false,
+                    "message", "无权限访问此用户TOTP设置"
+                ));
             }
             
             TOTPManagementService.TOTPSetupInfo setupInfo = totpManagementService.generateTOTPSetup(userId);
-            return ResponseEntity.ok(setupInfo);
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "data", setupInfo,
+                "message", "TOTP设置信息获取成功"
+            ));
             
         } catch (Exception e) {
             log.error("获取TOTP设置失败: userId={}", userId, e);
-            return ResponseEntity.badRequest().body("获取TOTP设置失败: " + e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "获取TOTP设置失败: " + e.getMessage()
+            ));
         }
     }
     
@@ -182,15 +193,25 @@ public class UserSettingsController {
         try {
             // 验证用户权限
             if (!validateUserAccess(userId)) {
-                return ResponseEntity.status(403).body("无权限访问此用户TOTP状态");
+                return ResponseEntity.status(403).body(Map.of(
+                    "success", false,
+                    "message", "无权限访问此用户TOTP状态"
+                ));
             }
             
             TOTPManagementService.TOTPStatusInfo statusInfo = totpManagementService.getTOTPStatus(userId);
-            return ResponseEntity.ok(statusInfo);
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "data", statusInfo,
+                "message", "TOTP状态获取成功"
+            ));
             
         } catch (Exception e) {
             log.error("获取TOTP状态失败: userId={}", userId, e);
-            return ResponseEntity.badRequest().body("获取TOTP状态失败: " + e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "获取TOTP状态失败: " + e.getMessage()
+            ));
         }
     }
     
@@ -247,7 +268,7 @@ public class UserSettingsController {
      * 禁用TOTP
      */
     @PostMapping("/totp/disable")
-    @Auditable(operation = AuditOperation.TOTP_DISABLE, resourceType = "USER", description = "禁用TOTP")
+    @Auditable(operation = AuditOperation.TOTP_DISABLED, resourceType = "USER", description = "禁用TOTP")
     public ResponseEntity<?> disableTOTP(@PathVariable Long userId, 
                                        @RequestBody DisableTOTPRequest request) {
         try {
@@ -347,76 +368,56 @@ public class UserSettingsController {
         User currentUser = authenticationService.getCurrentUser();
         return currentUser != null && currentUser.getId().equals(userId);
     }
-}
+
 
 // ==================== 请求DTO类 ====================
 
-@Getter
-class UpdateBasicInfoRequest {
-    private String bio;
-    private String avatarUrl;
-    
-    public void setBio(String bio) { this.bio = bio; }
-    public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
-}
 
-@Getter
-class ChangePasswordRequest {
-    private String currentPassword;
-    private String newPassword;
-    private String totpCode;
-    
-    public void setCurrentPassword(String currentPassword) { this.currentPassword = currentPassword; }
-    public void setNewPassword(String newPassword) { this.newPassword = newPassword; }
-    public void setTotpCode(String totpCode) { this.totpCode = totpCode; }
-}
+    @Getter@Setter
+    private static class UpdateBasicInfoRequest {
+        private String bio;
+        private String avatarUrl;
+    }
 
-@Getter
-class BindEmailRequest {
-    private String email;
-    private String verificationCode;
-    private String totpCode;
-    
-    public void setEmail(String email) { this.email = email; }
-    public void setVerificationCode(String verificationCode) { this.verificationCode = verificationCode; }
-    public void setTotpCode(String totpCode) { this.totpCode = totpCode; }
-}
+    @Getter@Setter
+    private static class ChangePasswordRequest {
+        private String currentPassword;
+        private String newPassword;
+        private String totpCode;
+    }
 
-@Getter
-class EnableTOTPRequest {
-    private String secret;
-    private String verificationCode;
-    
-    public void setSecret(String secret) { this.secret = secret; }
-    public void setVerificationCode(String verificationCode) { this.verificationCode = verificationCode; }
-}
+    @Getter@Setter
+    private static class BindEmailRequest {
+        private String email;
+        private String verificationCode;
+        private String totpCode;
+    }
 
-@Getter
-class DisableTOTPRequest {
-    private String verificationCode;
-    
-    public void setVerificationCode(String verificationCode) { this.verificationCode = verificationCode; }
-}
+    @Getter@Setter
+    private static class EnableTOTPRequest {
+        private String secret;
+        private String verificationCode;
+    }
 
-@Getter
-class ResetTOTPRequest {
-    private String currentVerificationCode;
-    
-    public void setCurrentVerificationCode(String currentVerificationCode) { 
-        this.currentVerificationCode = currentVerificationCode; 
+    @Getter@Setter
+    private static class DisableTOTPRequest {
+        private String verificationCode;
+    }
+
+    @Getter@Setter
+    private static  class ResetTOTPRequest {
+        private String currentVerificationCode;
+
+    }
+
+    @Getter@Setter
+    private static class VerifyTOTPRequest {
+        private String verificationCode;
+    }
+
+    @Getter@Setter
+    private static class CheckAdminAccessRequest {
+        private String totpCode;
     }
 }
 
-@Getter
-class VerifyTOTPRequest {
-    private String verificationCode;
-    
-    public void setVerificationCode(String verificationCode) { this.verificationCode = verificationCode; }
-}
-
-@Getter
-class CheckAdminAccessRequest {
-    private String totpCode;
-    
-    public void setTotpCode(String totpCode) { this.totpCode = totpCode; }
-}

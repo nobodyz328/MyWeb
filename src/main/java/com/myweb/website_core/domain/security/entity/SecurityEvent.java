@@ -1,8 +1,6 @@
 package com.myweb.website_core.domain.security.entity;
 
 import com.myweb.website_core.common.enums.SecurityEventType;
-import com.myweb.website_core.domain.security.dto.SecurityAuditMessage;
-import com.myweb.website_core.domain.security.dto.UnifiedSecurityMessage;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -24,6 +22,7 @@ import java.time.LocalDateTime;
     @Index(name = "idx_security_event_status", columnList = "status")
 })
 @Data
+@NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class SecurityEvent {
@@ -259,18 +258,4 @@ public class SecurityEvent {
         updatedAt = LocalDateTime.now();
     }
 
-    public SecurityEvent(){
-    }
-    public SecurityEvent(UnifiedSecurityMessage message){
-        this.setEventType(message.getSecurityEventType());
-        this.setUserId(message.getUserId());
-        this.setUsername(message.getUsername());
-        this.setSourceIp(message.getIpAddress());
-        this.setDescription(message.getDescription());
-        this.setSeverity(message.getSecurityEventType().getSeverity());
-        this.setEventTime(message.getTimestamp() != null ? message.getTimestamp() : LocalDateTime.now());
-        this.setStatus("DETECTED");
-        this.setEventData(message.getRequestData());
-
-    }
 }

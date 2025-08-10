@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JWT Authentication Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        button { margin: 5px; padding: 10px; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>JWT Authentication Test</h1>
+    
+    <div class="test-section">
+        <h2>Authentication Status</h2>
+        <div id="authStatus"></div>
+        <button onclick="checkAuthStatus()">Check Auth Status</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test API Calls</h2>
+        <button onclick="testPublicAPI()">Test Public API (/api/posts)</button>
+        <button onclick="testProtectedAPI()">Test Protected API (/api/posts/1/collect-status)</button>
+        <button onclick="testAuthenticatedAPI()">Test Authenticated API (/users/profile)</button>
+        <div id="apiResults"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Token Information</h2>
+        <button onclick="showTokenInfo()">Show Token Info</button>
+        <div id="tokenInfo"></div>
+    </div>
+
+    <script>
+        // Include AuthUtils (assuming it's available)
+        function checkAuthStatus() {
+            const statusDiv = document.getElementById('authStatus');
+            const isLoggedIn = localStorage.getItem('accessToken') ? true : false;
+            const userId = localStorage.getItem('userId');
+            const username = localStorage.getItem('username');
+            
+            statusDiv.innerHTML = `
+                <div class="${isLoggedIn ? 'success' : 'error'}">
+                    Logged in: ${isLoggedIn}<br>
+                    User ID: ${userId || 'N/A'}<br>
+                    Username: ${username || 'N/A'}
+                </div>
+            `;
+        }
+        
+        async function testPublicAPI() {
+            const resultsDiv = document.getElementById('apiResults');
+            try {
+                const response = await fetch('/blog/api/posts');
+                const data = await response.json();
+                resultsDiv.innerHTML += `
+                    <div class="success">
+                        <h3>Public API Test - SUCCESS</h3>
+                        <pre>Status: ${response.status}\nData: ${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                resultsDiv.innerHTML += `
+                    <div class="error">
+                        <h3>Public API Test - ERROR</h3>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+        
+        async function testProtectedAPI() {
+            const resultsDiv = document.getElementById('apiResults');
+            const userId = localStorage.getItem('userId');
+            
+            if (!userId) {
+                resultsDiv.innerHTML += `
+                    <div class="error">
+                        <h3>Protected API Test - ERROR</h3>
+                        <pre>No user ID found. Please login first.</pre>
+                    </div>
+                `;
+                return;
+            }
+            
+            try {
+                // Test with direct fetch (should fail)
+                const directResponse = await fetch(`/blog/api/posts/1/collect-status?userId=${userId}`);
+                const directData = await directResponse.json();
+                
+                resultsDiv.innerHTML += `
+                    <div class="${directResponse.ok ? 'success' : 'error'}">
+                        <h3>Protected API Test (Direct Fetch) - ${directResponse.ok ? 'SUCCESS' : 'FAILED'}</h3>
+                        <pre>Status: ${directResponse.status}\nData: ${JSON.stringify(directData, null, 2)}</pre>
+                    </div>
+                `;
+                
+                // Test with authenticated fetch (should succeed)
+                if (window.AuthUtils) {
+                    const authResponse = await AuthUtils.authenticatedFetch(`/blog/api/posts/1/collect-status?userId=${userId}`);
+                    const authData = await authResponse.json();
+                    
+                    resultsDiv.innerHTML += `
+                        <div class="${authResponse.ok ? 'success' : 'error'}">
+                            <h3>Protected API Test (Authenticated Fetch) - ${authResponse.ok ? 'SUCCESS' : 'FAILED'}</h3>
+                            <pre>Status: ${authResponse.status}\nData: ${JSON.stringify(authData, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+                
+            } catch (error) {
+                resultsDiv.innerHTML += `
+                    <div class="error">
+                        <h3>Protected API Test - ERROR</h3>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+        
+        async function testAuthenticatedAPI() {
+            const resultsDiv = document.getElementById('apiResults');
+            const userId = localStorage.getItem('userId');
+            
+            if (!userId) {
+                resultsDiv.innerHTML += `
+                    <div class="error">
+                        <h3>Authenticated API Test - ERROR</h3>
+                        <pre>No user ID found. Please login first.</pre>
+                    </div>
+                `;
+                return;
+            }
+            
+            try {
+                if (window.AuthUtils) {
+                    const response = await AuthUtils.authenticatedFetch(`/blog/users/${userId}/profile`);
+                    const data = await response.json();
+                    
+                    resultsDiv.innerHTML += `
+                        <div class="${response.ok ? 'success' : 'error'}">
+                            <h3>Authenticated API Test - ${response.ok ? 'SUCCESS' : 'FAILED'}</h3>
+                            <pre>Status: ${response.status}\nData: ${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultsDiv.innerHTML += `
+                        <div class="error">
+                            <h3>Authenticated API Test - ERROR</h3>
+                            <pre>AuthUtils not available</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML += `
+                    <div class="error">
+                        <h3>Authenticated API Test - ERROR</h3>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+        
+        function showTokenInfo() {
+            const tokenDiv = document.getElementById('tokenInfo');
+            const accessToken = localStorage.getItem('accessToken');
+            
+            if (!accessToken) {
+                tokenDiv.innerHTML = '<div class="error">No access token found</div>';
+                return;
+            }
+            
+            try {
+                // Parse JWT token
+                const parts = accessToken.split('.');
+                const header = JSON.parse(atob(parts[0]));
+                const payload = JSON.parse(atob(parts[1]));
+                
+                tokenDiv.innerHTML = `
+                    <div class="info">
+                        <h3>Token Header:</h3>
+                        <pre>${JSON.stringify(header, null, 2)}</pre>
+                        <h3>Token Payload:</h3>
+                        <pre>${JSON.stringify(payload, null, 2)}</pre>
+                        <h3>Token Expiry:</h3>
+                        <pre>Expires: ${new Date(payload.exp * 1000).toLocaleString()}</pre>
+                        <pre>Current: ${new Date().toLocaleString()}</pre>
+                        <pre>Expired: ${payload.exp * 1000 < Date.now()}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                tokenDiv.innerHTML = `<div class="error">Error parsing token: ${error.message}</div>`;
+            }
+        }
+        
+        // Auto-check auth status on load
+        document.addEventListener('DOMContentLoaded', checkAuthStatus);
+    </script>
+    
+    <!-- Include AuthUtils if available -->
+    <script src="/blog/static/js/auth-utils.js"></script>
+</body>
+</html>

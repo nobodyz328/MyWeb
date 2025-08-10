@@ -1,7 +1,7 @@
 package com.myweb.website_core.common.validation;
 
 import com.myweb.website_core.application.service.security.IPS.virusprotect.InputValidationService;
-import com.myweb.website_core.common.exception.ValidationException;
+import com.myweb.website_core.common.exception.security.ValidationException;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import org.springframework.beans.factory.annotation.Autowired;

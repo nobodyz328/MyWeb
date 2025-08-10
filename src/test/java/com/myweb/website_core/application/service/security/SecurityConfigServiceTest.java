@@ -6,7 +6,6 @@ import com.myweb.website_core.common.config.BackupProperties;
 import com.myweb.website_core.infrastructure.config.JwtConfig;
 import com.myweb.website_core.common.config.RateLimitProperties;
 import com.myweb.website_core.common.config.SecurityProperties;
-import com.myweb.website_core.common.exception.ValidationException;
 import com.myweb.website_core.domain.security.dto.SecurityConfigBackupDTO;
 import com.myweb.website_core.domain.security.dto.SecurityConfigDTO;
 import org.junit.jupiter.api.BeforeEach;

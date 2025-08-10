@@ -2,20 +2,19 @@ package com.myweb.website_core.application.service.security.authentication;
 
 import com.myweb.website_core.application.service.security.authentication.JWT.JwtTokenService;
 import com.myweb.website_core.application.service.security.authentication.JWT.TokenPair;
+import com.myweb.website_core.common.exception.security.AccountLockedException;
+import com.myweb.website_core.common.exception.security.AuthenticationException;
+import com.myweb.website_core.common.exception.security.TokenException;
+import com.myweb.website_core.common.util.SecurityEventUtils;
 import com.myweb.website_core.domain.business.dto.UserLoginResponse;
 import com.myweb.website_core.domain.business.entity.User;
 import com.myweb.website_core.infrastructure.persistence.repository.UserRepository;
-import com.myweb.website_core.infrastructure.security.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,9 +33,8 @@ public class AuthenticationService {
     
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final CustomUserDetailsService userDetailsService;
     private final JwtTokenService jwtTokenService;
+    private final TOTPService totpService;
     
 
     
@@ -45,7 +43,7 @@ public class AuthenticationService {
      * 
      * @param username 用户名或邮箱
      * @param password 密码
-     * @param code 验证码
+     * @param code 验证码（管理员必须提供TOTP验证码）
      * @param ipAddress 客户端IP地址
      * @return 登录响应
      */
@@ -54,17 +52,35 @@ public class AuthenticationService {
         try {
             // 查找用户
             User user = userRepository.findByUsernameOrEmail(username, username)
-                    .orElseThrow(() -> new BadCredentialsException("用户名或密码错误"));
+                    .orElseThrow(() -> new AuthenticationException("用户名或密码错误"));
             
             // 检查账户锁定状态
             if (user.isAccountLocked()) {
-                throw new LockedException("账户已被锁定，请稍后再试");
+                throw new AccountLockedException(user.getUsername(),user.getAccountLockedUntil());
             }
             
             // 检查邮箱
 //            if (!user.getEmailVerified()) {
 //                throw new DisabledException("账户未激活，请先验证邮箱");
 //            }
+            
+            // 管理员登录必须提供TOTP验证码
+            if (user.getRole() != null && user.getRole().isAdmin()) {
+                if (!user.getTotpEnabled()) {
+                    throw new AuthenticationException("管理员账户必须启用二次验证才能登录");
+                }
+                
+                if (code == null || code.trim().isEmpty()) {
+                    throw new AuthenticationException("管理员登录需要提供TOTP验证码");
+                }
+                
+                // 验证TOTP代码
+                if (!validateTOTPCode(user, code.trim())) {
+                    throw new AuthenticationException("TOTP验证码不正确");
+                }
+                
+                log.info("管理员 {} TOTP验证成功", username);
+            }
             
             // 使用Spring Security进行认证
             UsernamePasswordAuthenticationToken authToken = 
@@ -95,9 +111,7 @@ public class AuthenticationService {
                         user.incrementLoginAttempts();
                         userRepository.save(user);
                     });
-            
-            log.warn("用户登录失败: {}, IP: {}, 原因: {}", username, ipAddress, e.getMessage());
-            throw new RuntimeException("用户名或密码错误");
+            throw new AuthenticationException("用户登录失败:"+username+"; 原因: "+e.getMessage());
         }
     }
     
@@ -124,8 +138,7 @@ public class AuthenticationService {
             return "退出登录成功";
             
         } catch (Exception e) {
-            log.error("用户退出登录失败: ", e);
-            throw new RuntimeException("退出登录失败: " + e.getMessage());
+            throw new AuthenticationException("退出登录失败: " + e.getMessage());
         }
     }
     
@@ -135,21 +148,7 @@ public class AuthenticationService {
      * @return 当前用户，如果未认证则返回null
      */
     public User getCurrentUser() {
-        try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            if (authentication != null && authentication.isAuthenticated() && 
-                !"anonymousUser".equals(authentication.getPrincipal())) {
-                
-                if (authentication.getPrincipal() instanceof CustomUserDetailsService.CustomUserPrincipal) {
-                    CustomUserDetailsService.CustomUserPrincipal principal = 
-                            (CustomUserDetailsService.CustomUserPrincipal) authentication.getPrincipal();
-                    return principal.getUser();
-                }
-            }
-        } catch (Exception e) {
-            log.debug("获取当前用户失败: {}", e.getMessage());
-        }
-        return null;
+       return SecurityEventUtils.getCurrentUser();
     }
     
     /**
@@ -173,12 +172,12 @@ public class AuthenticationService {
             // 从刷新令牌中获取用户信息
             String username = jwtTokenService.getUsernameFromToken(refreshToken);
             if (username == null) {
-                throw new RuntimeException("无效的刷新令牌");
+                throw new TokenException("无效的JWT刷新令牌");
             }
             
             // 查找用户
             User user = userRepository.findByUsernameOrEmail(username, username)
-                    .orElseThrow(() -> new RuntimeException("用户不存在"));
+                    .orElseThrow(() -> new AuthenticationException("用户不存在"));
             
             // 刷新令牌
             TokenPair tokenPair = jwtTokenService.refreshToken(refreshToken, user);
@@ -187,8 +186,29 @@ public class AuthenticationService {
             return tokenPair;
             
         } catch (Exception e) {
-            log.error("刷新访问令牌失败", e);
-            throw new RuntimeException("刷新令牌失败: " + e.getMessage());
+            throw new TokenException("刷新令牌失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 验证用户的TOTP代码
+     * 
+     * @param user 用户对象
+     * @param code TOTP验证码
+     * @return 验证是否成功
+     */
+    private boolean validateTOTPCode(User user, String code) {
+        try {
+            if (user.getTotpSecret() == null || user.getTotpSecret().trim().isEmpty()) {
+                log.warn("用户 {} 未设置TOTP密钥", user.getUsername());
+                return false;
+            }
+            
+            return totpService.validateTOTP(user.getTotpSecret(), code, user.getUsername());
+            
+        } catch (Exception e) {
+            log.error("验证用户 {} 的TOTP代码失败", user.getUsername(), e);
+            return false;
         }
     }
     
@@ -215,7 +235,7 @@ public class AuthenticationService {
         
         // 设置JWT令牌信息
         response.setAccessToken(tokenPair.getAccessToken());
-        response.setRefreshToken(tokenPair.getRefreshToken());
+        //response.setRefreshToken(tokenPair.getRefreshToken());
         response.setTokenType(tokenPair.getTokenType());
         response.setExpiresIn(tokenPair.getExpiresIn());
         

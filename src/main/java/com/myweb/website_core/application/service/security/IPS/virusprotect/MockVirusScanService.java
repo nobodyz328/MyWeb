@@ -19,19 +19,18 @@ import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * 模拟病毒扫描服务实现
- * 
+ * <p>
  * 用于开发和测试环境的模拟病毒扫描服务：
  * - 模拟真实的扫描过程和结果
  * - 支持测试病毒文件检测（EICAR测试文件）
  * - 可配置的扫描延迟和结果
  * - 完整的审计日志记录
  * - 不依赖外部病毒扫描引擎
- * 
+ * <p>
  * 符合GB/T 22239-2019二级等保要求的恶意代码防范机制
  * 
- * @author MyWeb Security Team
+ * @author MyWeb
  * @version 1.0
- * @since 2025-01-01
  */
 @Slf4j
 @Service

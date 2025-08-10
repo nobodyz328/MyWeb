@@ -20,6 +20,9 @@ document.addEventListener('DOMContentLoaded', async function () {
   // 初始化设置功能
   initializeSettings();
   
+  // 初始化TOTP功能
+  initializeTOTP();
+  
   // 默认加载我的帖子
   loadMyPosts();
 });
@@ -43,9 +46,8 @@ async function loadUserProfile() {
     document.getElementById('profileFollowing').textContent = data?.followingCount || 0;
     document.getElementById('profileFollowers').textContent = data?.followersCount || 0;
     document.getElementById('profileLiked').textContent = data?.likedCount || 0;
-    
-    const avatarUrl = data?.avatarUrl || '/blog/static/images/noface.gif';
-    document.getElementById('profileAvatar').src = avatarUrl;
+
+    document.getElementById('profileAvatar').src = data?.avatarUrl || '/blog/static/images/noface.gif';
     
   } catch (error) {
     console.error('Failed to load user profile:', error);
@@ -301,102 +303,6 @@ function initializeSettings() {
   }
 }
 
-// 处理获取邮箱验证码
-async function handleGetEmailCode() {
-  const emailInput = document.getElementById('bindEmailInput');
-  const statusDiv = document.getElementById('emailBindStatus');
-  const button = document.getElementById('getBindCodeBtn');
-  
-  const email = emailInput.value.trim();
-  if (!email) {
-    showStatus(statusDiv, '请输入邮箱地址', 'error');
-    return;
-  }
-  
-  if (!isValidEmail(email)) {
-    showStatus(statusDiv, '请输入有效的邮箱地址', 'error');
-    return;
-  }
-  
-  button.disabled = true;
-  button.textContent = '发送中...';
-  
-  try {
-    // 优先使用新的设置API，如果不存在则使用旧的API
-    let response;
-    try {
-      response = await AuthUtils.authenticatedFetch(`/blog/users/${userId}/settings/email/send-code?email=${encodeURIComponent(email)}`, {
-        method: 'POST'
-      });
-    } catch (error) {
-      // 如果新API不存在，使用旧API
-      response = await AuthUtils.authenticatedFetch(`/blog/users/${userId}/bind-email/code?email=${encodeURIComponent(email)}`, {
-        method: 'POST'
-      });
-    }
-    
-    if (response.ok) {
-      showStatus(statusDiv, '验证码已发送到邮箱，请查收', 'success');
-      startCountdown(button);
-    } else {
-      const error = await response.text();
-      showStatus(statusDiv, error || '发送失败，请重试', 'error');
-      button.disabled = false;
-      button.textContent = '获取验证码';
-    }
-  } catch (error) {
-    console.error('Failed to send email code:', error);
-    showStatus(statusDiv, '网络错误，请重试', 'error');
-    button.disabled = false;
-    button.textContent = '获取验证码';
-  }
-}
-
-// 处理邮箱绑定
-async function handleEmailBind(e) {
-  e.preventDefault();
-  
-  const email = document.getElementById('bindEmailInput').value.trim();
-  const verificationCode = document.getElementById('bindEmailCode').value.trim();
-  const totpCode = document.getElementById('bindEmailTotpCode').value.trim();
-  const statusDiv = document.getElementById('emailBindStatus');
-  
-  if (!email || !verificationCode) {
-    showStatus(statusDiv, '请填写完整信息', 'error');
-    return;
-  }
-  
-  try {
-    // 优先使用新的设置API，如果不存在则使用旧的API
-    let response;
-    try {
-      response = await AuthUtils.authenticatedFetch(`/blog/users/${userId}/settings/email/bind`, {
-        method: 'POST',
-        body: JSON.stringify({ email, verificationCode, totpCode })
-      });
-    } catch (error) {
-      // 如果新API不存在，使用旧API
-      response = await AuthUtils.authenticatedFetch(`/blog/users/${userId}/bind-email`, {
-        method: 'POST',
-        body: JSON.stringify({ email, code: verificationCode })
-      });
-    }
-    
-    if (response.ok) {
-      showStatus(statusDiv, '邮箱绑定成功！', 'success');
-      // 清空表单并刷新设置
-      document.getElementById('emailBindForm').reset();
-      loadUserSettings();
-    } else {
-      const error = await response.text();
-      showStatus(statusDiv, error || '绑定失败，请检查验证码', 'error');
-    }
-  } catch (error) {
-    console.error('Failed to bind email:', error);
-    showStatus(statusDiv, '网络错误，请重试', 'error');
-  }
-}
-
 // 编辑帖子
 function editPost(postId) {
   window.location.href = `/blog/posts/edit/${postId}`;
@@ -415,7 +321,7 @@ async function deletePost(postId) {
     
     if (response.ok) {
       showNotification('帖子删除成功', 'success');
-      loadMyPosts(); // 重新加载帖子列表
+      await loadMyPosts(); // 重新加载帖子列表
     } else {
       showNotification('删除失败，请重试', 'error');
     }
@@ -439,7 +345,7 @@ async function uncollectPost(postId) {
     const data = await response.json();
     if (data.success) {
       showNotification('取消收藏成功', 'success');
-      loadCollectedPosts(); // 重新加载收藏列表
+      await loadCollectedPosts(); // 重新加载收藏列表
     } else {
       showNotification('操作失败，请重试', 'error');
     }
@@ -453,6 +359,341 @@ async function uncollectPost(postId) {
 function logout() {
   if (confirm('确定要退出登录吗？')) {
     AuthUtils.logout();
+  }
+}
+
+// ==================== TOTP 二次验证功能 ====================
+
+// 加载TOTP状态
+async function loadTOTPStatus() {
+  try {
+    const response = await AuthUtils.authenticatedFetch(`/blog/api/users/${userId}/settings/totp/status`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    console.log('TOTP status response:', data);
+    
+    // 检查响应格式
+      if (data.success) {
+        updateTOTPUI(data.data);
+      } else {
+        showTOTPError('加载TOTP状态失败: ' + (data.message || '未知错误'));
+      }
+  } catch (error) {
+    console.error('Failed to load TOTP status:', error);
+    showTOTPError('网络错误，请重试: ' + error.message);
+  }
+}
+
+// 更新TOTP界面
+function updateTOTPUI(status) {
+  const totpStatus = document.getElementById('totpStatus');
+  const disabledSection = document.getElementById('totpDisabledSection');
+  const setupSection = document.getElementById('totpSetupSection');
+  const enabledSection = document.getElementById('totpEnabledSection');
+  const requiredNotice = document.getElementById('totpRequiredNotice');
+  const disableBtn = document.getElementById('disableTotpBtn');
+  
+  // 隐藏加载状态
+  totpStatus.style.display = 'none';
+  
+  if (status.enabled) {
+    // TOTP已启用
+    disabledSection.style.display = 'none';
+    setupSection.style.display = 'none';
+    enabledSection.style.display = 'block';
+    
+    // 更新剩余时间
+    updateTOTPRemainingTime(status.remainingTime);
+    
+    // 管理员不能禁用TOTP
+    if (!status.required) {
+      disableBtn.style.display = 'inline-block';
+    }
+  } else if (status.configured) {
+    // TOTP已配置但未启用（设置过程中）
+    disabledSection.style.display = 'none';
+    setupSection.style.display = 'block';
+    enabledSection.style.display = 'none';
+    
+    // 加载二维码
+    loadTOTPQRCode();
+  } else {
+    // TOTP未配置
+    disabledSection.style.display = 'block';
+    setupSection.style.display = 'none';
+    enabledSection.style.display = 'none';
+    
+    // 显示管理员必须启用的提示
+    if (status.required) {
+      requiredNotice.style.display = 'block';
+    }
+  }
+}
+
+// 设置TOTP
+async function setupTOTP() {
+  try {
+    const response = await AuthUtils.authenticatedFetch(`/blog/api/users/${userId}/settings/totp/setup`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    console.log('TOTP setup response:', data);
+    
+    // 检查响应格式
+    let setupData = data;
+    if (data.success !== undefined) {
+      if (data.success) {
+        setupData = data.data;
+      } else {
+        showTOTPError('设置TOTP失败: ' + (data.message || '未知错误'));
+        return;
+      }
+    }
+    
+    // 验证必要的数据字段
+    if (!setupData.secret) {
+      showTOTPError('设置TOTP失败: 服务器未返回密钥');
+      return;
+    }
+    
+    // 显示设置界面
+    document.getElementById('totpDisabledSection').style.display = 'none';
+    document.getElementById('totpSetupSection').style.display = 'block';
+    
+    // 设置密钥
+    document.getElementById('totpSecret').textContent = setupData.secret;
+    
+    // 加载二维码
+    await loadTOTPQRCode();
+    
+  } catch (error) {
+    console.error('Failed to setup TOTP:', error);
+    showTOTPError('网络错误，请重试: ' + error.message);
+  }
+}
+
+
+// 启用TOTP
+async function enableTOTP(event) {
+  event.preventDefault();
+  
+  const verificationCode = document.getElementById('totpVerificationCode').value;
+  const secret = document.getElementById('totpSecret').textContent;
+  
+  if (!verificationCode || verificationCode.length !== 6) {
+    showTOTPSetupStatus('请输入6位验证码', 'error');
+    return;
+  }
+  
+  try {
+    const response = await AuthUtils.authenticatedFetch(`/blog/api/users/${userId}/settings/totp/enable`, {
+      method: 'POST',
+      body: JSON.stringify({
+        secret: secret,
+        verificationCode: verificationCode
+      })
+    });
+    if (response.ok) {
+      const data = await response.json();
+      showTOTPSetupStatus(data.message, 'success');
+      setTimeout(() => {
+        loadTOTPStatus(); // 重新加载状态
+      }, 1000);
+    } else {
+      showTOTPSetupStatus('启用失败: ', 'error');
+    }
+    
+
+  } catch (error) {
+    console.error('Failed to enable TOTP:', error);
+    showTOTPSetupStatus('网络错误，请重试', 'error');
+  }
+}
+
+
+// 测试TOTP
+async function testTOTP(event) {
+  event.preventDefault();
+  
+  const testCode = document.getElementById('testTotpCode').value;
+  
+  if (!testCode || testCode.length !== 6) {
+    showNotification('请输入6位验证码', 'error');
+    return;
+  }
+  
+  try {
+    const response = await AuthUtils.authenticatedFetch(`/blog/api/users/${userId}/settings/totp/verify`, {
+      method: 'POST',
+      body: JSON.stringify({
+        verificationCode: testCode
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      showNotification('验证码正确！', 'success');
+      document.getElementById('testTotpCode').value = '';
+      document.getElementById('testTotpSection').style.display = 'none';
+    } else {
+      showNotification('验证码错误: ' + data.message, 'error');
+    }
+  } catch (error) {
+    console.error('Failed to test TOTP:', error);
+    showNotification('网络错误，请重试', 'error');
+  }
+}
+
+// 禁用TOTP
+async function disableTOTP() {
+  const verificationCode = prompt('请输入当前的6位验证码以确认禁用TOTP:');
+  
+  if (!verificationCode || verificationCode.length !== 6) {
+    showNotification('请输入有效的6位验证码', 'error');
+    return;
+  }
+  
+  if (!confirm('确定要禁用二次验证吗？这会降低您账户的安全性。')) {
+    return;
+  }
+  
+  try {
+    const response = await AuthUtils.authenticatedFetch(`/blog/api/users/${userId}/settings/totp/disable`, {
+      method: 'POST',
+      body: JSON.stringify({
+        verificationCode: verificationCode
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      showNotification('TOTP已禁用', 'success');
+      await loadTOTPStatus(); // 重新加载状态
+    } else {
+      showNotification('禁用失败: ' + data.message, 'error');
+    }
+  } catch (error) {
+    console.error('Failed to disable TOTP:', error);
+    showNotification('网络错误，请重试', 'error');
+  }
+}
+
+// 重置TOTP密钥
+async function resetTOTP() {
+  const verificationCode = prompt('请输入当前的6位验证码以确认重置密钥:');
+  
+  if (!verificationCode || verificationCode.length !== 6) {
+    showNotification('请输入有效的6位验证码', 'error');
+    return;
+  }
+  
+  if (!confirm('确定要重置TOTP密钥吗？您需要重新设置验证器应用。')) {
+    return;
+  }
+  
+  try {
+    const response = await AuthUtils.authenticatedFetch(`/blog/api/users/${userId}/settings/totp/reset`, {
+      method: 'POST',
+      body: JSON.stringify({
+        verificationCode: verificationCode
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      showNotification('TOTP密钥已重置', 'success');
+      await loadTOTPStatus(); // 重新加载状态
+    } else {
+      showNotification('重置失败: ' + data.message, 'error');
+    }
+  } catch (error) {
+    console.error('Failed to reset TOTP:', error);
+    showNotification('网络错误，请重试', 'error');
+  }
+}
+
+// 更新TOTP剩余时间
+function updateTOTPRemainingTime(remainingTime) {
+  const element = document.getElementById('totpRemainingTime');
+  if (element) {
+    element.textContent = remainingTime || '--';
+  }
+}
+
+// 显示TOTP错误
+function showTOTPError(message) {
+  const totpStatus = document.getElementById('totpStatus');
+  totpStatus.innerHTML = `<div class="error">${message}</div>`;
+  totpStatus.style.display = 'block';
+}
+
+// 显示TOTP设置状态
+function showTOTPSetupStatus(message, type) {
+  const statusElement = document.getElementById('totpSetupStatus');
+  statusElement.className = `status-message status-${type}`;
+  statusElement.textContent = message;
+  statusElement.style.display = 'block';
+}
+
+// 初始化TOTP功能
+function initializeTOTP() {
+  // 加载TOTP状态
+  loadTOTPStatus();
+  
+  // 绑定TOTP相关事件监听器
+  const setupTotpBtn = document.getElementById('setupTotpBtn');
+  if (setupTotpBtn) {
+    setupTotpBtn.addEventListener('click', setupTOTP);
+  }
+  
+  const enableTotpForm = document.getElementById('enableTotpForm');
+  if (enableTotpForm) {
+    enableTotpForm.addEventListener('submit', enableTOTP);
+  }
+  
+  const cancelTotpSetup = document.getElementById('cancelTotpSetup');
+  if (cancelTotpSetup) {
+    cancelTotpSetup.addEventListener('click', cancelTOTPSetup);
+  }
+  
+  const testTotpBtn = document.getElementById('testTotpBtn');
+  if (testTotpBtn) {
+    testTotpBtn.addEventListener('click', function() {
+      document.getElementById('testTotpSection').style.display = 'block';
+    });
+  }
+  
+  const testTotpForm = document.getElementById('testTotpForm');
+  if (testTotpForm) {
+    testTotpForm.addEventListener('submit', testTOTP);
+  }
+  
+  const cancelTestTotp = document.getElementById('cancelTestTotp');
+  if (cancelTestTotp) {
+    cancelTestTotp.addEventListener('click', function() {
+      document.getElementById('testTotpSection').style.display = 'none';
+      document.getElementById('testTotpCode').value = '';
+    });
+  }
+  
+  const resetTotpBtn = document.getElementById('resetTotpBtn');
+  if (resetTotpBtn) {
+    resetTotpBtn.addEventListener('click', resetTOTP);
+  }
+  
+  const disableTotpBtn = document.getElementById('disableTotpBtn');
+  if (disableTotpBtn) {
+    disableTotpBtn.addEventListener('click', disableTOTP);
   }
 }
 
@@ -550,7 +791,7 @@ function startCountdown(button) {
 // 加载用户设置信息
 async function loadUserSettings() {
   try {
-    const response = await AuthUtils.authenticatedFetch(`/blog/users/${userId}/settings`);
+    const response = await AuthUtils.authenticatedFetch(`/blog/api/users/${userId}/settings`);
     if (!response.ok) {
       throw new Error('Failed to load user settings');
     }
@@ -590,7 +831,7 @@ async function loadUserSettings() {
     }
     
     // 加载TOTP状态
-    loadTOTPStatus();
+    await loadTOTPStatus();
     
   } catch (error) {
     console.error('Failed to load user settings:', error);
@@ -607,7 +848,7 @@ async function handleUpdateBasicInfo(e) {
   const statusDiv = document.getElementById('basicInfoStatus');
   
   try {
-    const response = await AuthUtils.authenticatedFetch(`/blog/users/${userId}/settings/basic`, {
+    const response = await AuthUtils.authenticatedFetch(`/blog/api/users/${userId}/settings/basic`, {
       method: 'PUT',
       body: JSON.stringify({ bio, avatarUrl })
     });
@@ -615,7 +856,7 @@ async function handleUpdateBasicInfo(e) {
     if (response.ok) {
       showStatus(statusDiv, '个人信息更新成功', 'success');
       // 刷新个人资料显示
-      loadUserProfile();
+      await loadUserProfile();
     } else {
       const error = await response.text();
       showStatus(statusDiv, error, 'error');
@@ -648,7 +889,7 @@ async function handleChangePassword(e) {
   }
   
   try {
-    const response = await AuthUtils.authenticatedFetch(`/blog/users/${userId}/settings/password`, {
+    const response = await AuthUtils.authenticatedFetch(`/blog/api/users/${userId}/settings/password`, {
       method: 'PUT',
       body: JSON.stringify({ currentPassword, newPassword, totpCode })
     });
@@ -688,7 +929,7 @@ async function handleGetEmailCode() {
   button.textContent = '发送中...';
   
   try {
-    const response = await AuthUtils.authenticatedFetch(`/blog/users/${userId}/settings/email/send-code?email=${encodeURIComponent(email)}`, {
+    const response = await AuthUtils.authenticatedFetch(`/blog/api/users/${userId}/settings/email/send-code?email=${encodeURIComponent(email)}`, {
       method: 'POST'
     });
     
@@ -724,7 +965,7 @@ async function handleEmailBind(e) {
   }
   
   try {
-    const response = await AuthUtils.authenticatedFetch(`/blog/users/${userId}/settings/email/bind`, {
+    const response = await AuthUtils.authenticatedFetch(`/blog/api/users/${userId}/settings/email/bind`, {
       method: 'POST',
       body: JSON.stringify({ email, verificationCode, totpCode })
     });
@@ -733,7 +974,7 @@ async function handleEmailBind(e) {
       showStatus(statusDiv, '邮箱绑定成功！', 'success');
       // 清空表单并刷新设置
       document.getElementById('emailBindForm').reset();
-      loadUserSettings();
+      await loadUserSettings();
     } else {
       const error = await response.text();
       showStatus(statusDiv, error, 'error');
@@ -809,54 +1050,10 @@ function initializeTOTPSettings() {
   }
 }
 
-// 加载TOTP状态
-async function loadTOTPStatus() {
-  try {
-    const response = await AuthUtils.authenticatedFetch(`/blog/users/${userId}/settings/totp/status`);
-    if (!response.ok) {
-      throw new Error('Failed to load TOTP status');
-    }
-    
-    const status = await response.json();
-    const statusDiv = document.getElementById('totpStatus');
-    
-    if (status.enabled) {
-      // TOTP已启用
-      statusDiv.innerHTML = '<div class="info-box success">✅ 二次验证已启用</div>';
-      document.getElementById('totpEnabledSection').style.display = 'block';
-      document.getElementById('totpDisabledSection').style.display = 'none';
-      
-      // 显示剩余时间
-      if (status.remainingTime) {
-        document.getElementById('totpRemainingTime').textContent = status.remainingTime;
-      }
-      
-      // 如果不是必需的，显示禁用按钮
-      if (!status.required) {
-        document.getElementById('disableTotpBtn').style.display = 'inline-block';
-      }
-    } else {
-      // TOTP未启用
-      statusDiv.innerHTML = '<div class="info-box">🔒 二次验证未启用</div>';
-      document.getElementById('totpDisabledSection').style.display = 'block';
-      document.getElementById('totpEnabledSection').style.display = 'none';
-      
-      // 如果是必需的，显示提醒
-      if (status.required) {
-        document.getElementById('totpRequiredNotice').style.display = 'block';
-      }
-    }
-    
-  } catch (error) {
-    console.error('Failed to load TOTP status:', error);
-    document.getElementById('totpStatus').innerHTML = '<div class="info-box error">❌ 加载TOTP状态失败</div>';
-  }
-}
-
 // 开始TOTP设置
 async function startTOTPSetup() {
   try {
-    const response = await AuthUtils.authenticatedFetch(`/blog/users/${userId}/settings/totp`);
+    const response = await AuthUtils.authenticatedFetch(`/blog/api/users/${userId}/settings/totp`);
     if (!response.ok) {
       throw new Error('Failed to get TOTP setup info');
     }
@@ -871,7 +1068,7 @@ async function startTOTPSetup() {
     document.getElementById('totpSecret').textContent = setupInfo.secret;
     
     // 加载二维码
-    loadTOTPQRCode();
+    await loadTOTPQRCode();
     
   } catch (error) {
     console.error('Failed to start TOTP setup:', error);
@@ -882,7 +1079,7 @@ async function startTOTPSetup() {
 // 加载TOTP二维码
 async function loadTOTPQRCode() {
   try {
-    const response = await AuthUtils.authenticatedFetch(`/blog/users/${userId}/settings/totp/qrcode?width=200&height=200`);
+    const response = await AuthUtils.authenticatedFetch(`/blog/api/users/${userId}/settings/totp/qrcode?width=200&height=200`);
     if (!response.ok) {
       throw new Error('Failed to load QR code');
     }
@@ -912,7 +1109,7 @@ async function handleEnableTOTP(e) {
   }
   
   try {
-    const response = await AuthUtils.authenticatedFetch(`/blog/users/${userId}/settings/totp/enable`, {
+    const response = await AuthUtils.authenticatedFetch(`/blog/api/users/${userId}/settings/totp/enable`, {
       method: 'POST',
       body: JSON.stringify({ secret, verificationCode })
     });
@@ -939,6 +1136,8 @@ function cancelTOTPSetup() {
   document.getElementById('totpSetupSection').style.display = 'none';
   document.getElementById('totpDisabledSection').style.display = 'block';
   document.getElementById('enableTotpForm').reset();
+  document.getElementById('totpVerificationCode').value = '';
+  document.getElementById('totpSetupStatus').style.display = 'none';
 }
 
 // 显示测试TOTP
@@ -965,7 +1164,7 @@ async function handleTestTOTP(e) {
   }
   
   try {
-    const response = await AuthUtils.authenticatedFetch(`/blog/users/${userId}/settings/totp/verify`, {
+    const response = await AuthUtils.authenticatedFetch(`/blog/api/users/${userId}/settings/totp/verify`, {
       method: 'POST',
       body: JSON.stringify({ verificationCode })
     });
@@ -999,14 +1198,14 @@ async function handleResetTOTP() {
   }
   
   try {
-    const response = await AuthUtils.authenticatedFetch(`/blog/users/${userId}/settings/totp/reset`, {
+    const response = await AuthUtils.authenticatedFetch(`/blog/api/users/${userId}/settings/totp/reset`, {
       method: 'POST',
       body: JSON.stringify({ currentVerificationCode: currentCode })
     });
     
     if (response.ok) {
       showNotification('TOTP密钥重置成功，请重新设置', 'success');
-      loadTOTPStatus();
+      await loadTOTPStatus();
     } else {
       const error = await response.text();
       showNotification(error, 'error');
@@ -1041,7 +1240,7 @@ async function handleDisableTOTP(e) {
   }
   
   try {
-    const response = await AuthUtils.authenticatedFetch(`/blog/users/${userId}/settings/totp/disable`, {
+    const response = await AuthUtils.authenticatedFetch(`/blog/api/users/${userId}/settings/totp/disable`, {
       method: 'POST',
       body: JSON.stringify({ verificationCode })
     });
@@ -1069,32 +1268,16 @@ async function handleDisableTOTP(e) {
 async function handleAdminAccess(e) {
   e.preventDefault();
   
-  const totpCode = document.getElementById('adminTotpCode').value.trim();
   const statusDiv = document.getElementById('adminAccessStatus');
   
   try {
-    const response = await AuthUtils.authenticatedFetch(`/blog/users/${userId}/settings/admin/check-access`, {
-      method: 'POST',
-      body: JSON.stringify({ totpCode })
-    });
-    
-    if (response.ok) {
-      const result = await response.json();
-      if (result.canAccess) {
-        showStatus(statusDiv, '验证成功，正在跳转到管理界面...', 'success');
-        setTimeout(() => {
-          // 跳转到管理界面
-          window.location.href = '/blog/admin';
-        }, 1000);
-      } else {
-        showStatus(statusDiv, result.message, 'error');
-      }
-    } else {
-      const error = await response.text();
-      showStatus(statusDiv, error, 'error');
-    }
+    // 直接跳转到管理界面，不需要TOTP验证
+    showStatus(statusDiv, '正在跳转到管理界面...', 'success');
+    setTimeout(() => {
+      window.location.href = '/blog/admin';
+    }, 500);
   } catch (error) {
-    console.error('Failed to check admin access:', error);
+    console.error('Failed to access admin:', error);
     showStatus(statusDiv, '网络错误，请重试', 'error');
   }
 }

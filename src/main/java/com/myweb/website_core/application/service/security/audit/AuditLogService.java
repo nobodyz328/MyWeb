@@ -7,7 +7,9 @@ import com.myweb.website_core.domain.business.entity.User;
 import com.myweb.website_core.domain.security.dto.AuditLogQuery;
 import com.myweb.website_core.domain.security.dto.AuditLogRequest;
 import com.myweb.website_core.domain.security.entity.AuditLog;
+import com.myweb.website_core.infrastructure.persistence.mapper.AuditLogMapperService;
 import com.myweb.website_core.infrastructure.persistence.repository.AuditLogRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -51,9 +53,11 @@ import java.util.concurrent.CompletableFuture;
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class AuditLogService {
     
     private final AuditLogRepository auditLogRepository;
+    private final AuditLogMapperService auditLogMapperService;
     private final ObjectMapper objectMapper;
     
     // 审计日志保留天数配置
@@ -67,13 +71,7 @@ public class AuditLogService {
     // 导出记录数限制配置
     @Value("${app.audit.export-limit:10000}")
     private int exportLimit;
-    
-    @Autowired
-    public AuditLogService(AuditLogRepository auditLogRepository, ObjectMapper objectMapper) {
-        this.auditLogRepository = auditLogRepository;
-        this.objectMapper = objectMapper;
-    }
-    
+
     /**
      * 异步记录审计日志
      * 
@@ -101,181 +99,7 @@ public class AuditLogService {
         return CompletableFuture.completedFuture(null);
     }
     
-    /**
-     * 记录用户登录审计日志
-     * 
-     * @param userId 用户ID
-     * @param username 用户名
-     * @param ipAddress IP地址
-     * @param userAgent 用户代理
-     * @param success 是否成功
-     * @param errorMessage 错误信息（失败时）
-     */
-    public void logUserLogin(Long userId, String username, String ipAddress, 
-                           String userAgent, boolean success, String errorMessage) {
-        AuditLogRequest request = AuditLogRequest.login(success, userId, username, 
-                ipAddress, userAgent, errorMessage);
-        logOperation(request);
-    }
-    
-    /**
-     * 记录用户注册审计日志
-     * 
-     * @param userId 用户ID
-     * @param username 用户名
-     * @param ipAddress IP地址
-     */
-    public void logUserRegistration(Long userId, String username, String ipAddress) {
-        AuditLogRequest request = AuditLogRequest.builder()
-                .operation(com.myweb.website_core.common.enums.AuditOperation.USER_REGISTER)
-                .userId(userId)
-                .username(username)
-                .ipAddress(ipAddress)
-                .result("SUCCESS")
-                .timestamp(LocalDateTime.now())
-                .build();
-        logOperation(request);
-    }
-    
-    /**
-     * 记录登录尝试审计日志
-     * 
-     * @param username 用户名
-     * @param ipAddress IP地址
-     * @param result 结果
-     */
-    public void logLoginAttempt(String username, String ipAddress, String result) {
-        AuditLogRequest request = AuditLogRequest.builder()
-                .operation(com.myweb.website_core.common.enums.AuditOperation.USER_LOGIN_FAILURE)
-                .username(username)
-                .ipAddress(ipAddress)
-                .result(result)
-                .timestamp(LocalDateTime.now())
-                .build();
-        logOperation(request);
-    }
-    
-    /**
-     * 记录用户登录成功审计日志
-     * 
-     * @param user 用户信息
-     * @param ipAddress IP地址
-     * @param userAgent 用户代理
-     * @param result 结果
-     */
-    public void logUserLogin(User user, String ipAddress, String userAgent, String result) {
-        AuditLogRequest request = AuditLogRequest.builder()
-                .operation(com.myweb.website_core.common.enums.AuditOperation.USER_LOGIN_SUCCESS)
-                .userId(user.getId())
-                .username(user.getUsername())
-                .ipAddress(ipAddress)
-                .userAgent(userAgent)
-                .result(result)
-                .timestamp(LocalDateTime.now())
-                .build();
-        logOperation(request);
-    }
-    
-    /**
-     * 记录用户注册审计日志
-     * 
-     * @param user 用户信息
-     */
-    public void logUserRegistration(User user) {
-        AuditLogRequest request = AuditLogRequest.builder()
-                .operation(com.myweb.website_core.common.enums.AuditOperation.USER_REGISTER)
-                .userId(user.getId())
-                .username(user.getUsername())
-                .result("SUCCESS")
-                .timestamp(LocalDateTime.now())
-                .build();
-        logOperation(request);
-    }
-    
-    /**
-     * 记录用户退出登录审计日志
-     * 
-     * @param userId 用户ID
-     * @param username 用户名
-     * @param ipAddress IP地址
-     * @param reason 退出原因
-     */
-    public void logUserLogout(Long userId, String username, String ipAddress, String reason) {
-        AuditLogRequest request = AuditLogRequest.builder()
-                .operation(com.myweb.website_core.common.enums.AuditOperation.USER_LOGOUT)
-                .userId(userId)
-                .username(username)
-                .ipAddress(ipAddress)
-                .result("SUCCESS")
-                .errorMessage(reason)
-                .timestamp(LocalDateTime.now())
-                .build();
-        logOperation(request);
-    }
-    
-    /**
-     * 记录角色操作审计日志
-     * 
-     * @param operation 操作类型
-     * @param roleId 角色ID
-     * @param operatorId 操作者ID
-     * @param description 操作描述
-     */
-    public void logRoleOperation(String operation, Long roleId, Long operatorId, String description) {
-        AuditLogRequest request = AuditLogRequest.builder()
-                //.operation(operation)
-                .resourceType("ROLE")
-                .resourceId(roleId)
-                .userId(operatorId)
-                .result("SUCCESS")
-                .errorMessage(description)
-                .timestamp(LocalDateTime.now())
-                .build();
-        logOperation(request);
-    }
-    
-    /**
-     * 记录权限操作审计日志
-     * 
-     * @param operation 操作类型
-     * @param permissionId 权限ID
-     * @param operatorId 操作者ID
-     * @param description 操作描述
-     */
-    public void logPermissionOperation(String operation, Long permissionId, Long operatorId, String description) {
-        AuditLogRequest request = AuditLogRequest.builder()
-                //.operation(operation)
-                .resourceType("PERMISSION")
-                .resourceId(permissionId)
-                .userId(operatorId)
-                .result("SUCCESS")
-                .errorMessage(description)
-                .timestamp(LocalDateTime.now())
-                .build();
-        logOperation(request);
-    }
-    
-    /**
-     * 记录用户操作审计日志
-     * 
-     * @param operation 操作类型
-     * @param userId 用户ID
-     * @param operatorId 操作者ID
-     * @param description 操作描述
-     */
-    public void logUserOperation(String operation, Long userId, Long operatorId, String description) {
-        AuditLogRequest request = AuditLogRequest.builder()
-                //.operation(operation)
-                .resourceType("USER")
-                .resourceId(userId)
-                .userId(operatorId)
-                .result("SUCCESS")
-                .errorMessage(description)
-                .timestamp(LocalDateTime.now())
-                .build();
-        logOperation(request);
-    }
-    
+
     /**
      * 记录安全事件审计日志
      * 
@@ -817,10 +641,216 @@ public class AuditLogService {
      */
     public long countActiveIPs(LocalDateTime startTime, LocalDateTime endTime) {
         try {
-            return auditLogRepository.countActiveIPs(startTime, endTime);
+            return auditLogMapperService.countActiveIPs(startTime, endTime);
         } catch (Exception e) {
             log.error("统计活跃IP数失败: startTime={}, endTime={}", startTime, endTime, e);
             return 0L;
+        }
+    }
+    
+    // ==================== 新增的MyBatis复杂查询方法 ====================
+    
+    /**
+     * 查询失败登录记录
+     * 
+     * @param operation 操作类型
+     * @param startTime 开始时间
+     * @param endTime 结束时间
+     * @param pageable 分页参数
+     * @return 失败登录记录分页结果
+     */
+    public Page<AuditLog> findFailedLoginAttempts(AuditOperation operation, LocalDateTime startTime, 
+                                                 LocalDateTime endTime, Pageable pageable) {
+        try {
+            return auditLogMapperService.findFailedLoginAttempts(operation, startTime, endTime, pageable);
+        } catch (Exception e) {
+            log.error("查询失败登录记录失败: operation={}, startTime={}, endTime={}", 
+                    operation, startTime, endTime, e);
+            return Page.empty(pageable);
+        }
+    }
+    
+    /**
+     * 查询可疑IP活动
+     * 
+     * @param ipAddress IP地址
+     * @param startTime 开始时间
+     * @param endTime 结束时间
+     * @param minAttempts 最小尝试次数
+     * @return 可疑活动记录
+     */
+    public List<AuditLog> findSuspiciousActivitiesByIp(String ipAddress, LocalDateTime startTime, 
+                                                       LocalDateTime endTime, int minAttempts) {
+        try {
+            return auditLogMapperService.findSuspiciousActivitiesByIp(ipAddress, startTime, endTime, minAttempts);
+        } catch (Exception e) {
+            log.error("查询可疑IP活动失败: ipAddress={}, startTime={}, endTime={}, minAttempts={}", 
+                    ipAddress, startTime, endTime, minAttempts, e);
+            return List.of();
+        }
+    }
+    
+    /**
+     * 查询高风险操作记录
+     * 
+     * @param minRiskLevel 最小风险级别
+     * @param startTime 开始时间
+     * @param endTime 结束时间
+     * @param pageable 分页参数
+     * @return 高风险操作记录分页结果
+     */
+    public Page<AuditLog> findHighRiskOperations(int minRiskLevel, LocalDateTime startTime, 
+                                                LocalDateTime endTime, Pageable pageable) {
+        try {
+            return auditLogMapperService.findHighRiskOperations(minRiskLevel, startTime, endTime, pageable);
+        } catch (Exception e) {
+            log.error("查询高风险操作记录失败: minRiskLevel={}, startTime={}, endTime={}", 
+                    minRiskLevel, startTime, endTime, e);
+            return Page.empty(pageable);
+        }
+    }
+    
+    /**
+     * 查询未处理的安全事件
+     * 
+     * @param pageable 分页参数
+     * @return 未处理的安全事件分页结果
+     */
+    public Page<AuditLog> findUnprocessedSecurityEvents(Pageable pageable) {
+        try {
+            return auditLogMapperService.findUnprocessedSecurityEvents(pageable);
+        } catch (Exception e) {
+            log.error("查询未处理安全事件失败", e);
+            return Page.empty(pageable);
+        }
+    }
+    
+    /**
+     * 查询异常登录记录（不同地理位置）
+     * 
+     * @param userId 用户ID
+     * @param currentLocation 当前位置
+     * @param startTime 开始时间
+     * @param endTime 结束时间
+     * @return 异常登录记录
+     */
+    public List<AuditLog> findAbnormalLoginsByLocation(Long userId, String currentLocation, 
+                                                      LocalDateTime startTime, LocalDateTime endTime) {
+        try {
+            return auditLogMapperService.findAbnormalLoginsByLocation(userId, currentLocation, startTime, endTime);
+        } catch (Exception e) {
+            log.error("查询异常登录记录失败: userId={}, currentLocation={}, startTime={}, endTime={}", 
+                    userId, currentLocation, startTime, endTime, e);
+            return List.of();
+        }
+    }
+    
+    /**
+     * 查询最近的用户登录记录
+     * 
+     * @param userId 用户ID
+     * @return 最近的登录记录
+     */
+    public Optional<AuditLog> findLatestLoginByUserId(Long userId) {
+        try {
+            return auditLogMapperService.findLatestLoginByUserId(userId);
+        } catch (Exception e) {
+            log.error("查询最近登录记录失败: userId={}", userId, e);
+            return Optional.empty();
+        }
+    }
+    
+    /**
+     * 查询用户的登录历史
+     * 
+     * @param userId 用户ID
+     * @param limit 返回记录数限制
+     * @return 登录历史记录
+     */
+    public List<AuditLog> findLoginHistoryByUserId(Long userId, int limit) {
+        try {
+            return auditLogMapperService.findLoginHistoryByUserId(userId, limit);
+        } catch (Exception e) {
+            log.error("查询用户登录历史失败: userId={}, limit={}", userId, limit, e);
+            return List.of();
+        }
+    }
+    
+    /**
+     * 查询指定资源的操作历史
+     * 
+     * @param resourceType 资源类型
+     * @param resourceId 资源ID
+     * @param pageable 分页参数
+     * @return 资源操作历史分页结果
+     */
+    public Page<AuditLog> findResourceHistory(String resourceType, Long resourceId, Pageable pageable) {
+        try {
+            return auditLogMapperService.findResourceHistory(resourceType, resourceId, pageable);
+        } catch (Exception e) {
+            log.error("查询资源操作历史失败: resourceType={}, resourceId={}", resourceType, resourceId, e);
+            return Page.empty(pageable);
+        }
+    }
+    
+    /**
+     * 查询包含指定标签的审计日志
+     * 
+     * @param tag 标签
+     * @param pageable 分页参数
+     * @return 包含指定标签的审计日志分页结果
+     */
+    public Page<AuditLog> findByTag(String tag, Pageable pageable) {
+        try {
+            return auditLogMapperService.findByTag(tag, pageable);
+        } catch (Exception e) {
+            log.error("按标签查询审计日志失败: tag={}", tag, e);
+            return Page.empty(pageable);
+        }
+    }
+    
+    /**
+     * 查询执行时间超过阈值的慢操作
+     * 
+     * @param minExecutionTime 最小执行时间（毫秒）
+     * @param startTime 开始时间
+     * @param endTime 结束时间
+     * @param pageable 分页参数
+     * @return 慢操作记录分页结果
+     */
+    public Page<AuditLog> findSlowOperations(long minExecutionTime, LocalDateTime startTime, 
+                                            LocalDateTime endTime, Pageable pageable) {
+        try {
+            return auditLogMapperService.findSlowOperations(minExecutionTime, startTime, endTime, pageable);
+        } catch (Exception e) {
+            log.error("查询慢操作失败: minExecutionTime={}, startTime={}, endTime={}", 
+                    minExecutionTime, startTime, endTime, e);
+            return Page.empty(pageable);
+        }
+    }
+    
+    /**
+     * 批量标记审计日志为已处理
+     * 
+     * @param ids 审计日志ID列表
+     * @param processedBy 处理人
+     * @param processNotes 处理备注
+     * @return 更新的记录数
+     */
+    @Transactional
+    public int markAsProcessed(List<Long> ids, String processedBy, String processNotes) {
+        try {
+            int updatedCount = auditLogMapperService.markAsProcessed(ids, processedBy, processNotes);
+            log.info("批量标记审计日志为已处理: count={}, processedBy={}", updatedCount, processedBy);
+            
+            // 记录处理操作的审计日志
+            logSystemOperation(AuditOperation.AUDIT_LOG_QUERY, 
+                "批量处理审计日志", "标记了" + updatedCount + "条日志为已处理");
+            
+            return updatedCount;
+        } catch (Exception e) {
+            log.error("批量标记审计日志为已处理失败: ids={}, processedBy={}", ids, processedBy, e);
+            throw new RuntimeException("批量处理审计日志失败", e);
         }
     }
     
@@ -974,12 +1004,12 @@ public class AuditLogService {
      */
     public List<Map<String, Object>> getOperationStatistics(LocalDateTime startTime, LocalDateTime endTime) {
         try {
-            List<Object[]> results = auditLogRepository.countOperationsByType(startTime, endTime);
-            return results.stream()
-                    .map(result -> {
+            Map<String, Long> results = auditLogMapperService.countOperationsByType(startTime, endTime);
+            return results.entrySet().stream()
+                    .map(entry -> {
                         Map<String, Object> map = new HashMap<>();
-                        map.put("operation", result[0].toString());
-                        map.put("count", ((Number) result[1]).longValue());
+                        map.put("operation", entry.getKey());
+                        map.put("count", entry.getValue());
                         return map;
                     })
                     .collect(java.util.stream.Collectors.toList());
@@ -999,12 +1029,12 @@ public class AuditLogService {
      */
     public List<Map<String, Object>> getUserStatistics(LocalDateTime startTime, LocalDateTime endTime, int limit) {
         try {
-            List<Object[]> results = auditLogRepository.countOperationsByUser(startTime, endTime, limit);
-            return results.stream()
-                    .map(result -> {
+            Map<String, Long> results = auditLogMapperService.countOperationsByUser(startTime, endTime, limit);
+            return results.entrySet().stream()
+                    .map(entry -> {
                         Map<String, Object> map = new HashMap<>();
-                        map.put("username", result[0].toString());
-                        map.put("count", ((Number) result[1]).longValue());
+                        map.put("username", entry.getKey());
+                        map.put("count", entry.getValue());
                         return map;
                     })
                     .collect(java.util.stream.Collectors.toList());
@@ -1024,12 +1054,12 @@ public class AuditLogService {
      */
     public List<Map<String, Object>> getIpStatistics(LocalDateTime startTime, LocalDateTime endTime, int limit) {
         try {
-            List<Object[]> results = auditLogRepository.countOperationsByIp(startTime, endTime, limit);
-            return results.stream()
-                    .map(result -> {
+            Map<String, Long> results = auditLogMapperService.countOperationsByIp(startTime, endTime, limit);
+            return results.entrySet().stream()
+                    .map(entry -> {
                         Map<String, Object> map = new HashMap<>();
-                        map.put("ipAddress", result[0].toString());
-                        map.put("count", ((Number) result[1]).longValue());
+                        map.put("ipAddress", entry.getKey());
+                        map.put("count", entry.getValue());
                         return map;
                     })
                     .collect(java.util.stream.Collectors.toList());
@@ -1048,12 +1078,12 @@ public class AuditLogService {
      */
     public List<Map<String, Object>> getHourlyStatistics(LocalDateTime startTime, LocalDateTime endTime) {
         try {
-            List<Object[]> results = auditLogRepository.countOperationsByHour(startTime, endTime);
-            return results.stream()
-                    .map(result -> {
+            Map<Integer, Long> results = auditLogMapperService.countOperationsByHour(startTime, endTime);
+            return results.entrySet().stream()
+                    .map(entry -> {
                         Map<String, Object> map = new HashMap<>();
-                        map.put("hour", result[0].toString());
-                        map.put("count", ((Number) result[1]).longValue());
+                        map.put("hour", entry.getKey().toString());
+                        map.put("count", entry.getValue());
                         return map;
                     })
                     .collect(java.util.stream.Collectors.toList());
@@ -1072,12 +1102,12 @@ public class AuditLogService {
      */
     public List<Map<String, Object>> getDailyStatistics(LocalDateTime startTime, LocalDateTime endTime) {
         try {
-            List<Object[]> results = auditLogRepository.countOperationsByDay(startTime, endTime);
-            return results.stream()
-                    .map(result -> {
+            Map<String, Long> results = auditLogMapperService.countOperationsByDay(startTime, endTime);
+            return results.entrySet().stream()
+                    .map(entry -> {
                         Map<String, Object> map = new HashMap<>();
-                        map.put("date", result[0].toString());
-                        map.put("count", ((Number) result[1]).longValue());
+                        map.put("date", entry.getKey());
+                        map.put("count", entry.getValue());
                         return map;
                     })
                     .collect(java.util.stream.Collectors.toList());
@@ -1096,7 +1126,7 @@ public class AuditLogService {
      */
     public long countActiveUsers(LocalDateTime startTime, LocalDateTime endTime) {
         try {
-            return auditLogRepository.countActiveUsers(startTime, endTime);
+            return auditLogMapperService.countActiveUsers(startTime, endTime);
         } catch (Exception e) {
             log.error("统计活跃用户数失败: startTime={}, endTime={}", startTime, endTime, e);
             return 0L;

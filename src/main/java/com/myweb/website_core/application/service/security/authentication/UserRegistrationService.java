@@ -4,7 +4,7 @@ import com.myweb.website_core.application.service.security.authentication.EmailV
 import com.myweb.website_core.application.service.integration.EmailService;
 import com.myweb.website_core.common.enums.UserRole;
 import com.myweb.website_core.common.exception.RateLimitExceededException;
-import com.myweb.website_core.common.security.exception.ValidationException;
+import com.myweb.website_core.common.exception.security.ValidationException;
 import com.myweb.website_core.common.util.RedisKey;
 import com.myweb.website_core.domain.business.dto.UserRegistrationDTO;
 import com.myweb.website_core.domain.business.dto.UserRegistrationResult;

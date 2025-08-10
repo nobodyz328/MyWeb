@@ -1,6 +1,6 @@
 package com.myweb.website_core.domain.business.entity;
 
-import com.myweb.website_core.application.service.security.dataprotect.DataIntegrityService;
+import com.myweb.website_core.application.service.security.integeration.dataManage.DataIntegrityService;
 import com.myweb.website_core.infrastructure.config.ApplicationContextProvider;
 import jakarta.persistence.*;
 import lombok.Getter;

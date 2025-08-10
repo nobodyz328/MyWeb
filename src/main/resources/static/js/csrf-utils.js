@@ -76,7 +76,7 @@ class CsrfUtils {
         // 检查令牌是否过期（2小时）
         const now = Date.now();
         const tokenAge = now - (this.tokenInfo.timestamp || 0);
-        const maxAge = 2 * 60 * 60 * 1000; // 2小时
+        const maxAge =  60 * 60 * 1000; // 1小时
         
         return tokenAge < maxAge;
     }

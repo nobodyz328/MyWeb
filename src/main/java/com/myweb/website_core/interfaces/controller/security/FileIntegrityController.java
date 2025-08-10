@@ -1,6 +1,6 @@
 package com.myweb.website_core.interfaces.controller.security;
 
-import com.myweb.website_core.application.service.security.fileProtect.FileIntegrityService;
+import com.myweb.website_core.application.service.security.integeration.FileIntegrityService;
 import com.myweb.website_core.application.service.security.audit.AuditLogService;
 import com.myweb.website_core.common.enums.AuditOperation;
 import lombok.extern.slf4j.Slf4j;

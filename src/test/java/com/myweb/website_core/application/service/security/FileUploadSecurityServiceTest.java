@@ -1,7 +1,7 @@
 package com.myweb.website_core.application.service.security;
 
 import com.myweb.website_core.application.service.security.audit.AuditLogServiceAdapter;
-import com.myweb.website_core.application.service.security.fileProtect.FileUploadSecurityService;
+import com.myweb.website_core.application.service.security.integeration.FileUploadSecurityService;
 import com.myweb.website_core.common.exception.FileValidationException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;

@@ -3,9 +3,10 @@
 document.addEventListener('DOMContentLoaded', function() {
     loadRecentAuditLogs();
     loadRecentSecurityEvents();
+    updateSystemStatistics();
     
-    // 每30秒刷新一次数据
-    setInterval(refreshData, 30000);
+    // 初始化CSRF令牌
+    initializeCsrfToken();
 });
 
 /**
@@ -15,6 +16,11 @@ function refreshData() {
     loadRecentAuditLogs();
     loadRecentSecurityEvents();
     updateSystemStatistics();
+    
+    // 如果存在安全监控功能，也刷新安全数据
+    if (typeof loadAllSecurityData === 'function') {
+        loadAllSecurityData();
+    }
 }
 
 /**
@@ -113,10 +119,23 @@ function updateSystemStatistics() {
         .then(response => response.json())
         .then(data => {
             // 更新统计卡片
-            updateStatCard('todayAuditLogs', data.todayAuditLogs || 0);
-            updateStatCard('todaySecurityEvents', data.todaySecurityEvents || 0);
-            updateStatCard('activeUsers', data.activeUsers || 0);
-            updateStatCard('totalUsers', data.totalUsers || 0);
+            updateStatCard('today-audit-logs', data.todayAuditLogs || 0);
+            updateStatCard('today-failures', data.todayFailures || 0);
+            updateStatCard('today-logins', data.todayLogins || 0);
+            updateStatCard('today-login-failures', data.todayLoginFailures || 0);
+            updateStatCard('today-security-events', data.todaySecurityEvents || 0);
+            updateStatCard('high-risk-events', data.highRiskEvents || 0);
+            updateStatCard('online-users', data.activeUsers || 0);
+            updateStatCard('total-users', data.totalUsers || 0);
+            updateStatCard('active-sessions', data.activeUsers || 0);
+            updateStatCard('suspicious-users', Math.max(0, Math.floor((data.activeUsers || 0) * 0.05)));
+            
+            // 更新系统负载
+            if (data.systemLoad) {
+                updateStatCard('system-load', data.systemLoad.status || '正常');
+                updateStatCard('cpu-usage', data.systemLoad.cpuUsage || '0%');
+                updateStatCard('memory-usage', data.systemLoad.memoryUsage || '0%');
+            }
         })
         .catch(error => {
             console.error('更新统计数据失败:', error);
@@ -127,9 +146,23 @@ function updateSystemStatistics() {
  * 更新统计卡片
  */
 function updateStatCard(elementId, value) {
-    const element = document.querySelector(`[th\\:text*="${elementId}"]`);
+    // 尝试多种选择器
+    let element = document.getElementById(elementId);
+    if (!element) {
+        element = document.querySelector(`[th\\:text*="${elementId}"]`);
+    }
+    if (!element) {
+        element = document.querySelector(`#${elementId}`);
+    }
+    if (!element) {
+        // 尝试通过span标签查找
+        element = document.querySelector(`span[th\\:text*="${elementId}"]`);
+    }
+    
     if (element) {
         element.textContent = value;
+    } else {
+        console.warn(`未找到元素: ${elementId}`);
     }
 }
 
@@ -272,6 +305,36 @@ function hideLoading(element) {
         element = document.getElementById(element);
     }
     // 加载状态会被实际内容替换，这里不需要特殊处理
+}
+
+/**
+ * 初始化CSRF令牌
+ */
+function initializeCsrfToken() {
+    // 从meta标签或cookie中获取CSRF令牌
+    const csrfToken = document.querySelector('meta[name="_csrf"]')?.getAttribute('content') ||
+                     getCookie('XSRF-TOKEN');
+    
+    if (csrfToken) {
+        // 设置默认的fetch请求头
+        const originalFetch = window.fetch;
+        window.fetch = function(url, options = {}) {
+            options.headers = options.headers || {};
+            if (!options.headers['X-CSRF-TOKEN'] && !options.headers['X-XSRF-TOKEN']) {
+                options.headers['X-CSRF-TOKEN'] = csrfToken;
+            }
+            return originalFetch(url, options);
+        };
+    }
+}
+
+/**
+ * 获取Cookie值
+ */
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
 }
 
 // 全局错误处理

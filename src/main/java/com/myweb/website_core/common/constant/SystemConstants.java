@@ -2,7 +2,7 @@ package com.myweb.website_core.common.constant;
 
 /**
  * 系统常量统一管理类
- * 
+ * <p>
  * 统一管理系统中的各种常量，避免硬编码
  * 包括：时间格式、文件路径、消息模板、业务规则等
  * 

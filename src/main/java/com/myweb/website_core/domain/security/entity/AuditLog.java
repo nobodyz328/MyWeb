@@ -512,29 +512,8 @@ public class AuditLog {
         this.setRequestId(message.getRequestId());
         this.setDescription(message.getDescription());
         this.setRiskLevel(message.getRiskLevel());
-        this.setLocation(message.getLocation());
         this.setTags(message.getTags());
     }
     
-    public AuditLog(com.myweb.website_core.domain.security.dto.UnifiedSecurityMessage message){
-        this.setUserId(message.getUserId());
-        this.setUsername(message.getUsername());
-        this.setOperation(message.getOperation());
-        this.setResourceType(message.getResourceType());
-        this.setResourceId(message.getResourceId());
-        this.setIpAddress(message.getIpAddress());
-        this.setUserAgent(message.getUserAgent());
-        this.setResult(message.getResult());
-        this.setErrorMessage(message.getErrorMessage());
-        this.setRequestData(message.getRequestData());
-        this.setResponseData(message.getResponseData());
-        this.setExecutionTime(message.getExecutionTime());
-        this.setTimestamp(message.getTimestamp() != null ? message.getTimestamp() : LocalDateTime.now());
-        this.setSessionId(message.getSessionId());
-        this.setRequestId(message.getRequestId());
-        this.setDescription(message.getDescription());
-        this.setRiskLevel(message.getRiskLevel());
-        this.setLocation(message.getLocation());
-        this.setTags(message.getTags());
-    }
+
 }

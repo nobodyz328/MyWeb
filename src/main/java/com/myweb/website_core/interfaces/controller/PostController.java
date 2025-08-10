@@ -1,6 +1,7 @@
 package com.myweb.website_core.interfaces.controller;
 
 import com.myweb.website_core.application.service.business.PostService;
+import com.myweb.website_core.application.service.security.authorization.AccessControlService;
 import com.myweb.website_core.common.enums.AuditOperation;
 import com.myweb.website_core.domain.business.dto.*;
 //import com.myweb.website_core.domain.dto.*;
@@ -8,12 +9,13 @@ import com.myweb.website_core.domain.business.entity.Comment;
 import com.myweb.website_core.application.service.business.CommentService;
 import com.myweb.website_core.infrastructure.persistence.repository.UserRepository;
 import com.myweb.website_core.domain.business.entity.Post;
-import com.myweb.website_core.infrastructure.security.Auditable;
+import com.myweb.website_core.infrastructure.security.audit.Auditable;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,16 +25,12 @@ import java.util.concurrent.CompletableFuture;
 @Slf4j
 @RestController
 @RequestMapping("/api/posts")
+@RequiredArgsConstructor
 public class PostController {
     private final PostService postService;
     private final UserRepository userRepository;
     private final CommentService commentService;
-    @Autowired
-    public PostController(PostService postService, UserRepository userRepository, CommentService commentService) {
-        this.postService = postService;
-        this.userRepository = userRepository;
-        this.commentService = commentService;
-    }
+    private final AccessControlService accessControlService;
 
     @PostMapping(value = "")
     @Auditable(operation = AuditOperation.POST_CREATE, resourceType = "POST", description = "创建帖子")
@@ -65,6 +63,15 @@ public class PostController {
     @Auditable(operation = AuditOperation.POST_UPDATE, resourceType = "POST",  description = "更新帖子")
     public ResponseEntity<PostDTO> editPost(@PathVariable Long id, @RequestBody Post post) {
         try {
+            Optional<Post> existingPost = postService.getPostById(id);
+            if (existingPost.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            // 检查编辑权限
+            if (!accessControlService.canEditPost(userRepository.findById(post.getAuthor().getId()).get(), existingPost.get())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
 
             Post updatedPost = postService.editPost(id, post);
             PostDTO postDTO = postService.convertToDTO(updatedPost);
@@ -79,6 +86,11 @@ public class PostController {
     @Auditable(operation = AuditOperation.POST_LIKE, resourceType = "POST", description = "点赞帖子")
     public ResponseEntity<ApiResponse<LikeResponse>> likePost(@PathVariable Long id, @RequestParam Long userId) {
         try {
+            // 检查点赞权限
+            if (!accessControlService.canLikePost(userRepository.findById(userId).get(), postService.getPostById(id).get())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error("无权限点赞"));
+            }
+            
             LikeResponse likeResponse = postService.likePost(id, userId);
             return ResponseEntity.ok(ApiResponse.success(likeResponse));
         } catch (RuntimeException e) {
@@ -92,6 +104,11 @@ public class PostController {
     @Auditable(operation = AuditOperation.POST_COLLECT, resourceType = "POST", description = "收藏帖子")
     public ResponseEntity<ApiResponse<CollectResponse>> collectPost(@PathVariable Long id, @RequestParam Long userId) {
         try {
+            // 检查收藏权限
+            if (!accessControlService.canCollectPost(userRepository.findById(userId).get(), postService.getPostById(id).get())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error("无权限收藏"));
+            }
+            
             CollectResponse collectResponse = postService.collectPost(id, userId);
             return ResponseEntity.ok(ApiResponse.success(collectResponse));
         } catch (RuntimeException e) {
@@ -139,8 +156,12 @@ public class PostController {
 
     
     @GetMapping("/{id}/like-status")
-    public ResponseEntity<ApiResponse<Boolean>> getLikeStatus(@PathVariable Long id, @RequestParam(required = false) Long userId) {
+    public ResponseEntity<ApiResponse<Boolean>> getLikeStatus(
+            @PathVariable Long id,
+            @RequestParam(required = false) Long userId
+            ) {
         try {
+
             boolean isLiked = postService.isPostLikedByUser(id, userId);
             return ResponseEntity.ok(ApiResponse.success(isLiked));
         } catch (Exception e) {
@@ -149,7 +170,10 @@ public class PostController {
     }
     
     @GetMapping("/{id}/collect-status")
-    public ResponseEntity<ApiResponse<Boolean>> getCollectStatus(@PathVariable Long id, @RequestParam(required = false) Long userId) {
+    public ResponseEntity<ApiResponse<Boolean>> getCollectStatus(
+            @PathVariable Long id,
+            @RequestParam(required = false) Long userId,
+            Authentication  authentication) {
         try {
             boolean isCollected = postService.isPostCollectedByUser(id, userId);
             return ResponseEntity.ok(ApiResponse.success(isCollected));
@@ -190,6 +214,16 @@ public class PostController {
     @Auditable(operation = AuditOperation.POST_DELETE, resourceType = "POST", description = "删除帖子")
     public ResponseEntity<Void> deletePost(@PathVariable Long id, @RequestParam Long userId) {
         try {
+            Optional<Post> post = postService.getPostById(id);
+            if (post.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            // 检查删除权限
+            if (!accessControlService.canDeletePost(userRepository.findById(userId).get(), post.get())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+            
             postService.deletePost(id, userId).get();
             return ResponseEntity.ok().build();
         } catch (Exception e) {
@@ -203,6 +237,11 @@ public class PostController {
             @PathVariable Long id, 
             @RequestBody CommentRequest request) {
         try {
+            // 检查创建评论权限
+            if (!accessControlService.canCreateComment(userRepository.findById(request.getUserId()).get(), postService.getPostById(id).get())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error("无权限创建评论"));
+            }
+            
             Comment comment = commentService.createComment(id, request.getUserId(), request.getContent());
             CommentDTO commentDTO = convertCommentToDTO(comment);
             return ResponseEntity.ok(ApiResponse.success(commentDTO));
@@ -230,6 +269,10 @@ public class PostController {
             @PathVariable Long commentId,
             @RequestBody CommentRequest request) {
         try {
+            // 检查创建评论权限
+            if (!accessControlService.canCreateComment(userRepository.findById(request.getUserId()).get(), postService.getPostById(postId).get())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error("无权限评论"));
+            }
             Comment reply = commentService.createReply(postId, commentId, request.getUserId(), request.getContent());
             CommentDTO replyDTO = convertCommentToDTO(reply);
             return ResponseEntity.ok(ApiResponse.success(replyDTO));
@@ -245,6 +288,12 @@ public class PostController {
             @PathVariable Long commentId,
             @RequestParam Long userId) {
         try {
+            // 检查删除评论权限
+            Comment comment = commentService.getCommentById(commentId);
+            if (!accessControlService.canDeleteComment(userRepository.findById(userId).get(), comment)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error("无权限删除评论"));
+            }
+            
             commentService.deleteComment(commentId, userId);
             return ResponseEntity.ok(ApiResponse.success(null));
         } catch (RuntimeException e) {

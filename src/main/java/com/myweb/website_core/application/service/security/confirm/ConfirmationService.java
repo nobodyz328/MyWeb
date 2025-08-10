@@ -3,7 +3,7 @@ package com.myweb.website_core.application.service.security.confirm;
 import com.myweb.website_core.application.service.integration.EmailService;
 import com.myweb.website_core.application.service.security.audit.AuditLogServiceAdapter;
 import com.myweb.website_core.common.enums.AuditOperation;
-import com.myweb.website_core.common.exception.ValidationException;
+import com.myweb.website_core.common.exception.security.ValidationException;
 import com.myweb.website_core.domain.business.entity.User;
 import com.myweb.website_core.domain.security.dto.AuditLogRequest;
 import com.myweb.website_core.infrastructure.persistence.repository.UserRepository;
@@ -311,7 +311,7 @@ public class ConfirmationService {
      */
     private String buildConfirmationUrl(String token) {
         // 这里应该根据实际的前端路由配置
-        return "https://localhost:8443/blog/confirm?token=" + token;
+        return "https://localhost:8443/blog//api/security/confirmation?token=" + token;
     }
     
     /**

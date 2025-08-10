@@ -4,6 +4,8 @@ import com.myweb.website_core.application.service.security.audit.AuditLogService
 import com.myweb.website_core.application.service.security.audit.AuditLogServiceAdapter;
 import com.myweb.website_core.common.enums.AuditOperation;
 import com.myweb.website_core.domain.security.dto.AuditLogRequest;
+import com.myweb.website_core.infrastructure.security.audit.AuditAspect;
+import com.myweb.website_core.infrastructure.security.audit.Auditable;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;

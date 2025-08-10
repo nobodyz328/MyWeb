@@ -1,8 +1,8 @@
 package com.myweb.website_core.interfaces.controller.security;
 
-import com.myweb.website_core.application.service.security.dataprotect.DataIntegrityService;
+import com.myweb.website_core.application.service.security.integeration.dataManage.DataIntegrityService;
 import com.myweb.website_core.common.enums.AuditOperation;
-import com.myweb.website_core.infrastructure.security.Auditable;
+import com.myweb.website_core.infrastructure.security.audit.Auditable;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

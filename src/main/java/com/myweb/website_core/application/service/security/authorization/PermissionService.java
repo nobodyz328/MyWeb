@@ -91,8 +91,8 @@ public class PermissionService {
         Permission savedPermission = permissionRepository.save(permission);
         
         // 记录审计日志
-        auditLogService.logPermissionOperation("PERMISSION_CREATE", savedPermission.getId(), 
-                                              createdBy, "创建权限: " + name);
+        //auditLogService.logPermissionOperation("PERMISSION_CREATE", savedPermission.getId(),
+        //                                      createdBy, "创建权限: " + name);
         
         log.info("权限创建成功: id={}, name={}", savedPermission.getId(), savedPermission.getName());
         return savedPermission;
@@ -156,8 +156,8 @@ public class PermissionService {
         Permission updatedPermission = permissionRepository.save(permission);
         
         // 记录审计日志
-        auditLogService.logPermissionOperation("PERMISSION_UPDATE", permissionId, 
-                                              updatedBy, "更新权限: " + permission.getName());
+        //auditLogService.logPermissionOperation("PERMISSION_UPDATE", permissionId,
+        //                                      updatedBy, "更新权限: " + permission.getName());
         
         log.info("权限更新成功: id={}, name={}", updatedPermission.getId(), updatedPermission.getName());
         return updatedPermission;
@@ -192,8 +192,8 @@ public class PermissionService {
         permissionRepository.delete(permission);
         
         // 记录审计日志
-        auditLogService.logPermissionOperation("PERMISSION_DELETE", permissionId, 
-                                              deletedBy, "删除权限: " + permission.getName());
+        //auditLogService.logPermissionOperation("PERMISSION_DELETE", permissionId,
+         //                                     deletedBy, "删除权限: " + permission.getName());
         
         log.info("权限删除成功: id={}, name={}", permissionId, permission.getName());
     }
@@ -527,8 +527,8 @@ public class PermissionService {
         }
         
         // 记录审计日志
-        auditLogService.logPermissionOperation("PERMISSION_BATCH_UPDATE", null, 
-                                              updatedBy, "批量更新权限状态: " + updatedCount + "个");
+       // auditLogService.logPermissionOperation("PERMISSION_BATCH_UPDATE", null,
+         //                                     updatedBy, "批量更新权限状态: " + updatedCount + "个");
         
         log.info("批量更新权限状态完成: 成功={}, 总数={}", updatedCount, permissionIds.size());
         return updatedCount;

@@ -1,7 +1,7 @@
 package com.myweb.website_core.common.exception;
 
 /**
- * Base exception for interaction-related operations
+ * 交互操作异常
  */
 public class InteractionException extends RuntimeException {
     

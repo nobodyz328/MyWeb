@@ -16,106 +16,108 @@ public class SearchException extends RuntimeException {
     /**
      * 无效的搜索关键词
      */
-    public static final String INVALID_KEYWORD = "SEARCH_001";
+    public static final String INVALID_KEYWORD = "无效的搜索关键词";
     
     /**
      * 搜索超时
      */
-    public static final String SEARCH_TIMEOUT = "SEARCH_002";
+    public static final String SEARCH_TIMEOUT = "搜索超时";
     
     /**
      * 无效的搜索类型
      */
-    public static final String INVALID_SEARCH_TYPE = "SEARCH_003";
+    public static final String INVALID_SEARCH_TYPE = "无效的搜索类型";
     
     /**
      * 无效的排序方式
      */
-    public static final String INVALID_SORT_BY = "SEARCH_004";
+    public static final String INVALID_SORT_BY = "无效的排序方式";
     
     /**
      * 无效的分页参数
      */
-    public static final String INVALID_PAGINATION = "SEARCH_005";
+    public static final String INVALID_PAGINATION = "无效的分页参数";
     
     /**
      * 缓存操作失败
      */
-    public static final String CACHE_OPERATION_FAILED = "SEARCH_006";
+    public static final String CACHE_OPERATION_FAILED = "缓存操作失败";
     
     /**
      * 搜索服务不可用
      */
-    public static final String SERVICE_UNAVAILABLE = "SEARCH_007";
+    public static final String SERVICE_UNAVAILABLE = "搜索服务不可用";
     
     /**
      * 关键词长度超限
      */
-    public static final String KEYWORD_TOO_LONG = "SEARCH_008";
-    
+    public static final String KEYWORD_TOO_LONG = "关键词长度超限";
+
     /**
      * 关键词长度不足
      */
-    public static final String KEYWORD_TOO_SHORT = "SEARCH_009";
-    
+    public static final String KEYWORD_TOO_SHORT = "关键词长度不足";
+
     /**
      * 搜索结果过多
      */
-    public static final String TOO_MANY_RESULTS = "SEARCH_010";
-    
+    public static final String TOO_MANY_RESULTS = "搜索结果过多";
+
     // ========== 属性 ==========
-    
+
     /**
      * 错误代码
      */
-    private final String errorCode;
-    
+    private final String errorType;
+
     // ========== 构造函数 ==========
-    
+
     /**
      * 构造函数
-     * 
-     * @param errorCode 错误代码
+     *
+     * @param errorType
+     *错误代码
      * @param message 错误消息
      */
-    public SearchException(String errorCode, String message) {
+    public SearchException(String errorType, String message) {
         super(message);
-        this.errorCode = errorCode;
+        this.errorType = errorType;
     }
-    
+
     /**
      * 构造函数
-     * 
-     * @param errorCode 错误代码
+     *
+     * @param errorType
+     *错误代码
      * @param message 错误消息
      * @param cause 原因异常
      */
-    public SearchException(String errorCode, String message, Throwable cause) {
+    public SearchException(String errorType, String message, Throwable cause) {
         super(message, cause);
-        this.errorCode = errorCode;
+        this.errorType = errorType;
     }
-    
+
     /**
      * 构造函数（使用默认错误代码）
-     * 
+     *
      * @param message 错误消息
      */
     public SearchException(String message) {
         super(message);
-        this.errorCode = "SEARCH_UNKNOWN";
+        this.errorType = "SEARCH_UNKNOWN";
     }
-    
+
     /**
      * 构造函数（使用默认错误代码）
-     * 
+     *
      * @param message 错误消息
      * @param cause 原因异常
      */
     public SearchException(String message, Throwable cause) {
         super(message, cause);
-        this.errorCode = "SEARCH_UNKNOWN";
+        this.errorType = "SEARCH_UNKNOWN";
     }
-    
+
     // ========== Getter方法 ==========
     
     /**
@@ -124,7 +126,7 @@ public class SearchException extends RuntimeException {
      * @return 错误代码
      */
     public String getErrorCode() {
-        return errorCode;
+        return errorType;
     }
     
     // ========== 静态工厂方法 ==========
@@ -136,7 +138,7 @@ public class SearchException extends RuntimeException {
      * @return 搜索异常
      */
     public static SearchException invalidKeyword(String keyword) {
-        return new SearchException(INVALID_KEYWORD, "无效的搜索关键词: " + keyword);
+        return new SearchException(INVALID_KEYWORD,  keyword);
     }
     
     /**
@@ -146,7 +148,7 @@ public class SearchException extends RuntimeException {
      * @return 搜索异常
      */
     public static SearchException searchTimeout(String keyword) {
-        return new SearchException(SEARCH_TIMEOUT, "搜索超时，关键词: " + keyword);
+        return new SearchException(SEARCH_TIMEOUT, keyword);
     }
     
     /**
@@ -156,7 +158,7 @@ public class SearchException extends RuntimeException {
      * @return 搜索异常
      */
     public static SearchException invalidSearchType(String type) {
-        return new SearchException(INVALID_SEARCH_TYPE, "无效的搜索类型: " + type);
+        return new SearchException(INVALID_SEARCH_TYPE, type);
     }
     
     /**
@@ -166,7 +168,7 @@ public class SearchException extends RuntimeException {
      * @return 搜索异常
      */
     public static SearchException invalidSortBy(String sortBy) {
-        return new SearchException(INVALID_SORT_BY, "无效的排序方式: " + sortBy);
+        return new SearchException(INVALID_SORT_BY, sortBy);
     }
     
     /**
@@ -178,7 +180,7 @@ public class SearchException extends RuntimeException {
      */
     public static SearchException invalidPagination(Integer page, Integer size) {
         return new SearchException(INVALID_PAGINATION, 
-                String.format("无效的分页参数，页码: %d, 大小: %d", page, size));
+                String.format("页码: %d, 大小: %d", page, size));
     }
     
     /**
@@ -190,7 +192,7 @@ public class SearchException extends RuntimeException {
      */
     public static SearchException cacheOperationFailed(String operation, Throwable cause) {
         return new SearchException(CACHE_OPERATION_FAILED, 
-                "缓存操作失败: " + operation, cause);
+                operation, cause);
     }
     
     /**
@@ -199,7 +201,7 @@ public class SearchException extends RuntimeException {
      * @return 搜索异常
      */
     public static SearchException serviceUnavailable() {
-        return new SearchException(SERVICE_UNAVAILABLE, "搜索服务暂时不可用");
+        return new SearchException(SERVICE_UNAVAILABLE);
     }
     
     /**
@@ -211,7 +213,7 @@ public class SearchException extends RuntimeException {
      */
     public static SearchException keywordTooLong(String keyword, int maxLength) {
         return new SearchException(KEYWORD_TOO_LONG, 
-                String.format("关键词长度超限，当前: %d, 最大: %d", keyword.length(), maxLength));
+                String.format("当前: %d, 最大: %d", keyword.length(), maxLength));
     }
     
     /**
@@ -223,7 +225,7 @@ public class SearchException extends RuntimeException {
      */
     public static SearchException keywordTooShort(String keyword, int minLength) {
         return new SearchException(KEYWORD_TOO_SHORT, 
-                String.format("关键词长度不足，当前: %d, 最小: %d", keyword.length(), minLength));
+                String.format("当前: %d, 最小: %d", keyword.length(), minLength));
     }
     
     /**
@@ -235,14 +237,14 @@ public class SearchException extends RuntimeException {
      */
     public static SearchException tooManyResults(long count, int maxCount) {
         return new SearchException(TOO_MANY_RESULTS, 
-                String.format("搜索结果过多，当前: %d, 最大: %d", count, maxCount));
+                String.format("当前: %d, 最大: %d", count, maxCount));
     }
     
     // ========== toString方法 ==========
     
     @Override
     public String toString() {
-        return String.format("SearchException{errorCode='%s', message='%s'}", 
-                errorCode, getMessage());
+        return String.format("SearchException{errorType='%s', message='%s'}",
+                errorType, getMessage());
     }
 }

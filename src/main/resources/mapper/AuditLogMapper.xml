@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.myweb.website_core.infrastructure.persistence.mapper.AuditLogMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="AuditLogResultMap" type="com.myweb.website_core.domain.security.entity.AuditLog">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="username" property="username"/>
+        <result column="operation" property="operation" typeHandler="org.apache.ibatis.type.EnumTypeHandler"/>
+        <result column="resource_type" property="resourceType"/>
+        <result column="resource_id" property="resourceId"/>
+        <result column="ip_address" property="ipAddress"/>
+        <result column="user_agent" property="userAgent"/>
+        <result column="result" property="result"/>
+        <result column="error_message" property="errorMessage"/>
+        <result column="request_data" property="requestData"/>
+        <result column="response_data" property="responseData"/>
+        <result column="execution_time" property="executionTime"/>
+        <result column="timestamp" property="timestamp"/>
+        <result column="session_id" property="sessionId"/>
+        <result column="request_id" property="requestId"/>
+        <result column="description" property="description"/>
+        <result column="risk_level" property="riskLevel"/>
+        <result column="location" property="location"/>
+        <result column="tags" property="tags"/>
+        <result column="processed" property="processed"/>
+        <result column="processed_at" property="processedAt"/>
+        <result column="processed_by" property="processedBy"/>
+        <result column="process_notes" property="processNotes"/>
+    </resultMap>
+
+    <!-- 查询失败登录记录 -->
+    <select id="findFailedLoginAttempts" resultMap="AuditLogResultMap">
+        SELECT * FROM audit_logs
+        WHERE operation = #{operation}::varchar
+        AND result = 'FAILURE'
+        AND timestamp BETWEEN #{startTime} AND #{endTime}
+        ORDER BY timestamp DESC
+        <if test="limit > 0">
+            LIMIT #{limit} OFFSET #{offset}
+        </if>
+    </select>
+
+    <!-- 统计失败登录记录总数 -->
+    <select id="countFailedLoginAttempts" resultType="long">
+        SELECT COUNT(*) FROM audit_logs
+        WHERE operation = #{operation}::varchar
+        AND result = 'FAILURE'
+        AND timestamp BETWEEN #{startTime} AND #{endTime}
+    </select>
+
+    <!-- 查询指定IP地址的可疑活动 -->
+    <select id="findSuspiciousActivitiesByIp" resultMap="AuditLogResultMap">
+        SELECT * FROM audit_logs
+        WHERE ip_address = #{ipAddress}
+        AND timestamp BETWEEN #{startTime} AND #{endTime}
+        AND result = 'FAILURE'
+        AND ip_address IN (
+            SELECT ip_address FROM audit_logs
+            WHERE ip_address = #{ipAddress}
+            AND timestamp BETWEEN #{startTime} AND #{endTime}
+            AND result = 'FAILURE'
+            GROUP BY ip_address
+            HAVING COUNT(*) >= #{minAttempts}
+        )
+        ORDER BY timestamp DESC
+    </select>
+
+    <!-- 查询高风险操作记录 -->
+    <select id="findHighRiskOperations" resultMap="AuditLogResultMap">
+        SELECT * FROM audit_logs
+        WHERE risk_level >= #{minRiskLevel}
+        AND timestamp BETWEEN #{startTime} AND #{endTime}
+        ORDER BY risk_level DESC, timestamp DESC
+        <if test="limit > 0">
+            LIMIT #{limit} OFFSET #{offset}
+        </if>
+    </select>
+
+    <!-- 统计高风险操作记录总数 -->
+    <select id="countHighRiskOperations" resultType="long">
+        SELECT COUNT(*) FROM audit_logs
+        WHERE risk_level >= #{minRiskLevel}
+        AND timestamp BETWEEN #{startTime} AND #{endTime}
+    </select>
+
+    <!-- 查询未处理的安全事件 -->
+    <select id="findUnprocessedSecurityEvents" resultMap="AuditLogResultMap">
+        SELECT * FROM audit_logs
+        WHERE processed = false
+        AND (result = 'FAILURE' OR risk_level >= 4)
+        ORDER BY risk_level DESC, timestamp DESC
+        <if test="limit > 0">
+            LIMIT #{limit} OFFSET #{offset}
+        </if>
+    </select>
+
+    <!-- 统计未处理的安全事件总数 -->
+    <select id="countUnprocessedSecurityEvents" resultType="long">
+        SELECT COUNT(*) FROM audit_logs
+        WHERE processed = false
+        AND (result = 'FAILURE' OR risk_level >= 4)
+    </select>
+
+    <!-- 查询异常登录记录（不同地理位置） -->
+    <select id="findAbnormalLoginsByLocation" resultMap="AuditLogResultMap">
+        SELECT * FROM audit_logs
+        WHERE user_id = #{userId}
+        AND operation IN ('USER_LOGIN_SUCCESS', 'USER_LOGIN_FAILURE')
+        <if test="currentLocation != null and currentLocation != ''">
+            AND location != #{currentLocation}
+        </if>
+        AND timestamp BETWEEN #{startTime} AND #{endTime}
+        ORDER BY timestamp DESC
+    </select>
+
+    <!-- 按操作类型统计 -->
+    <select id="countOperationsByType" resultType="map">
+        SELECT operation, COUNT(*) as count
+        FROM audit_logs
+        WHERE timestamp BETWEEN #{startTime} AND #{endTime}
+        GROUP BY operation
+        ORDER BY COUNT(*) DESC
+    </select>
+
+    <!-- 按用户统计 -->
+    <select id="countOperationsByUser" resultType="map">
+        SELECT username, COUNT(*) as count
+        FROM audit_logs
+        WHERE timestamp BETWEEN #{startTime} AND #{endTime}
+        AND username IS NOT NULL
+        GROUP BY username
+        ORDER BY count DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 按IP地址统计 -->
+    <select id="countOperationsByIp" resultType="map">
+        SELECT ip_address as ipAddress, COUNT(*) as count
+        FROM audit_logs
+        WHERE timestamp BETWEEN #{startTime} AND #{endTime}
+        AND ip_address IS NOT NULL
+        GROUP BY ip_address
+        ORDER BY count DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 按小时统计 -->
+    <select id="countOperationsByHour" resultType="map">
+        SELECT EXTRACT(HOUR FROM timestamp) as hour, COUNT(*) as count
+        FROM audit_logs
+        WHERE timestamp BETWEEN #{startTime} AND #{endTime}
+        GROUP BY EXTRACT(HOUR FROM timestamp)
+        ORDER BY hour
+    </select>
+
+    <!-- 按天统计 -->
+    <select id="countOperationsByDay" resultType="map">
+        SELECT DATE(timestamp) as day, COUNT(*) as count
+        FROM audit_logs
+        WHERE timestamp BETWEEN #{startTime} AND #{endTime}
+        GROUP BY DATE(timestamp)
+        ORDER BY day
+    </select>
+
+    <!-- 查询最近的用户登录记录 -->
+    <select id="findLatestLoginByUserId" resultMap="AuditLogResultMap">
+        SELECT * FROM audit_logs
+        WHERE user_id = #{userId}
+        AND operation = 'USER_LOGIN_SUCCESS'
+        ORDER BY timestamp DESC
+        LIMIT 1
+    </select>
+
+    <!-- 查询用户的登录历史 -->
+    <select id="findLoginHistoryByUserId" resultMap="AuditLogResultMap">
+        SELECT * FROM audit_logs
+        WHERE user_id = #{userId}
+        AND operation IN ('USER_LOGIN_SUCCESS', 'USER_LOGIN_FAILURE')
+        ORDER BY timestamp DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 查询指定资源的操作历史 -->
+    <select id="findResourceHistory" resultMap="AuditLogResultMap">
+        SELECT * FROM audit_logs
+        WHERE resource_type = #{resourceType}
+        AND resource_id = #{resourceId}
+        ORDER BY timestamp DESC
+        <if test="limit > 0">
+            LIMIT #{limit} OFFSET #{offset}
+        </if>
+    </select>
+
+    <!-- 统计指定资源的操作历史总数 -->
+    <select id="countResourceHistory" resultType="long">
+        SELECT COUNT(*) FROM audit_logs
+        WHERE resource_type = #{resourceType}
+        AND resource_id = #{resourceId}
+    </select>
+
+    <!-- 查询包含指定标签的审计日志 -->
+    <select id="findByTag" resultMap="AuditLogResultMap">
+        SELECT * FROM audit_logs
+        WHERE tags LIKE CONCAT('%', #{tag}, '%')
+        ORDER BY timestamp DESC
+        <if test="limit > 0">
+            LIMIT #{limit} OFFSET #{offset}
+        </if>
+    </select>
+
+    <!-- 统计包含指定标签的审计日志总数 -->
+    <select id="countByTag" resultType="long">
+        SELECT COUNT(*) FROM audit_logs
+        WHERE tags LIKE CONCAT('%', #{tag}, '%')
+    </select>
+
+    <!-- 查询执行时间超过阈值的慢操作 -->
+    <select id="findSlowOperations" resultMap="AuditLogResultMap">
+        SELECT * FROM audit_logs
+        WHERE execution_time >= #{minExecutionTime}
+        AND timestamp BETWEEN #{startTime} AND #{endTime}
+        ORDER BY execution_time DESC
+        <if test="limit > 0">
+            LIMIT #{limit} OFFSET #{offset}
+        </if>
+    </select>
+
+    <!-- 统计执行时间超过阈值的慢操作总数 -->
+    <select id="countSlowOperations" resultType="long">
+        SELECT COUNT(*) FROM audit_logs
+        WHERE execution_time >= #{minExecutionTime}
+        AND timestamp BETWEEN #{startTime} AND #{endTime}
+    </select>
+
+    <!-- 统计活跃用户数 -->
+    <select id="countActiveUsers" resultType="long">
+        SELECT COUNT(DISTINCT user_id)
+        FROM audit_logs
+        WHERE timestamp BETWEEN #{startTime} AND #{endTime}
+        AND user_id IS NOT NULL
+    </select>
+
+    <!-- 统计活跃IP数 -->
+    <select id="countActiveIPs" resultType="long">
+        SELECT COUNT(DISTINCT ip_address)
+        FROM audit_logs
+        WHERE timestamp BETWEEN #{startTime} AND #{endTime}
+        AND ip_address IS NOT NULL
+    </select>
+
+    <!-- 批量标记审计日志为已处理 -->
+    <update id="markAsProcessed">
+        UPDATE audit_logs
+        SET processed = true,
+            processed_at = CURRENT_TIMESTAMP,
+            processed_by = #{processedBy},
+            process_notes = #{processNotes}
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+</mapper>

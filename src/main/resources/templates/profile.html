@@ -336,20 +336,8 @@
           <h3>⚙️ 管理功能</h3>
           <div class="info-box">
             <p>您拥有管理权限，可以访问系统管理界面。</p>
-            <p id="adminTotpNotice" style="display: none; color: #ff6b6b;">
-              ⚠️ 访问管理界面需要TOTP验证。
-            </p>
           </div>
           <form id="adminAccessForm" class="form-group">
-            <input 
-              type="text" 
-              id="adminTotpCode" 
-              class="form-input" 
-              placeholder="输入TOTP验证码"
-              maxlength="6"
-              pattern="[0-9]{6}"
-              style="display: none;"
-            >
             <button type="submit" class="steam-btn">
               进入管理界面
             </button>
@@ -403,6 +391,7 @@
   </footer>
 
   <script src="/blog/static/js/auth-utils.js"></script>
+  <script src="/blog/static/js/csrf-utils.js"></script>
   <script src="/blog/static/js/profile.js"></script>
 </body>
 </html>

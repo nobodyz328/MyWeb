@@ -4,7 +4,7 @@ import com.myweb.website_core.application.service.security.audit.LogStorageManag
 import com.myweb.website_core.common.enums.AuditOperation;
 import com.myweb.website_core.domain.security.dto.LogStorageStatistics;
 import com.myweb.website_core.domain.business.dto.StorageInfo;
-import com.myweb.website_core.infrastructure.security.Auditable;
+import com.myweb.website_core.infrastructure.security.audit.Auditable;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

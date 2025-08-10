@@ -6,6 +6,7 @@ import com.myweb.website_core.infrastructure.persistence.repository.UserReposito
 import com.myweb.website_core.infrastructure.security.CustomUserDetailsService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -52,12 +53,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             // 提取JWT令牌
             String jwt = extractJwtFromRequest(request);
             
+            log.debug("处理请求: {}, JWT令牌: {}", request.getRequestURI(), jwt != null ? "存在" : "不存在");
+            
             if (StringUtils.hasText(jwt) && SecurityContextHolder.getContext().getAuthentication() == null) {
                 // 验证令牌
-                if (jwtTokenService.validateToken(jwt) && jwtService.isAccessToken(jwt)) {
+                boolean isValidToken = jwtTokenService.validateToken(jwt);
+                boolean isAccessToken = jwtService.isAccessToken(jwt);
+                
+                log.debug("JWT令牌验证结果: valid={}, isAccessToken={}", isValidToken, isAccessToken);
+                
+                if (isValidToken && isAccessToken) {
                     // 从令牌中获取用户信息
                     String username = jwtService.getUsernameFromToken(jwt);
                     Long userId = jwtService.getUserIdFromToken(jwt);
+                    
+                    log.debug("从JWT令牌提取用户信息: username={}, userId={}", username, userId);
                     
                     if (StringUtils.hasText(username) && userId != null) {
                         // 加载用户详情
@@ -74,12 +84,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             // 设置安全上下文
                             SecurityContextHolder.getContext().setAuthentication(authentication);
                             
-                            log.debug("JWT认证成功: username={}, userId={}", username, userId);
+                            log.debug("JWT认证成功: username={}, userId={}, authorities={}", 
+                                    username, userId, userDetails.getAuthorities());
+                        } else {
+                            log.debug("无法加载用户详情: username={}", username);
                         }
+                    } else {
+                        log.debug("JWT令牌中缺少用户信息: username={}, userId={}", username, userId);
                     }
                 } else {
-                    log.debug("JWT令牌验证失败或非访问令牌");
+                    log.debug("JWT令牌验证失败或非访问令牌: valid={}, isAccessToken={}", isValidToken, isAccessToken);
                 }
+            } else if (!StringUtils.hasText(jwt)) {
+                log.debug("请求中未找到JWT令牌");
+            } else {
+                log.debug("安全上下文中已存在认证信息");
             }
             
         } catch (Exception e) {
@@ -99,8 +118,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
      * @return JWT令牌，如果不存在则返回null
      */
     private String extractJwtFromRequest(HttpServletRequest request) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if (AUTHORIZATION_HEADER.equals(cookie.getName())) {
+                    return cookie.getValue();
+                }
+            }
+        }
         String bearerToken = request.getHeader(AUTHORIZATION_HEADER);
         return jwtService.extractTokenFromBearer(bearerToken);
+
     }
     
     /**
@@ -111,14 +139,28 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         String path = request.getRequestURI();
         
+        // 移除context path前缀进行匹配
+//        String contextPath = request.getContextPath();
+//        if (contextPath != null && !contextPath.isEmpty() && path.startsWith(contextPath)) {
+//            path = path.substring(contextPath.length());
+//        }
+        
         // 跳过登录、注册等公开接口
         return path.startsWith("/users/login") ||
-               path.startsWith("/users/register") ||
-               path.startsWith("/users/check-") ||
-               path.startsWith("/public/") ||
-               path.startsWith("/actuator/") ||
-               path.startsWith("/swagger-") ||
-               path.startsWith("/v3/api-docs") ||
-               path.startsWith("/webjars/");
+                path.startsWith("/users/register") ||
+                path.startsWith("/users/check-") ||
+                path.startsWith("/public/") ||
+                path.startsWith("/actuator/") ||
+                path.startsWith("/swagger-") ||
+                path.startsWith("/v3/api-docs") ||
+                path.startsWith("/webjars/") ||
+                path.equals("/") ||
+                path.startsWith("/view") ||
+                path.startsWith("/static/") ||
+                path.startsWith("/css/") ||
+                path.startsWith("/js/") ||
+                path.startsWith("/images/") ||
+                path.startsWith("/api/csrf/")||
+                path.startsWith("/error/");
     }
 }

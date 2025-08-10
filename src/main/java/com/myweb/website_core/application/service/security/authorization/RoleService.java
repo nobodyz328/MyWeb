@@ -78,10 +78,7 @@ public class RoleService {
         
         Role savedRole = roleRepository.save(role);
         
-        // 记录审计日志
-        auditLogService.logRoleOperation("ROLE_CREATE", savedRole.getId(), 
-                                        createdBy, "创建角色: " + name);
-        
+
         log.info("角色创建成功: id={}, name={}", savedRole.getId(), savedRole.getName());
         return savedRole;
     }
@@ -138,11 +135,7 @@ public class RoleService {
         
         Role updatedRole = roleRepository.save(role);
         
-        // 记录审计日志
-        auditLogService.logRoleOperation("ROLE_UPDATE", roleId, 
-                                        updatedBy, "更新角色: " + role.getName());
-        
-        log.info("角色更新成功: id={}, name={}", updatedRole.getId(), updatedRole.getName());
+       log.info("角色更新成功: id={}, name={}", updatedRole.getId(), updatedRole.getName());
         return updatedRole;
     }
     
@@ -178,10 +171,7 @@ public class RoleService {
         // 删除角色
         roleRepository.delete(role);
         
-        // 记录审计日志
-        auditLogService.logRoleOperation("ROLE_DELETE", roleId, 
-                                        deletedBy, "删除角色: " + role.getName());
-        
+
         log.info("角色删除成功: id={}, name={}", roleId, role.getName());
     }
     
@@ -301,10 +291,7 @@ public class RoleService {
         role.setUpdatedAt(LocalDateTime.now());
         roleRepository.save(role);
         
-        // 记录审计日志
-        auditLogService.logRoleOperation("ROLE_ASSIGN_PERMISSIONS", roleId, 
-                                        assignedBy, "为角色分配权限: " + permissionIds.size() + "个");
-        
+
         log.info("角色权限分配成功: roleId={}, permissionCount={}", roleId, permissions.size());
     }
     
@@ -334,10 +321,7 @@ public class RoleService {
         role.setUpdatedAt(LocalDateTime.now());
         roleRepository.save(role);
         
-        // 记录审计日志
-        auditLogService.logRoleOperation("ROLE_ADD_PERMISSION", roleId, 
-                                        assignedBy, "添加权限: " + permission.getName());
-        
+
         log.info("角色权限添加成功: roleId={}, permissionName={}", roleId, permission.getName());
     }
     
@@ -363,10 +347,7 @@ public class RoleService {
         role.setUpdatedAt(LocalDateTime.now());
         roleRepository.save(role);
         
-        // 记录审计日志
-        auditLogService.logRoleOperation("ROLE_REMOVE_PERMISSION", roleId, 
-                                        removedBy, "移除权限: " + permission.getName());
-        
+
         log.info("角色权限移除成功: roleId={}, permissionName={}", roleId, permission.getName());
     }
     
@@ -415,8 +396,8 @@ public class RoleService {
         userRepository.save(user);
         
         // 记录审计日志
-        auditLogService.logUserOperation("USER_ASSIGN_ROLES", userId, 
-                                        assignedBy, "为用户分配角色: " + roleIds.size() + "个");
+        //auditLogService.logUserOperation("USER_ASSIGN_ROLES", userId,
+        //                                assignedBy, "为用户分配角色: " + roleIds.size() + "个");
         
         log.info("用户角色分配成功: userId={}, roleCount={}", userId, roles.size());
     }
@@ -446,8 +427,8 @@ public class RoleService {
         userRepository.save(user);
         
         // 记录审计日志
-        auditLogService.logUserOperation("USER_ADD_ROLE", userId, 
-                                        assignedBy, "添加角色: " + role.getName());
+        //auditLogService.logUserOperation("USER_ADD_ROLE", userId,
+         //                               assignedBy, "添加角色: " + role.getName());
         
         log.info("用户角色添加成功: userId={}, roleName={}", userId, role.getName());
     }
@@ -473,8 +454,8 @@ public class RoleService {
         userRepository.save(user);
         
         // 记录审计日志
-        auditLogService.logUserOperation("USER_REMOVE_ROLE", userId, 
-                                        removedBy, "移除角色: " + role.getName());
+       // auditLogService.logUserOperation("USER_REMOVE_ROLE", userId,
+       //                                 removedBy, "移除角色: " + role.getName());
         
         log.info("用户角色移除成功: userId={}, roleName={}", userId, role.getName());
     }

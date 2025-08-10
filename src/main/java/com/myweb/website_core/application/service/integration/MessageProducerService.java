@@ -2,8 +2,8 @@ package com.myweb.website_core.application.service.integration;
 
 import com.myweb.website_core.infrastructure.config.RabbitMQConfig;
 import com.myweb.website_core.domain.business.entity.Post;
-import com.myweb.website_core.domain.security.dto.SecurityAuditMessage;
-import com.myweb.website_core.domain.security.dto.UnifiedSecurityMessage;
+import com.myweb.website_core.domain.security.dto.AuditLogRequest;
+import com.myweb.website_core.domain.security.dto.SecurityEventRequest;
 import com.myweb.website_core.common.enums.AuditOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -165,56 +165,16 @@ public class MessageProducerService {
     // ==================== 安全审计消息发送方法 ====================
 
     /**
-     * 发送安全审计消息（兼容旧版本）
-     */
-    public void sendSecurityAuditMessage(SecurityAuditMessage auditMessage) {
-        try {
-            rabbitTemplate.convertAndSend(
-                RabbitMQConfig.SECURITY_EXCHANGE,
-                RabbitMQConfig.SECURITY_AUDIT_ROUTING_KEY,
-                auditMessage
-            );
-            log.debug("安全审计消息发送成功: {}", auditMessage.getOperation());
-        } catch (Exception e) {
-            log.error("发送安全审计消息失败: {}", e.getMessage(), e);
-            // 不抛出异常，避免影响主业务流程
-        }
-    }
-
-    /**
-     * 发送统一安全消息（新版本）
-     */
-    public void sendUnifiedSecurityMessage(UnifiedSecurityMessage message) {
-        try {
-            String exchange = RabbitMQConfig.SECURITY_EXCHANGE;
-            String routingKey = message.getRoutingKey();
-            
-            rabbitTemplate.convertAndSend(exchange, routingKey, message);
-            
-            log.debug("统一安全消息发送成功: type={}, operation={}", 
-                     message.getMessageType(), message.getOperation());
-        } catch (Exception e) {
-            log.error("发送统一安全消息失败: {}", e.getMessage(), e);
-            // 不抛出异常，避免影响主业务流程
-        }
-    }
-
-    /**
      * 发送用户认证审计消息
      */
-    public void sendUserAuthAuditMessage(String username, AuditOperation operation, String ipAddress, 
-                                       String result, String errorMessage, String sessionId) {
+    public void sendUserAuthAuditMessage(AuditLogRequest request) {
         try {
-            UnifiedSecurityMessage message = UnifiedSecurityMessage.userAuth(
-                username, operation, ipAddress, result, errorMessage, sessionId
-            );
-
             rabbitTemplate.convertAndSend(
                 RabbitMQConfig.SECURITY_EXCHANGE,
                 RabbitMQConfig.USER_AUTH_ROUTING_KEY,
-                message
+                request
             );
-            log.debug("用户认证审计消息发送成功: {} - {}", username, operation);
+            log.debug("用户认证审计消息发送成功: {} - {}", request.getUsername(), request.getOperation());
         } catch (Exception e) {
             log.error("发送用户认证审计消息失败: {}", e.getMessage(), e);
         }
@@ -223,20 +183,14 @@ public class MessageProducerService {
     /**
      * 发送文件上传审计消息
      */
-    public void sendFileUploadAuditMessage(Long userId, String username, String fileName, 
-                                         String fileType, Long fileSize, String result, 
-                                         String ipAddress, String errorMessage) {
+    public void sendFileUploadAuditMessage(AuditLogRequest request) {
         try {
-            UnifiedSecurityMessage message = UnifiedSecurityMessage.fileUpload(
-                userId, username, fileName, fileType, fileSize, result, ipAddress, errorMessage
-            );
-
             rabbitTemplate.convertAndSend(
                 RabbitMQConfig.SECURITY_EXCHANGE,
                 RabbitMQConfig.FILE_UPLOAD_AUDIT_ROUTING_KEY,
-                message
+                request
             );
-            log.debug("文件上传审计消息发送成功: {} - {}", username, fileName);
+            log.debug("文件上传审计消息发送成功: {} - {}", request.getUsername(), request.getDescription());
         } catch (Exception e) {
             log.error("发送文件上传审计消息失败: {}", e.getMessage(), e);
         }
@@ -245,19 +199,14 @@ public class MessageProducerService {
     /**
      * 发送搜索操作审计消息
      */
-    public void sendSearchAuditMessage(Long userId, String username, String searchQuery, 
-                                     String searchType, Integer resultCount, String ipAddress) {
+    public void sendSearchAuditMessage(AuditLogRequest request) {
         try {
-            UnifiedSecurityMessage message = UnifiedSecurityMessage.search(
-                userId, username, searchQuery, searchType, resultCount, ipAddress
-            );
-
             rabbitTemplate.convertAndSend(
                 RabbitMQConfig.SECURITY_EXCHANGE,
                 RabbitMQConfig.SEARCH_AUDIT_ROUTING_KEY,
-                message
+                request
             );
-            log.debug("搜索审计消息发送成功: {} - {}", username, searchQuery);
+            log.debug("搜索审计消息发送成功: {} - {}", request.getUsername(), request.getDescription());
         } catch (Exception e) {
             log.error("发送搜索审计消息失败: {}", e.getMessage(), e);
         }
@@ -266,20 +215,15 @@ public class MessageProducerService {
     /**
      * 发送访问控制审计消息
      */
-    public void sendAccessControlAuditMessage(Long userId, String username, String resourceType, 
-                                            Long resourceId, String action, String result, 
-                                            String ipAddress, String reason) {
+    public void sendAccessControlAuditMessage(AuditLogRequest request) {
         try {
-            UnifiedSecurityMessage message = UnifiedSecurityMessage.accessControl(
-                userId, username, resourceType, resourceId, action, result, ipAddress, reason
-            );
-
             rabbitTemplate.convertAndSend(
                 RabbitMQConfig.SECURITY_EXCHANGE,
                 RabbitMQConfig.ACCESS_CONTROL_ROUTING_KEY,
-                message
+                request
             );
-            log.debug("访问控制审计消息发送成功: {} - {} - {}", username, action, result);
+            log.debug("访问控制审计消息发送成功: {} - {} - {}", request.getUsername(), 
+                     request.getDescription(), request.getResult());
         } catch (Exception e) {
             log.error("发送访问控制审计消息失败: {}", e.getMessage(), e);
         }
@@ -288,14 +232,14 @@ public class MessageProducerService {
     /**
      * 发送安全事件消息
      */
-    public void sendSecurityEventMessage(UnifiedSecurityMessage message) {
+    public void sendSecurityEventMessage(SecurityEventRequest request) {
         try {
             rabbitTemplate.convertAndSend(
                 RabbitMQConfig.SECURITY_EXCHANGE,
                 RabbitMQConfig.SECURITY_EVENT_ROUTING_KEY,
-                message
+                request
             );
-            log.warn("安全事件消息发送成功: {} - {}", message.getSecurityEventType(), message.getDescription());
+            log.warn("安全事件消息发送成功: {} - {}", request.getEventType(), request.getDescription());
         } catch (Exception e) {
             log.error("发送安全事件消息失败: {}", e.getMessage(), e);
         }
@@ -304,50 +248,38 @@ public class MessageProducerService {
     /**
      * 发送用户注册审计消息
      */
-    public void sendUserRegistrationAuditMessage(String username, String email, String ipAddress, 
-                                               String result, String errorMessage) {
-        sendUserAuthAuditMessage(username, AuditOperation.USER_REGISTER, ipAddress, result, errorMessage, null);
+    public void sendUserRegistrationAuditMessage(AuditLogRequest request) {
+        sendUserAuthAuditMessage(request);
     }
 
     /**
      * 发送用户登录审计消息
      */
-    public void sendUserLoginAuditMessage(String username, String ipAddress, String result, 
-                                        String errorMessage, String sessionId) {
-        AuditOperation operation = "SUCCESS".equals(result) ? 
-                AuditOperation.USER_LOGIN_SUCCESS : AuditOperation.USER_LOGIN_FAILURE;
-        sendUserAuthAuditMessage(username, operation, ipAddress, result, errorMessage, sessionId);
+    public void sendUserLoginAuditMessage(AuditLogRequest request) {
+        sendUserAuthAuditMessage(request);
     }
 
     /**
      * 发送用户退出登录审计消息
      */
-    public void sendUserLogoutAuditMessage(String username, String ipAddress, String sessionId) {
-        sendUserAuthAuditMessage(username, AuditOperation.USER_LOGOUT, ipAddress, "SUCCESS", null, sessionId);
+    public void sendUserLogoutAuditMessage(AuditLogRequest request) {
+        sendUserAuthAuditMessage(request);
     }
 
     /**
      * 发送内容操作审计消息
      */
-    public void sendContentOperationAuditMessage(Long userId, String username, AuditOperation operation, 
-                                                String resourceType, Long resourceId, String ipAddress, 
-                                                String result, String description) {
+    public void sendContentOperationAuditMessage(AuditLogRequest request) {
         try {
-            UnifiedSecurityMessage message = UnifiedSecurityMessage.auditLog(
-                operation, userId, username, result, ipAddress
-            );
-            message.setResourceType(resourceType);
-            message.setResourceId(resourceId);
-            message.setDescription(description);
-
             rabbitTemplate.convertAndSend(
                 RabbitMQConfig.SECURITY_EXCHANGE,
                 RabbitMQConfig.SECURITY_AUDIT_ROUTING_KEY,
-                message
+                request
             );
-            log.debug("内容操作审计消息发送成功: {} - {} - {}", username, operation, resourceType);
+            log.debug("内容操作审计消息发送成功: {} - {} - {}", request.getUsername(), 
+                     request.getOperation(), request.getResourceType());
         } catch (Exception e) {
             log.error("发送内容操作审计消息失败: {}", e.getMessage(), e);
         }
     }
-} 
+}

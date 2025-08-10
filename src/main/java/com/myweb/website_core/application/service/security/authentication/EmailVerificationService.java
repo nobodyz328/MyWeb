@@ -1,7 +1,7 @@
 package com.myweb.website_core.application.service.security.authentication;
 
 import com.myweb.website_core.common.exception.RateLimitExceededException;
-import com.myweb.website_core.common.security.exception.ValidationException;
+import com.myweb.website_core.common.exception.security.ValidationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.mail.SimpleMailMessage;

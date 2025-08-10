@@ -92,7 +92,7 @@ async function loadUserInteractionsForPosts(postIds) {
     const promises = postIds.map(async postId => {
       try {
         // 获取点赞状态
-        const likeResponse = await fetch(`/blog/api/posts/${postId}/like-status?userId=${userId}`);
+        const likeResponse = await AuthUtils.authenticatedFetch(`/blog/api/posts/${postId}/like-status?userId=${userId}`);
         let liked = false;
         if (likeResponse.ok) {
           const likeData = await likeResponse.json();
@@ -100,7 +100,7 @@ async function loadUserInteractionsForPosts(postIds) {
         }
 
         // 获取收藏状态
-        const collectResponse = await fetch(`/blog/api/posts/${postId}/collect-status?userId=${userId}`);
+        const collectResponse = await AuthUtils.authenticatedFetch(`/blog/api/posts/${postId}/collect-status?userId=${userId}`);
         let collected = false;
         if (collectResponse.ok) {
           const collectData = await collectResponse.json();

@@ -1,6 +1,7 @@
 package com.myweb.website_core.common.util;
 
 import com.myweb.website_core.application.service.security.IPS.virusprotect.SqlInjectionProtectionService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -12,24 +13,24 @@ import java.util.regex.Pattern;
 
 /**
  * 安全的动态SQL构建工具类
- * 
+ * <p>
  * 提供安全的动态SQL构建功能，防止SQL注入攻击：
  * 1. 参数化查询构建
  * 2. 安全的条件拼接
  * 3. 排序和分页安全处理
  * 4. 输入验证和清理
- * 
+ * <p>
  * 符合需求：4.1, 4.4 - 入侵防范机制
  * 
- * @author MyWeb Security Team
+ * @author MyWeb
  * @version 1.0
- * @since 2025-01-01
  */
 @Component
+@RequiredArgsConstructor
 public class SafeSqlBuilder {
     
-    @Autowired
-    private SqlInjectionProtectionService sqlInjectionProtectionService;
+
+    private final SqlInjectionProtectionService sqlInjectionProtectionService;
     
     // 允许的排序字段白名单
     private static final Map<String, List<String>> ALLOWED_SORT_FIELDS = new HashMap<>();
@@ -52,7 +53,9 @@ public class SafeSqlBuilder {
             "id", "created_at", "like_count"
         ));
         ALLOWED_SORT_FIELDS.put("audit_logs", List.of(
-            "id", "timestamp", "operation", "result"
+            "id", "timestamp", "operation", "result", "username", "user_id", 
+            "ip_address", "session_id", "resource_type", "resource_id", 
+            "description", "risk_level", "tags", "details", "execution_time"
         ));
     }
     

@@ -73,7 +73,7 @@ public class JwtConfig {
         /**
          * 是否启用黑名单
          */
-        private Boolean enabled = true;
+        private Boolean enabled = false;
         
         /**
          * 清理间隔（分钟）

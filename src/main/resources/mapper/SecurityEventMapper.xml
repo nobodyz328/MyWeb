@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.myweb.website_core.infrastructure.persistence.mapper.SecurityEventMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="SecurityEventResultMap" type="com.myweb.website_core.domain.security.entity.SecurityEvent">
+        <id column="id" property="id"/>
+        <result column="event_type" property="eventType" typeHandler="org.apache.ibatis.type.EnumTypeHandler"/>
+        <result column="title" property="title"/>
+        <result column="description" property="description"/>
+        <result column="severity" property="severity"/>
+        <result column="user_id" property="userId"/>
+        <result column="username" property="username"/>
+        <result column="source_ip" property="sourceIp"/>
+        <result column="user_agent" property="userAgent"/>
+        <result column="request_uri" property="requestUri"/>
+        <result column="request_method" property="requestMethod"/>
+        <result column="session_id" property="sessionId"/>
+        <result column="event_data" property="eventData"/>
+        <result column="event_time" property="eventTime"/>
+        <result column="status" property="status"/>
+        <result column="alerted" property="alerted"/>
+        <result column="alert_time" property="alertTime"/>
+        <result column="handled_by" property="handledBy"/>
+        <result column="handled_time" property="handledTime"/>
+        <result column="handle_notes" property="handleNotes"/>
+        <result column="risk_score" property="riskScore"/>
+        <result column="related_event_count" property="relatedEventCount"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <!-- 复杂条件查询 -->
+    <select id="findByComplexQuery" resultMap="SecurityEventResultMap">
+        SELECT * FROM security_events
+        <where>
+            <if test="query.eventTypes != null and query.eventTypes.size() > 0">
+                AND event_type IN
+                <foreach collection="query.eventTypes" item="eventType" open="(" separator="," close=")">
+                    #{eventType}::varchar
+                </foreach>
+            </if>
+            <if test="query.severities != null and query.severities.size() > 0">
+                AND severity IN
+                <foreach collection="query.severities" item="severity" open="(" separator="," close=")">
+                    #{severity}
+                </foreach>
+            </if>
+            <if test="query.userId != null">
+                AND user_id = #{query.userId}
+            </if>
+            <if test="query.username != null and query.username != ''">
+                AND username LIKE CONCAT('%', #{query.username}, '%')
+            </if>
+            <if test="query.sourceIp != null and query.sourceIp != ''">
+                AND source_ip = #{query.sourceIp}
+            </if>
+            <if test="query.statuses != null and query.statuses.size() > 0">
+                AND status IN
+                <foreach collection="query.statuses" item="status" open="(" separator="," close=")">
+                    #{status}
+                </foreach>
+            </if>
+            <if test="query.alerted != null">
+                AND alerted = #{query.alerted}
+            </if>
+            <if test="query.startTime != null">
+                AND event_time >= #{query.startTime}
+            </if>
+            <if test="query.endTime != null">
+                AND event_time &lt;= #{query.endTime}
+            </if>
+            <if test="query.minRiskScore != null">
+                AND risk_score >= #{query.minRiskScore}
+            </if>
+            <if test="query.maxRiskScore != null">
+                AND risk_score &lt;= #{query.maxRiskScore}
+            </if>
+            <if test="query.keyword != null and query.keyword != ''">
+                AND (title LIKE CONCAT('%', #{query.keyword}, '%') 
+                     OR description LIKE CONCAT('%', #{query.keyword}, '%'))
+            </if>
+        </where>
+        ORDER BY 
+        <choose>
+            <when test="query.sortBy != null and query.sortBy != ''">
+                ${query.sortBy}
+                <choose>
+                    <when test="query.sortDirection != null and query.sortDirection.toUpperCase() == 'ASC'">
+                        ASC
+                    </when>
+                    <otherwise>
+                        DESC
+                    </otherwise>
+                </choose>
+            </when>
+            <otherwise>
+                event_time DESC
+            </otherwise>
+        </choose>
+        <if test="limit > 0">
+            LIMIT #{limit} OFFSET #{offset}
+        </if>
+    </select>
+
+    <!-- 复杂条件查询总数 -->
+    <select id="countByComplexQuery" resultType="long">
+        SELECT COUNT(*) FROM security_events
+        <where>
+            <if test="query.eventTypes != null and query.eventTypes.size() > 0">
+                AND event_type IN
+                <foreach collection="query.eventTypes" item="eventType" open="(" separator="," close=")">
+                    #{eventType}::varchar
+                </foreach>
+            </if>
+            <if test="query.severities != null and query.severities.size() > 0">
+                AND severity IN
+                <foreach collection="query.severities" item="severity" open="(" separator="," close=")">
+                    #{severity}
+                </foreach>
+            </if>
+            <if test="query.userId != null">
+                AND user_id = #{query.userId}
+            </if>
+            <if test="query.username != null and query.username != ''">
+                AND username LIKE CONCAT('%', #{query.username}, '%')
+            </if>
+            <if test="query.sourceIp != null and query.sourceIp != ''">
+                AND source_ip = #{query.sourceIp}
+            </if>
+            <if test="query.statuses != null and query.statuses.size() > 0">
+                AND status IN
+                <foreach collection="query.statuses" item="status" open="(" separator="," close=")">
+                    #{status}
+                </foreach>
+            </if>
+            <if test="query.alerted != null">
+                AND alerted = #{query.alerted}
+            </if>
+            <if test="query.startTime != null">
+                AND event_time >= #{query.startTime}
+            </if>
+            <if test="query.endTime != null">
+                AND event_time &lt;= #{query.endTime}
+            </if>
+            <if test="query.minRiskScore != null">
+                AND risk_score >= #{query.minRiskScore}
+            </if>
+            <if test="query.maxRiskScore != null">
+                AND risk_score &lt;= #{query.maxRiskScore}
+            </if>
+            <if test="query.keyword != null and query.keyword != ''">
+                AND (title LIKE CONCAT('%', #{query.keyword}, '%') 
+                     OR description LIKE CONCAT('%', #{query.keyword}, '%'))
+            </if>
+        </where>
+    </select>
+
+    <!-- 按事件类型统计 -->
+    <select id="countByEventTypeInTimeRange" resultType="map">
+        SELECT event_type as eventType, COUNT(*) as count
+        FROM security_events
+        WHERE event_time BETWEEN #{startTime} AND #{endTime}
+        GROUP BY event_type
+        ORDER BY COUNT(*) DESC
+    </select>
+
+    <!-- 按严重级别统计 -->
+    <select id="countBySeverityInTimeRange" resultType="map">
+        SELECT severity, COUNT(*) as count
+        FROM security_events
+        WHERE event_time BETWEEN #{startTime} AND #{endTime}
+        GROUP BY severity
+        ORDER BY severity DESC
+    </select>
+
+    <!-- 按状态统计 -->
+    <select id="countByStatusInTimeRange" resultType="map">
+        SELECT status, COUNT(*) as count
+        FROM security_events
+        WHERE event_time BETWEEN #{startTime} AND #{endTime}
+        GROUP BY status
+        ORDER BY COUNT(*) DESC
+    </select>
+
+    <!-- 按小时统计 -->
+    <select id="countByHourInTimeRange" resultType="map">
+        SELECT EXTRACT(HOUR FROM event_time) as hour, COUNT(*) as count
+        FROM security_events
+        WHERE event_time BETWEEN #{startTime} AND #{endTime}
+        GROUP BY EXTRACT(HOUR FROM event_time)
+        ORDER BY EXTRACT(HOUR FROM event_time)
+    </select>
+
+    <!-- 按IP地址统计 -->
+    <select id="countByIpInTimeRange" resultType="map">
+        SELECT source_ip as sourceIp, COUNT(*) as count
+        FROM security_events
+        WHERE source_ip IS NOT NULL 
+        AND event_time BETWEEN #{startTime} AND #{endTime}
+        GROUP BY source_ip
+        ORDER BY COUNT(*) DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 按用户统计 -->
+    <select id="countByUserInTimeRange" resultType="map">
+        SELECT username, COUNT(*) as count
+        FROM security_events
+        WHERE username IS NOT NULL 
+        AND event_time BETWEEN #{startTime} AND #{endTime}
+        GROUP BY username
+        ORDER BY COUNT(*) DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 获取平均风险评分 -->
+    <select id="getAverageRiskScoreInTimeRange" resultType="double">
+        SELECT AVG(risk_score::numeric)
+        FROM security_events
+        WHERE risk_score IS NOT NULL 
+        AND event_time BETWEEN #{startTime} AND #{endTime}
+    </select>
+
+    <!-- 获取最高风险评分 -->
+    <select id="getMaxRiskScoreInTimeRange" resultType="integer">
+        SELECT MAX(risk_score)
+        FROM security_events
+        WHERE risk_score IS NOT NULL 
+        AND event_time BETWEEN #{startTime} AND #{endTime}
+    </select>
+
+    <!-- 统计时间范围内的事件总数 -->
+    <select id="countByTimeRange" resultType="long">
+        SELECT COUNT(*)
+        FROM security_events
+        WHERE event_time BETWEEN #{startTime} AND #{endTime}
+    </select>
+
+    <!-- 统计高危事件数量 -->
+    <select id="countHighRiskByTimeRange" resultType="long">
+        SELECT COUNT(*)
+        FROM security_events
+        WHERE severity >= 4 
+        AND event_time BETWEEN #{startTime} AND #{endTime}
+    </select>
+
+    <!-- 统计中等风险事件数量 -->
+    <select id="countMediumRiskByTimeRange" resultType="long">
+        SELECT COUNT(*)
+        FROM security_events
+        WHERE severity = 3 
+        AND event_time BETWEEN #{startTime} AND #{endTime}
+    </select>
+
+    <!-- 统计低风险事件数量 -->
+    <select id="countLowRiskByTimeRange" resultType="long">
+        SELECT COUNT(*)
+        FROM security_events
+        WHERE severity &lt;= 2 
+        AND event_time BETWEEN #{startTime} AND #{endTime}
+    </select>
+
+    <!-- 统计未处理事件数量 -->
+    <select id="countUnhandledByTimeRange" resultType="long">
+        SELECT COUNT(*)
+        FROM security_events
+        WHERE status IN ('NEW', 'PROCESSING') 
+        AND event_time BETWEEN #{startTime} AND #{endTime}
+    </select>
+
+    <!-- 统计已告警事件数量 -->
+    <select id="countAlertedByTimeRange" resultType="long">
+        SELECT COUNT(*)
+        FROM security_events
+        WHERE alerted = true 
+        AND event_time BETWEEN #{startTime} AND #{endTime}
+    </select>
+
+    <!-- 查询用户在时间窗口内的同类型事件数量 -->
+    <select id="countByUserAndTypeInTimeWindow" resultType="long">
+        SELECT COUNT(*)
+        FROM security_events
+        WHERE user_id = #{userId} 
+        AND event_type = #{eventType}::varchar
+        AND event_time BETWEEN #{startTime} AND #{endTime}
+    </select>
+
+    <!-- 查询IP在时间窗口内的事件数量 -->
+    <select id="countByIpInTimeWindow" resultType="long">
+        SELECT COUNT(*)
+        FROM security_events
+        WHERE source_ip = #{sourceIp}
+        AND event_time BETWEEN #{startTime} AND #{endTime}
+    </select>
+
+    <!-- 查询未告警的高危事件 -->
+    <select id="findUnalertedHighRiskEvents" resultMap="SecurityEventResultMap">
+        SELECT * FROM security_events
+        WHERE severity >= 4 
+        AND alerted = false
+        ORDER BY event_time DESC
+    </select>
+
+</mapper>

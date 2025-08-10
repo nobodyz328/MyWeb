@@ -2,14 +2,12 @@ package com.myweb.website_core.application.service.security.audit;
 
 import com.myweb.website_core.domain.security.entity.SecurityEvent;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -371,7 +369,7 @@ public class SecurityAlertService {
                 "建议立即锁定相关账户，检查登录日志，加强密码策略。";
             case SQL_INJECTION_ATTEMPT, XSS_ATTACK_ATTEMPT -> 
                 "建议检查输入验证机制，更新安全过滤规则，审查相关代码。";
-            case UNAUTHORIZED_ACCESS, PRIVILEGE_ESCALATION -> 
+            case ACCESS_DENIED, PRIVILEGE_ESCALATION ->
                 "建议检查权限配置，审查用户权限，加强访问控制。";
             case SUSPICIOUS_IP_ACCESS, DDOS_ATTACK -> 
                 "建议将可疑IP加入黑名单，检查防火墙规则，考虑启用CDN防护。";

@@ -2,7 +2,7 @@ package com.myweb.website_core.application.service.security.authorization;
 
 import com.myweb.website_core.application.service.security.audit.AuditLogService;
 import com.myweb.website_core.common.enums.AuditOperation;
-import com.myweb.website_core.common.security.exception.AuthorizationException;
+import com.myweb.website_core.common.exception.security.AuthorizationException;
 import com.myweb.website_core.domain.business.entity.Comment;
 import com.myweb.website_core.domain.business.entity.Post;
 import com.myweb.website_core.domain.business.entity.User;

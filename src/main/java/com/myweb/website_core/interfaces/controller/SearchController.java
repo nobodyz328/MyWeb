@@ -9,7 +9,7 @@ import com.myweb.website_core.domain.business.dto.SearchRequestDTO;
 import com.myweb.website_core.domain.business.dto.SearchResultDTO;
 import com.myweb.website_core.domain.business.vo.PostSearchVO;
 import com.myweb.website_core.domain.business.vo.UserSearchVO;
-import com.myweb.website_core.infrastructure.security.Auditable;
+import com.myweb.website_core.infrastructure.security.audit.Auditable;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

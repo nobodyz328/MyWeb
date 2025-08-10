@@ -1,10 +1,10 @@
 package com.myweb.website_core.application.service.security.IPS.virusprotect;
 
-import com.myweb.website_core.application.service.security.audit.SqlSecurityAuditAdapter;
-import com.myweb.website_core.common.exception.ValidationException;
+import com.myweb.website_core.common.enums.AuditOperation;
+import com.myweb.website_core.common.exception.security.ValidationException;
+import com.myweb.website_core.infrastructure.security.audit.Auditable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
@@ -24,15 +24,11 @@ import java.util.regex.Pattern;
  * 
  * @author MyWeb
  * @version 1.0
- * @since 2025-08-01
  */
 @Service
 public class SqlInjectionProtectionService {
     
     private static final Logger logger = LoggerFactory.getLogger(SqlInjectionProtectionService.class);
-    
-    @Autowired
-    private SqlSecurityAuditAdapter auditLogService;
     
     // SQL注入攻击关键词 - 扩展版本
     private static final List<String> SQL_INJECTION_KEYWORDS = Arrays.asList(
@@ -113,6 +109,13 @@ public class SqlInjectionProtectionService {
      * @param context 输入上下文（如：search, filter, sort等）
      * @return 如果检测到SQL注入返回true
      */
+    @Auditable(
+        operation = AuditOperation.SQL_INJECTION_CHECK,
+        resourceType = "SQL_SECURITY",
+        description = "SQL注入检测",
+        riskLevel = 3,
+        tags = "security,sql_injection"
+    )
     public boolean detectSqlInjection(String input, String context) {
         if (input == null || input.trim().isEmpty()) {
             return false;
@@ -125,7 +128,8 @@ public class SqlInjectionProtectionService {
             if (normalizedInput.contains(keyword)) {
                 // 检查是否在安全上下文中
                 if (!isSafeInContext(keyword, context)) {
-                    logSqlInjectionAttempt(input, context, "KEYWORD_DETECTED", keyword);
+                    logger.warn("SQL injection keyword detected - Context: {}, Keyword: {}, Input: {}", 
+                               context, keyword, input);
                     return true;
                 }
             }
@@ -134,14 +138,16 @@ public class SqlInjectionProtectionService {
         // 2. 检查危险SQL模式
         for (Pattern pattern : DANGEROUS_SQL_PATTERNS) {
             if (pattern.matcher(normalizedInput).find()) {
-                logSqlInjectionAttempt(input, context, "PATTERN_DETECTED", pattern.pattern());
+                logger.warn("SQL injection pattern detected - Context: {}, Pattern: {}, Input: {}", 
+                           context, pattern.pattern(), input);
                 return true;
             }
         }
         
         // 3. 检查特殊字符组合
         if (containsDangerousCharacterCombinations(normalizedInput)) {
-            logSqlInjectionAttempt(input, context, "DANGEROUS_CHARS", "Special character combinations");
+            logger.warn("Dangerous character combinations detected - Context: {}, Input: {}", 
+                       context, input);
             return true;
         }
         
@@ -156,27 +162,24 @@ public class SqlInjectionProtectionService {
      * @param fieldName 字段名称
      * @throws ValidationException 如果检测到SQL注入
      */
+    @Auditable(
+        operation = AuditOperation.SQL_INJECTION_CHECK,
+        resourceType = "INPUT_VALIDATION",
+        description = "用户输入SQL注入验证",
+        riskLevel = 4,
+        tags = "security,validation,sql_injection",
+        sensitiveParams = {0} // 第一个参数（input）是敏感参数
+    )
     public void validateAndSanitizeInput(String input, String context, String fieldName) {
         if (detectSqlInjection(input, context)) {
-            // 记录安全事件
-            auditLogService.logSecurityEvent(
-                "SQL_INJECTION_BLOCKED",
-                String.format("SQL injection attempt blocked in field: %s, context: %s", fieldName, context),
-                input,
-                "HIGH"
-            );
-            
-            // 记录SQL注入检查
-            auditLogService.logSqlInjectionCheck(input, context, fieldName, "BLOCKED");
+            logger.error("SQL injection attempt blocked - Field: {}, Context: {}, Input: {}", 
+                        fieldName, context, input);
             
             throw new ValidationException(
                 String.format("%s包含潜在的SQL注入代码", fieldName),
                 fieldName,
                 "SQL_INJECTION_DETECTED"
             );
-        } else {
-            // 记录通过的检查
-            auditLogService.logSqlInjectionCheck(input, context, fieldName, "PASSED");
         }
     }
     
@@ -187,6 +190,14 @@ public class SqlInjectionProtectionService {
      * @param parameters 参数映射
      * @return 安全的SQL查询
      */
+    @Auditable(
+        operation = AuditOperation.DATABASE_OPERATION,
+        resourceType = "DYNAMIC_SQL",
+        description = "构建安全的动态SQL查询",
+        riskLevel = 3,
+        tags = "security,sql,dynamic_query",
+        sensitiveParams = {0} // baseQuery参数敏感
+    )
     public String buildSafeDynamicQuery(String baseQuery, java.util.Map<String, Object> parameters) {
         // 验证基础查询
         if (detectSqlInjection(baseQuery, "DYNAMIC_QUERY")) {
@@ -208,12 +219,7 @@ public class SqlInjectionProtectionService {
             }
         }
         
-        // 记录动态查询构建
-        auditLogService.logDynamicSqlBuild(
-            baseQuery,
-            parameters.toString(),
-            "SUCCESS"
-        );
+        logger.debug("Dynamic SQL query built successfully - Parameters count: {}", parameters.size());
         
         return baseQuery;
     }
@@ -225,12 +231,19 @@ public class SqlInjectionProtectionService {
      * @param mapperId 映射器ID
      * @return 验证结果
      */
+    @Auditable(
+        operation = AuditOperation.DATABASE_OPERATION,
+        resourceType = "MYBATIS_VALIDATION",
+        description = "MyBatis SQL语句安全验证",
+        riskLevel = 4,
+        tags = "security,mybatis,sql_validation",
+        sensitiveParams = {0} // sqlStatement参数敏感
+    )
     public boolean validateMybatisStatement(String sqlStatement, String mapperId) {
         // 检查是否使用了参数化查询
         StringBuilder issues = new StringBuilder();
         boolean isValid = true;
-        
-        // 检查是否使用了参数化查询
+
         if (!isParameterizedQuery(sqlStatement)) {
             logger.warn("Non-parameterized query detected in mapper: {}", mapperId);
             issues.append("Non-parameterized query detected; ");
@@ -244,12 +257,11 @@ public class SqlInjectionProtectionService {
             isValid = false;
         }
         
-        // 记录验证结果
-        auditLogService.logMybatisValidation(
-            mapperId,
-            isValid,
-            issues.length() > 0 ? issues.toString() : null
-        );
+        if (!isValid) {
+            logger.error("MyBatis validation failed - Mapper: {}, Issues: {}", mapperId, issues.toString());
+        } else {
+            logger.debug("MyBatis validation passed - Mapper: {}", mapperId);
+        }
         
         return isValid;
     }
@@ -295,7 +307,7 @@ public class SqlInjectionProtectionService {
      * 检查是否为参数化查询
      */
     private boolean isParameterizedQuery(String sql) {
-        // MyBatis参数化查询应该使用 #{} 而不是 ${}
+        // MyBatis参数化查询使用 #{}
         return sql.contains("#{") && !sql.contains("${");
     }
     
@@ -319,19 +331,5 @@ public class SqlInjectionProtectionService {
         return false;
     }
     
-    /**
-     * 记录SQL注入尝试
-     */
-    private void logSqlInjectionAttempt(String input, String context, String detectionType, String details) {
-        logger.warn("SQL injection attempt detected - Type: {}, Context: {}, Details: {}, Input: {}", 
-                   detectionType, context, details, input);
-        
-        auditLogService.logSecurityEvent(
-            "SQL_INJECTION_ATTEMPT",
-            String.format("SQL injection attempt - Type: %s, Context: %s, Details: %s", 
-                         detectionType, context, details),
-            input,
-            "HIGH"
-        );
-    }
+
 }

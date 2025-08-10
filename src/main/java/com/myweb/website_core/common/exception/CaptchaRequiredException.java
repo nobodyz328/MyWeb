@@ -1,6 +1,6 @@
 package com.myweb.website_core.common.exception;
 
-import com.myweb.website_core.common.security.exception.AuthenticationException;
+import com.myweb.website_core.common.exception.security.AuthenticationException;
 
 /**
  * 验证码必需异常

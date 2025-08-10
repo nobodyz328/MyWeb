@@ -4,13 +4,12 @@ import lombok.Getter;
 
 /**
  * 安全事件类型枚举
- * 
+ * <p>
  * 定义系统中各种安全事件的类型和严重级别
  * 符合GB/T 22239-2019二级等保要求的安全事件分类
  * 
- * @author MyWeb Security Team
+ * @author MyWeb
  * @version 1.0
- * @since 2025-01-01
  */
 @Getter
 public enum SecurityEventType {
@@ -52,12 +51,13 @@ public enum SecurityEventType {
     /**
      * 未授权访问尝试
      */
-    UNAUTHORIZED_ACCESS("UNAUTHORIZED_ACCESS", "未授权访问", "检测到未授权的资源访问尝试", 4),
+    ACCESS_DENIED("UNAUTHORIZED_ACCESS", "未授权访问", "检测到未授权的资源访问尝试", 4),
     
     /**
      * 敏感操作异常
      */
     SENSITIVE_OPERATION_ANOMALY("SENSITIVE_OPERATION_ANOMALY", "敏感操作异常", "检测到异常的敏感操作行为", 4),
+
     SENSITIVE_DATA_ACCESS("SENSITIVE_DATA_ACCESS", "敏感数据访问", "用户访问敏感数据", 3),
     
     /**
@@ -341,7 +341,7 @@ public enum SecurityEventType {
      * @return 是否为访问控制相关事件
      */
     public boolean isAccessControlEvent() {
-        return this == PRIVILEGE_ESCALATION || this == UNAUTHORIZED_ACCESS ||
+        return this == PRIVILEGE_ESCALATION || this == ACCESS_DENIED ||
                this == SENSITIVE_DATA_ACCESS || this == BULK_DATA_ACCESS ||
                this == CROSS_DOMAIN_ANOMALY;
     }

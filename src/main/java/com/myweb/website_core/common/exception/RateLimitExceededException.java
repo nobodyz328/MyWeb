@@ -2,7 +2,7 @@ package com.myweb.website_core.common.exception;
 
 /**
  * 频率限制超出异常
- * 
+ * <p>
  * 当用户操作频率超出限制时抛出此异常
  * 
  * @author MyWeb Security Team

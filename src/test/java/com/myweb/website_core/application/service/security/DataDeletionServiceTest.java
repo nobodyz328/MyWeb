@@ -2,7 +2,7 @@ package com.myweb.website_core.application.service.security;
 
 import com.myweb.website_core.application.service.security.audit.AuditLogServiceAdapter;
 import com.myweb.website_core.application.service.security.confirm.ConfirmationService;
-import com.myweb.website_core.application.service.security.dataprotect.DataDeletionService;
+import com.myweb.website_core.application.service.security.integeration.dataManage.DataDeletionService;
 import com.myweb.website_core.domain.business.entity.*;
 import com.myweb.website_core.infrastructure.persistence.repository.*;
 import org.junit.jupiter.api.BeforeEach;

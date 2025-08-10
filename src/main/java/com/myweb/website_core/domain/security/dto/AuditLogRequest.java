@@ -44,7 +44,7 @@ public class AuditLogRequest {
     // ==================== 操作相关信息 ====================
     
     /**
-     * 操作类型（必填）
+     * 操作类型
      */
     private AuditOperation operation;
     
@@ -74,16 +74,7 @@ public class AuditLogRequest {
      * 用户代理字符串
      */
     private String userAgent;
-    
-    /**
-     * 地理位置信息
-     */
-    private String location;
-    
-    /**
-     * 设备指纹
-     */
-    private String deviceFingerprint;
+
     
     // ==================== 会话相关信息 ====================
     

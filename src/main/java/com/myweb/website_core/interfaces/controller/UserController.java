@@ -8,13 +8,19 @@ import com.myweb.website_core.application.service.security.authentication.JWT.To
 import com.myweb.website_core.application.service.security.authentication.UserRegistrationService;
 import com.myweb.website_core.application.service.security.authorization.AccessControlService;
 import com.myweb.website_core.common.enums.AuditOperation;
+import com.myweb.website_core.common.enums.SecurityEventType;
+import com.myweb.website_core.common.util.SecurityEventUtils;
 import com.myweb.website_core.domain.business.dto.UserLoginResponse;
 import com.myweb.website_core.domain.business.dto.UserProfileDTO;
 import com.myweb.website_core.domain.business.dto.UserRegistrationDTO;
 import com.myweb.website_core.domain.business.dto.UserRegistrationResult;
 import com.myweb.website_core.domain.business.entity.User;
-import com.myweb.website_core.infrastructure.security.Auditable;
+import com.myweb.website_core.domain.security.dto.SecurityEventRequest;
+import com.myweb.website_core.infrastructure.persistence.repository.UserRepository;
+import com.myweb.website_core.infrastructure.security.audit.Auditable;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -36,11 +42,12 @@ public class UserController {
     private final AuthenticationService authenticationService;
     private final UserRegistrationService userRegistrationService;
     private final EmailVerificationService emailVerificationService;
+    private final UserRepository userRepository;
 
     @PostMapping("/register/code")
     @Auditable(operation = AuditOperation.EMAIL_VERIFIED, resourceType = "USER", description = "发送注册验证码")
     public ResponseEntity<?> sendRegisterCode(@RequestParam String email, HttpServletRequest request) {
-        String ipAddress = getClientIpAddress(request);
+        String ipAddress = getClientIpAddress();
         
         try {
             // 检查邮箱是否已被注册
@@ -60,7 +67,7 @@ public class UserController {
     @PostMapping("/register")
     @Auditable(operation = AuditOperation.USER_REGISTER, resourceType = "USER", description = "用户注册")
     public ResponseEntity<?> register(@RequestBody RegisterRequest req, HttpServletRequest request) {
-        String ipAddress = getClientIpAddress(request);
+        String ipAddress = getClientIpAddress();
         
         try {
             // 构建注册DTO
@@ -114,11 +121,25 @@ public class UserController {
             return ResponseEntity.badRequest().body("检查失败");
         }
     }
+    
+    @GetMapping("/check-admin")
+    public ResponseEntity<?> checkAdmin(@RequestParam String username) {
+        try {
+            User user = userRepository.findByUsernameOrEmail(username, username).orElse(null);
+            boolean isAdmin = user != null && user.getRole() != null && user.getRole().isAdmin();
+            return ResponseEntity.ok(Map.of("isAdmin", isAdmin));
+        } catch (Exception e) {
+            log.error("检查管理员账户失败: username={}", username, e);
+            return ResponseEntity.ok(Map.of("isAdmin", false));
+        }
+    }
 
     @PostMapping("/login")
-    @Auditable(operation = AuditOperation.USER_LOGIN_SUCCESS, resourceType = "USER", description = "用户登录")
-    public ResponseEntity<?> login(@RequestBody LoginRequest req, HttpServletRequest request) {
-        String ipAddress = getClientIpAddress(request);
+    @Auditable(operation = AuditOperation.USER_LOGIN, resourceType = "USER", description = "用户登录")
+    public ResponseEntity<?> login(@RequestBody LoginRequest req,
+                                   HttpServletResponse resp,
+                                    HttpServletRequest request) {
+        String ipAddress = getClientIpAddress();
         //String sessionId = request.getSession().getId();
         
         try {
@@ -126,8 +147,15 @@ public class UserController {
                     req.getPassword(), req.getCode(), ipAddress);
 
             log.info("用户登录成功: {}", req.getUsername());
+            // 设置 HttpOnly Cookie，自动随请求发送
+            String jwt = response.getAccessToken();
+            Cookie cookie = new Cookie("Authorization", jwt);
+            cookie.setPath("/blog");
+            cookie.setHttpOnly(true);
+            cookie.setSecure(true); // HTTPS
+            cookie.setMaxAge(3600); // 1小时
+            resp.addCookie(cookie);
             return ResponseEntity.ok(response);
-            
         } catch (Exception e) {
             log.error("用户登录失败: ", e);
             
@@ -175,16 +203,11 @@ public class UserController {
     @Auditable(operation = AuditOperation.USER_FOLLOW, resourceType = "USER", description = "关注用户")
     public ResponseEntity<?> follow(@PathVariable Long id, @RequestParam Long targetId, HttpServletRequest request) {
         User currentUser = authenticationService.getCurrentUser();
-        String ipAddress = getClientIpAddress(request);
+        String ipAddress = getClientIpAddress();
         
         try {
-            // 检查访问权限
-            if (currentUser == null || !currentUser.getId().equals(id)) {
-                messageProducerService.sendAccessControlAuditMessage(
-                    currentUser != null ? currentUser.getId() : null,
-                    currentUser != null ? currentUser.getUsername() : "anonymous",
-                    "USER", targetId, "FOLLOW", "DENIED", ipAddress, "用户ID不匹配"
-                );
+            // 检查关注权限
+            if (!accessControlService.canAccessAdmin(currentUser)) {
                 return ResponseEntity.status(403).body("无权限执行此操作");
             }
             
@@ -203,16 +226,11 @@ public class UserController {
     @Auditable(operation = AuditOperation.USER_UNFOLLOW, resourceType = "USER", description = "取消关注用户")
     public ResponseEntity<?> unfollow(@PathVariable Long id, @RequestParam Long targetId, HttpServletRequest request) {
         User currentUser = authenticationService.getCurrentUser();
-        String ipAddress = getClientIpAddress(request);
+        //String ipAddress = getClientIpAddress();
         
         try {
-            // 检查访问权限
-            if (currentUser == null || !currentUser.getId().equals(id)) {
-                messageProducerService.sendAccessControlAuditMessage(
-                    currentUser != null ? currentUser.getId() : null,
-                    currentUser != null ? currentUser.getUsername() : "anonymous",
-                    "USER", targetId, "UNFOLLOW", "DENIED", ipAddress, "用户ID不匹配"
-                );
+            // 检查取消关注权限
+            if (!accessControlService.canAccessAdmin(currentUser)) {
                 return ResponseEntity.status(403).body("无权限执行此操作");
             }
             
@@ -231,7 +249,7 @@ public class UserController {
     @Auditable(operation = AuditOperation.PROFILE_UPDATE, resourceType = "USER",  description = "查看用户资料")
     public ResponseEntity<?> getProfile(@PathVariable Long id, HttpServletRequest request) {
         User currentUser = authenticationService.getCurrentUser();
-        String ipAddress = getClientIpAddress(request);
+        String ipAddress = getClientIpAddress();
         
         try {
             System.out.println("Getting profile for user ID: " + id);
@@ -250,11 +268,11 @@ public class UserController {
     @Auditable(operation = AuditOperation.EMAIL_VERIFIED, resourceType = "USER", description = "发送邮箱绑定验证码")
     public ResponseEntity<?> sendBindEmailCode(@PathVariable Long id, @RequestParam String email, HttpServletRequest request) {
         User currentUser = authenticationService.getCurrentUser();
-        String ipAddress = getClientIpAddress(request);
+        String ipAddress = getClientIpAddress();
         
         try {
             // 检查访问权限
-            if (currentUser == null || !currentUser.getId().equals(id)) {
+            if (!accessControlService.canBindEmail(currentUser, id)) {
                 return ResponseEntity.status(403).body("无权限执行此操作");
             }
             
@@ -271,11 +289,11 @@ public class UserController {
     @Auditable(operation = AuditOperation.EMAIL_VERIFIED, resourceType = "USER", description = "绑定邮箱")
     public ResponseEntity<?> bindEmail(@PathVariable Long id, @RequestBody SimpleBindEmailRequest req, HttpServletRequest request) {
         User currentUser = authenticationService.getCurrentUser();
-        String ipAddress = getClientIpAddress(request);
+        String ipAddress = getClientIpAddress();
         
         try {
             // 检查访问权限
-            if (currentUser == null || !currentUser.getId().equals(id)) {
+            if (!accessControlService.canBindEmail(currentUser, id)) {
                 return ResponseEntity.status(403).body("无权限执行此操作");
             }
             
@@ -308,16 +326,8 @@ public class UserController {
     /**
      * 获取客户端IP地址
      */
-    private String getClientIpAddress(HttpServletRequest request) {
-        String xForwardedFor = request.getHeader("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
-            return xForwardedFor.split(",")[0].trim();
-        }
-        String xRealIp = request.getHeader("X-Real-IP");
-        if (xRealIp != null && !xRealIp.isEmpty()) {
-            return xRealIp;
-        }
-        return request.getRemoteAddr();
+    private String getClientIpAddress() {
+       return SecurityEventUtils.getClientIpAddress();
     }
     
 

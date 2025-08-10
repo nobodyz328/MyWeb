@@ -1,7 +1,7 @@
 package com.myweb.website_core.application.service;
 
 import com.myweb.website_core.common.exception.RateLimitExceededException;
-import com.myweb.website_core.common.security.exception.ValidationException;
+import com.myweb.website_core.common.exception.security.ValidationException;
 import com.myweb.website_core.application.service.security.authentication.EmailVerificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

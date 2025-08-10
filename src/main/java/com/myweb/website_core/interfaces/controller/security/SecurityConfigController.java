@@ -4,14 +4,13 @@ import com.myweb.website_core.application.service.security.SecurityConfigService
 import com.myweb.website_core.common.enums.AuditOperation;
 import com.myweb.website_core.domain.security.dto.SecurityConfigBackupDTO;
 import com.myweb.website_core.domain.security.dto.SecurityConfigDTO;
-import com.myweb.website_core.infrastructure.security.Auditable;
+import com.myweb.website_core.infrastructure.security.audit.Auditable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.servlet.http.HttpServletRequest;
 import java.security.Principal;
 import java.util.HashMap;
 import java.util.List;

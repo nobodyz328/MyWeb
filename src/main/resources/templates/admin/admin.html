@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员入口 - MyWeb</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="/blog/static/css/admin.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- 侧边栏 -->
+            <nav class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
+                <div class="position-sticky pt-3">
+                    <div class="text-center mb-4">
+                        <h5>管理员面板</h5>
+                        <p class="text-muted" th:text="'欢迎, ' + ${currentUser?.username ?: '管理员'}">欢迎, 管理员</p>
+                    </div>
+                    
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/blog/admin_dashboard">
+                                <i class="bi bi-speedometer2"></i>
+                                安全监控面板
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/blog/admin_audit_logs">
+                                <i class="bi bi-journal-text"></i>
+                                审计日志
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/blog/admin_security_events">
+                                <i class="bi bi-shield-exclamation"></i>
+                                安全事件
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/blog/admin_users">
+                                <i class="bi bi-people"></i>
+                                用户管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/blog/admin_roles">
+                                <i class="bi bi-person-badge"></i>
+                                角色权限
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/blog/admin_settings">
+                                <i class="bi bi-gear"></i>
+                                系统设置
+                            </a>
+                        </li>
+                    </ul>
+                    
+                    <hr>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/blog/view">
+                                <i class="bi bi-house"></i>
+                                返回首页
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/logout">
+                                <i class="bi bi-box-arrow-right"></i>
+                                退出登录
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+            
+            <!-- 主内容区 -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">
+                        <i class="bi bi-shield-check text-primary"></i> 
+                        管理员控制台
+                    </h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <div class="btn-group me-2">
+                            <a href="/blog/admin_dashboard" class="btn btn-sm btn-primary">
+                                <i class="bi bi-speedometer2"></i> 进入监控面板
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 欢迎信息 -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card border-left-primary shadow">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <h4 class="text-primary">🛡️ 欢迎访问管理员控制台</h4>
+                                        <p class="text-muted mb-3">您已通过身份验证，可以安全地访问所有管理功能。</p>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="d-flex align-items-center mb-2">
+                                                    <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                                    <span>管理权限已验证</span>
+                                                </div>
+                                                <div class="d-flex align-items-center mb-2">
+                                                    <i class="bi bi-shield-check text-success me-2"></i>
+                                                    <span>安全等级: 高</span>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="d-flex align-items-center mb-2">
+                                                    <i class="bi bi-clock text-info me-2"></i>
+                                                    <span>会话有效期: 30分钟</span>
+                                                </div>
+                                                <div class="d-flex align-items-center mb-2">
+                                                    <i class="bi bi-journal-text text-info me-2"></i>
+                                                    <span>所有操作均被审计</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 text-center">
+                                        <i class="bi bi-person-badge fa-4x text-primary"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 快速操作 -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h5 class="mb-3">🎯 快速操作</h5>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card h-100 shadow-sm">
+                            <div class="card-body text-center">
+                                <i class="bi bi-speedometer2 fa-3x text-primary mb-3"></i>
+                                <h6 class="card-title">安全监控</h6>
+                                <p class="card-text text-muted">实时监控系统安全状态</p>
+                                <a href="/blog/admin_dashboard" class="btn btn-primary btn-sm">进入监控</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card h-100 shadow-sm">
+                            <div class="card-body text-center">
+                                <i class="bi bi-people fa-3x text-success mb-3"></i>
+                                <h6 class="card-title">用户管理</h6>
+                                <p class="card-text text-muted">管理系统用户和权限</p>
+                                <a href="/blog/admin_users" class="btn btn-success btn-sm">用户管理</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card h-100 shadow-sm">
+                            <div class="card-body text-center">
+                                <i class="bi bi-journal-text fa-3x text-info mb-3"></i>
+                                <h6 class="card-title">审计日志</h6>
+                                <p class="card-text text-muted">查看系统操作记录</p>
+                                <a href="/blog/admin_audit_logs" class="btn btn-info btn-sm">查看日志</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card h-100 shadow-sm">
+                            <div class="card-body text-center">
+                                <i class="bi bi-shield-exclamation fa-3x text-warning mb-3"></i>
+                                <h6 class="card-title">安全事件</h6>
+                                <p class="card-text text-muted">处理安全告警事件</p>
+                                <a href="/blog/admin_security_events" class="btn btn-warning btn-sm">查看事件</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 系统状态概览 -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h5 class="mb-3">📊 系统状态概览</h5>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="card shadow">
+                            <div class="card-header bg-light">
+                                <h6 class="m-0 font-weight-bold">系统运行状态</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <div class="text-center">
+                                            <div class="h4 text-success">正常</div>
+                                            <small class="text-muted">系统状态</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="text-center">
+                                            <div class="h4 text-info" id="system-uptime">72h 15m</div>
+                                            <small class="text-muted">运行时间</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <hr>
+                                <div class="row">
+                                    <div class="col-6">
+                                        <small class="text-muted">CPU使用率</small>
+                                        <div class="progress mb-2" style="height: 8px;">
+                                            <div class="progress-bar bg-success" style="width: 45%"></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted">内存使用率</small>
+                                        <div class="progress mb-2" style="height: 8px;">
+                                            <div class="progress-bar bg-warning" style="width: 68%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="card shadow">
+                            <div class="card-header bg-light">
+                                <h6 class="m-0 font-weight-bold">安全状态</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <div class="text-center">
+                                            <div class="h4 text-success">低危</div>
+                                            <small class="text-muted">威胁等级</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="text-center">
+                                            <div class="h4 text-primary" id="today-events">0</div>
+                                            <small class="text-muted">今日事件</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <hr>
+                                <div class="row">
+                                    <div class="col-12">
+                                        <small class="text-muted">安全评分</small>
+                                        <div class="progress mb-2" style="height: 12px;">
+                                            <div class="progress-bar bg-success" style="width: 85%">85%</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 安全提醒 -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card border-left-warning shadow">
+                            <div class="card-header bg-light">
+                                <h6 class="m-0 font-weight-bold text-warning">
+                                    <i class="bi bi-exclamation-triangle"></i> 安全提醒
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="bi bi-check-circle text-success me-2"></i>
+                                            <span>您已通过TOTP二次验证</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="bi bi-shield-lock text-warning me-2"></i>
+                                            <span>请勿在公共设备上操作</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="bi bi-journal-text text-info me-2"></i>
+                                            <span>所有操作均被记录审计</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 页面加载完成后更新系统状态
+        document.addEventListener('DOMContentLoaded', function() {
+            updateSystemStatus();
+            
+            // 每30秒更新一次状态
+            setInterval(updateSystemStatus, 30000);
+        });
+        
+        function updateSystemStatus() {
+            // 更新今日事件数量
+            fetch('/blog/admin/api/statistics')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('today-events').textContent = data.todaySecurityEvents || 0;
+                })
+                .catch(error => {
+                    console.error('更新系统状态失败:', error);
+                });
+        }
+    </script>
+
+  <script>
+    // 通知功能
+    function showNotification(message, type = 'info') {
+      // 移除现有通知
+      document.querySelectorAll('.notification').forEach(n => n.remove());
+
+      const notification = document.createElement('div');
+      notification.className = `notification notification-${type}`;
+      notification.textContent = message;
+      notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 12px 20px;
+        border-radius: 6px;
+        color: white;
+        font-size: 14px;
+        z-index: 1000;
+        max-width: 300px;
+        word-wrap: break-word;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      `;
+
+      if (type === 'success') {
+        notification.style.background = '#4caf50';
+        notification.style.border = '1px solid #45a049';
+      } else if (type === 'error') {
+        notification.style.background = '#f44336';
+        notification.style.border = '1px solid #da190b';
+      } else {
+        notification.style.background = '#2196f3';
+        notification.style.border = '1px solid #1976d2';
+      }
+
+      document.body.appendChild(notification);
+
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.remove();
+        }
+      }, 3000);
+    }
+
+    // 页面加载完成后显示欢迎消息
+    document.addEventListener('DOMContentLoaded', function() {
+      showNotification('欢迎访问管理界面！', 'success');
+    });
+  </script>
+</body>
+</html>

@@ -4,7 +4,7 @@ import lombok.Getter;
 
 /**
  * 审计操作类型枚举
- * 
+ * <p>
  * 定义系统中需要记录审计日志的操作类型
  * 符合GB/T 22239-2019二级等保要求的安全审计机制
  */
@@ -17,7 +17,10 @@ public enum AuditOperation {
      * 用户注册
      */
     USER_REGISTER("USER_REGISTER", "用户注册", "用户创建新账户"),
-    
+    /**
+     * 用户注登录
+     */
+    USER_LOGIN("USER_LOGIN", "用户登录", "用户通过身份验证"),
     /**
      * 用户登录成功
      */
@@ -86,11 +89,6 @@ public enum AuditOperation {
      * TOTP启用
      */
     TOTP_ENABLE("TOTP_ENABLE", "TOTP启用", "用户启用TOTP二次验证"),
-    
-    /**
-     * TOTP禁用
-     */
-    TOTP_DISABLE("TOTP_DISABLE", "TOTP禁用", "用户禁用TOTP二次验证"),
     
     /**
      * TOTP验证
@@ -334,7 +332,11 @@ public enum AuditOperation {
      * 访问被拒绝
      */
     ACCESS_DENIED("ACCESS_DENIED", "访问被拒绝", "用户访问被权限控制拒绝"),
-    
+
+    /**
+     * 访问允许
+     */
+    ACCESS_ALLOWED("ACCESS_ALLOWED", "访问权限", "用户尝试获取访问权限"),
     /**
      * 可疑活动检测
      */
@@ -509,7 +511,26 @@ public enum AuditOperation {
     /**
      * 安全报告导出
      */
-    SECURITY_REPORT_EXPORT("SECURITY_REPORT_EXPORT", "安全报告导出", "管理员导出安全分析报告");
+    SECURITY_REPORT_EXPORT("SECURITY_REPORT_EXPORT", "安全报告导出", "管理员导出安全分析报告"),
+    
+    /**
+     * 安全事件查看
+     */
+    SECURITY_EVENT_VIEW("SECURITY_EVENT_VIEW", "安全事件查看", "管理员查看安全事件详情"),
+    
+    /**
+     * 安全告警查看
+     */
+    SECURITY_ALERT_VIEW("SECURITY_ALERT_VIEW", "安全告警查看", "管理员查看实时安全告警"),
+    
+    /**
+     * 安全告警清除
+     */
+    SECURITY_ALERT_CLEAR("SECURITY_ALERT_CLEAR", "安全告警清除", "管理员清除安全告警"),
+
+    ROLE_QUERY("ROLE_QUERY", "角色查询", "管理员查询角色信息"),
+
+    USER_QUERY("USER_QUERY", "用户查询", "管理员查询用户信息");
     
     /**
      * 操作代码

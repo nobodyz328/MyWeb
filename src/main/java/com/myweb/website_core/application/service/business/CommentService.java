@@ -30,7 +30,9 @@ public class CommentService {
         this.userRepository = userRepository;
     }
     
-    // 创建评论
+    /**
+     *  创建评论
+     */
     @Transactional
     public Comment createComment(Long postId, Long userId, String content) {
         Post post = postRepository.findById(postId)
@@ -48,7 +50,10 @@ public class CommentService {
         return savedComment;
     }
     
-    // 创建回复
+
+    /**
+     *  创建回复
+     */
     @Transactional
     public Comment createReply(Long postId, Long parentCommentId, Long userId, String content) {
         Post post = postRepository.findById(postId)
@@ -69,7 +74,9 @@ public class CommentService {
         return savedReply;
     }
     
-    // 获取帖子的所有评论（包括回复）
+     /**
+      *获取帖子的所有评论（包括回复）
+      */
     public List<CommentDTO> getCommentsByPostId(Long postId) {
         List<Comment> topLevelComments = commentRepository.findTopLevelCommentsByPostId(postId);
         
@@ -77,8 +84,18 @@ public class CommentService {
                 .map(this::convertToDTO)
                 .toList();
     }
+
+    /**
+     *获取单个评论
+     */
+    public Comment getCommentById(Long commentId) {
+        return commentRepository.findById(commentId)
+                .orElseThrow(() -> new RuntimeException("评论不存在"));
+    }
     
-    // 删除评论
+    /**
+     * 删除评论
+     */
     @Transactional
     public void deleteComment(Long commentId, Long userId) {
         Comment comment = commentRepository.findById(commentId)
@@ -96,7 +113,9 @@ public class CommentService {
         updatePostCommentCount(postId);
     }
     
-    // 更新帖子的评论数
+    /**
+     * 更新帖子的评论数
+     */
     private void updatePostCommentCount(Long postId) {
         long commentCount = commentRepository.countByPostId(postId);
         Optional<Post> postOpt = postRepository.findById(postId);
@@ -107,7 +126,9 @@ public class CommentService {
         }
     }
     
-    // 转换为DTO
+    /**
+     * 转换为DTO
+     */
     private CommentDTO convertToDTO(Comment comment) {
         CommentDTO dto = new CommentDTO();
         dto.setId(comment.getId());

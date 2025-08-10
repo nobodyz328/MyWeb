@@ -1,6 +1,6 @@
 package com.myweb.website_core.application.service.security.authentication;
 
-import com.myweb.website_core.common.security.exception.ValidationException;
+import com.myweb.website_core.common.exception.security.ValidationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;

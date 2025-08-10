@@ -9,7 +9,7 @@ import com.myweb.website_core.common.enums.AuditOperation;
 import com.myweb.website_core.common.enums.SecurityEventType;
 import com.myweb.website_core.common.util.RedisKey;
 import com.myweb.website_core.domain.security.dto.AuditLogRequest;
-import com.myweb.website_core.infrastructure.security.Auditable;
+import com.myweb.website_core.infrastructure.security.audit.Auditable;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -444,7 +444,7 @@ public class SecurityDashboardController {
         for (int i = 0; i < Math.min(limit, 5); i++) {
             Map<String, Object> event = new HashMap<>();
             event.put("id", "EVENT_" + (System.currentTimeMillis() + i));
-            event.put("type", SecurityEventType.UNAUTHORIZED_ACCESS.name());
+            event.put("type", SecurityEventType.ACCESS_DENIED.name());
             event.put("severity", "MEDIUM");
             event.put("timestamp", LocalDateTime.now().minusMinutes(i * 10));
             event.put("description", "检测到未授权访问尝试");

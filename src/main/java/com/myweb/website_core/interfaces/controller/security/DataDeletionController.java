@@ -1,7 +1,7 @@
 package com.myweb.website_core.interfaces.controller.security;
 
 import com.myweb.website_core.application.service.security.confirm.ConfirmationService;
-import com.myweb.website_core.application.service.security.dataprotect.DataDeletionService;
+import com.myweb.website_core.application.service.security.integeration.dataManage.DataDeletionService;
 import com.myweb.website_core.common.validation.SafeString;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;

@@ -1,7 +1,7 @@
 package com.myweb.website_core.application.service;
 
 import com.myweb.website_core.common.constant.SecurityConstants;
-import com.myweb.website_core.common.security.exception.TOTPValidationException;
+import com.myweb.website_core.common.exception.security.TokenException;
 import com.myweb.website_core.application.service.security.authentication.TOTPService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -144,7 +144,7 @@ class TOTPServiceTest {
             
             boolean result2 = totpService.validateTOTP(testSecret, currentCode, TEST_USERNAME);
             assertTrue(result2, "带用户名的验证应该成功");
-        } catch (TOTPValidationException e) {
+        } catch (TokenException e) {
             // 如果验证失败，检查是否是时间窗口问题
             // 在测试环境中，时间窗口可能导致验证失败，这是正常的
             assertTrue(e.getMessage().contains("TOTP代码不匹配") || e.getMessage().contains("时间窗口"), 
@@ -159,7 +159,7 @@ class TOTPServiceTest {
         String wrongCode = "123456";
         
         // When & Then
-        TOTPValidationException exception = assertThrows(TOTPValidationException.class,
+        TokenException exception = assertThrows(TokenException.class,
                 () -> totpService.validateTOTP(TEST_SECRET, wrongCode, TEST_USERNAME),
                 "错误的代码应该抛出验证异常");
         
@@ -174,15 +174,15 @@ class TOTPServiceTest {
         String validCode = "123456";
         
         // When & Then
-        assertThrows(TOTPValidationException.class,
+        assertThrows(TokenException.class,
                 () -> totpService.validateTOTP(null, validCode, TEST_USERNAME),
                 "密钥为null时应该抛出验证异常");
         
-        assertThrows(TOTPValidationException.class,
+        assertThrows(TokenException.class,
                 () -> totpService.validateTOTP("", validCode, TEST_USERNAME),
                 "密钥为空字符串时应该抛出验证异常");
         
-        assertThrows(TOTPValidationException.class,
+        assertThrows(TokenException.class,
                 () -> totpService.validateTOTP("   ", validCode, TEST_USERNAME),
                 "密钥为空白字符串时应该抛出验证异常");
     }
@@ -191,15 +191,15 @@ class TOTPServiceTest {
     @DisplayName("验证时代码为空应该抛出异常")
     void shouldThrowExceptionWhenValidateWithEmptyCode() {
         // When & Then
-        assertThrows(TOTPValidationException.class,
+        assertThrows(TokenException.class,
                 () -> totpService.validateTOTP(TEST_SECRET, null, TEST_USERNAME),
                 "代码为null时应该抛出验证异常");
         
-        assertThrows(TOTPValidationException.class,
+        assertThrows(TokenException.class,
                 () -> totpService.validateTOTP(TEST_SECRET, "", TEST_USERNAME),
                 "代码为空字符串时应该抛出验证异常");
         
-        assertThrows(TOTPValidationException.class,
+        assertThrows(TokenException.class,
                 () -> totpService.validateTOTP(TEST_SECRET, "   ", TEST_USERNAME),
                 "代码为空白字符串时应该抛出验证异常");
     }
@@ -212,7 +212,7 @@ class TOTPServiceTest {
         
         // When & Then
         for (String invalidCode : invalidCodes) {
-            assertThrows(TOTPValidationException.class,
+            assertThrows(TokenException.class,
                     () -> totpService.validateTOTP(TEST_SECRET, invalidCode, TEST_USERNAME),
                     "无效格式的代码应该抛出验证异常: " + invalidCode);
         }
@@ -460,7 +460,7 @@ class TOTPServiceTest {
         try {
             boolean result = totpService.validateTOTP(testSecret, currentCode);
             assertTrue(result, "当前时间窗口的代码应该验证成功");
-        } catch (TOTPValidationException e) {
+        } catch (TokenException e) {
             // 在测试环境中，由于时间窗口的原因，验证可能失败
             // 这是正常的，主要测试容错机制的配置
             assertTrue(e.getMessage().contains("TOTP代码不匹配"), 

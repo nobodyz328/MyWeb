@@ -7,7 +7,7 @@ import com.myweb.website_core.common.enums.AuditOperation;
 import com.myweb.website_core.domain.business.dto.UserDataExportDTO;
 import com.myweb.website_core.domain.business.dto.UserDataUpdateDTO;
 import com.myweb.website_core.domain.business.entity.User;
-import com.myweb.website_core.domain.security.dto.UnifiedSecurityMessage;
+import com.myweb.website_core.domain.security.dto.AuditLogRequest;
 import com.myweb.website_core.infrastructure.persistence.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -554,14 +554,18 @@ public class UserDataManagementService {
                                 String resourceType, Long resourceId, String ipAddress, 
                                 String result, String description) {
         try {
-            UnifiedSecurityMessage message = UnifiedSecurityMessage.auditLog(
-                operation, userId, username, result, ipAddress
+            messageProducerService.sendContentOperationAuditMessage(
+                    AuditLogRequest.builder()
+                        .userId(userId)
+                        .username(username)
+                        .operation(operation)
+                        .resourceType(resourceType)
+                        .resourceId(resourceId)
+                        .ipAddress(ipAddress)
+                        .result(result)
+                        .description(description)
+                        .build()
             );
-            message.setResourceType(resourceType);
-            message.setResourceId(resourceId);
-            message.setDescription(description);
-            
-            messageProducerService.sendUnifiedSecurityMessage(message);
         } catch (Exception e) {
             log.error("发送审计消息失败: {}", e.getMessage(), e);
         }

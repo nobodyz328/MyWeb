@@ -4,7 +4,8 @@ import com.myweb.website_core.domain.business.entity.Post;
 import com.myweb.website_core.domain.business.entity.PostCollect;
 import com.myweb.website_core.domain.business.entity.PostLike;
 import com.myweb.website_core.domain.business.entity.User;
-import com.myweb.website_core.domain.security.dto.UnifiedSecurityMessage;
+import com.myweb.website_core.domain.security.dto.AuditLogRequest;
+import com.myweb.website_core.domain.security.dto.SecurityEventRequest;
 import com.myweb.website_core.domain.security.entity.AuditLog;
 import com.myweb.website_core.domain.security.entity.SecurityEvent;
 import com.myweb.website_core.infrastructure.config.RabbitMQConfig;
@@ -192,23 +193,18 @@ public class MessageConsumerService {
      */
     @RabbitListener(queues = RabbitMQConfig.SECURITY_AUDIT_QUEUE)
     @Transactional
-    public void handleSecurityAudit(UnifiedSecurityMessage message) {
+    public void handleSecurityAudit(AuditLogRequest request) {
         try {
-            log.info("处理安全审计消息: {} - {}", message.getOperation(), message.getUsername());
+            log.info("处理安全审计消息: {} - {}", request.getOperation(), request.getUsername());
             
             // 创建审计日志实体
-            AuditLog auditLog = createAuditLogFromUnified(message);
+            AuditLog auditLog = createAuditLogFromRequest(request);
             
             // 保存审计日志
             auditLogRepository.save(auditLog);
             
-            // 如果是安全事件，创建安全事件记录
-            if (Boolean.TRUE.equals(message.getIsSecurityEvent())) {
-                createSecurityEventFromUnified(message);
-            }
-            
             // 更新Redis中的审计统计
-            updateAuditStatisticsFromUnified(message);
+            updateAuditStatisticsFromRequest(request);
             
             log.debug("安全审计日志保存成功: {}", auditLog.getId());
             
@@ -223,22 +219,22 @@ public class MessageConsumerService {
      */
     @RabbitListener(queues = RabbitMQConfig.USER_AUTH_QUEUE)
     @Transactional
-    public void handleUserAuthAudit(UnifiedSecurityMessage message) {
+    public void handleUserAuthAudit(AuditLogRequest request) {
         try {
-            log.info("处理用户认证审计消息: {} - {}", message.getOperation(), message.getUsername());
+            log.info("处理用户认证审计消息: {} - {}", request.getOperation(), request.getUsername());
             
             // 创建审计日志
-            AuditLog auditLog = createAuditLogFromUnified(message);
+            AuditLog auditLog = createAuditLogFromRequest(request);
             auditLogRepository.save(auditLog);
             
             // 特殊处理登录失败事件
-            if (message.getOperation() == com.myweb.website_core.common.enums.AuditOperation.USER_LOGIN_FAILURE) {
-                handleLoginFailureEventFromUnified(message);
+            if (request.getOperation() == com.myweb.website_core.common.enums.AuditOperation.USER_LOGIN_FAILURE) {
+                handleLoginFailureEventFromRequest(request);
             }
             
             // 特殊处理账户锁定事件
-            if (message.getOperation() == com.myweb.website_core.common.enums.AuditOperation.ACCOUNT_LOCKED) {
-                handleAccountLockedEventFromUnified(message);
+            if (request.getOperation() == com.myweb.website_core.common.enums.AuditOperation.ACCOUNT_LOCKED) {
+                handleAccountLockedEventFromRequest(request);
             }
             
             log.debug("用户认证审计日志保存成功: {}", auditLog.getId());
@@ -254,17 +250,17 @@ public class MessageConsumerService {
      */
     @RabbitListener(queues = RabbitMQConfig.FILE_UPLOAD_AUDIT_QUEUE)
     @Transactional
-    public void handleFileUploadAudit(UnifiedSecurityMessage message) {
+    public void handleFileUploadAudit(AuditLogRequest request) {
         try {
-            log.info("处理文件上传审计消息: {} - {}", message.getUsername(), message.getDescription());
+            log.info("处理文件上传审计消息: {} - {}", request.getUsername(), request.getDescription());
             
             // 创建审计日志
-            AuditLog auditLog = createAuditLogFromUnified(message);
+            AuditLog auditLog = createAuditLogFromRequest(request);
             auditLogRepository.save(auditLog);
             
             // 如果上传失败，可能需要创建安全事件
-            if ("FAILURE".equals(message.getResult())) {
-                createSecurityEventFromUnified(message);
+            if ("FAILURE".equals(request.getResult())) {
+                createSecurityEventFromRequest(request);
             }
             
             log.debug("文件上传审计日志保存成功: {}", auditLog.getId());
@@ -280,16 +276,16 @@ public class MessageConsumerService {
      */
     @RabbitListener(queues = RabbitMQConfig.SEARCH_AUDIT_QUEUE)
     @Transactional
-    public void handleSearchAudit(UnifiedSecurityMessage message) {
+    public void handleSearchAudit(AuditLogRequest request) {
         try {
-            log.debug("处理搜索审计消息: {} - {}", message.getUsername(), message.getDescription());
+            log.debug("处理搜索审计消息: {} - {}", request.getUsername(), request.getDescription());
             
             // 创建审计日志
-            AuditLog auditLog = createAuditLogFromUnified(message);
+            AuditLog auditLog = createAuditLogFromRequest(request);
             auditLogRepository.save(auditLog);
             
             // 更新搜索统计
-            updateSearchStatisticsFromUnified(message);
+            updateSearchStatisticsFromRequest(request);
             
         } catch (Exception e) {
             log.error("处理搜索审计消息失败: {}", e.getMessage(), e);
@@ -302,17 +298,17 @@ public class MessageConsumerService {
      */
     @RabbitListener(queues = RabbitMQConfig.ACCESS_CONTROL_QUEUE)
     @Transactional
-    public void handleAccessControlAudit(UnifiedSecurityMessage message) {
+    public void handleAccessControlAudit(AuditLogRequest request) {
         try {
-            log.info("处理访问控制审计消息: {} - {}", message.getUsername(), message.getDescription());
+            log.info("处理访问控制审计消息: {} - {}", request.getUsername(), request.getDescription());
             
             // 创建审计日志
-            AuditLog auditLog = createAuditLogFromUnified(message);
+            AuditLog auditLog = createAuditLogFromRequest(request);
             auditLogRepository.save(auditLog);
             
             // 如果访问被拒绝，创建安全事件
-            if ("DENIED".equals(message.getResult())) {
-                createSecurityEventFromUnified(message);
+            if ("DENIED".equals(request.getResult())) {
+                createSecurityEventFromRequest(request);
             }
             
             log.debug("访问控制审计日志保存成功: {}", auditLog.getId());
@@ -328,16 +324,10 @@ public class MessageConsumerService {
      */
     @RabbitListener(queues = RabbitMQConfig.SECURITY_EVENT_QUEUE)
     @Transactional
-    public void handleSecurityEvent(UnifiedSecurityMessage message) {
+    public void handleSecurityEvent(SecurityEventRequest request) {
         try {
-            log.warn("处理安全事件消息: {}", message.getDescription());
-
-            
             // 创建安全事件
-            createSecurityEvent(message);
-
-            
-            log.warn("安全事件处理完成: {}", message.getDescription());
+            createSecurityEventFromRequest(request);
             
         } catch (Exception e) {
             log.error("处理安全事件消息失败: {}", e.getMessage(), e);
@@ -347,14 +337,57 @@ public class MessageConsumerService {
 
     // ==================== 私有辅助方法 ====================
 
-
+    /**
+     * 从AuditLogRequest创建审计日志实体
+     */
+    private AuditLog createAuditLogFromRequest(AuditLogRequest request) {
+        AuditLog auditLog = new AuditLog();
+        auditLog.setUserId(request.getUserId());
+        auditLog.setUsername(request.getUsername());
+        auditLog.setOperation(request.getOperation());
+        auditLog.setResourceType(request.getResourceType());
+        auditLog.setResourceId(request.getResourceId());
+        auditLog.setIpAddress(request.getIpAddress());
+        auditLog.setUserAgent(request.getUserAgent());
+        auditLog.setResult(request.getResult());
+        auditLog.setErrorMessage(request.getErrorMessage());
+        //requestData和responseData需要特殊处理，因为AuditLogRequest中的类型可能不同
+        auditLog.setRequestData(request.getRequestData() != null ? request.getRequestData().toString() : null);
+        auditLog.setResponseData(request.getResponseData() != null ? request.getResponseData().toString() : null);
+        auditLog.setExecutionTime(request.getExecutionTime());
+        auditLog.setTimestamp(request.getTimestamp() != null ? request.getTimestamp() : LocalDateTime.now());
+        auditLog.setSessionId(request.getSessionId());
+        auditLog.setRequestId(request.getRequestId());
+        auditLog.setDescription(request.getDescription());
+        auditLog.setRiskLevel(request.getRiskLevel());
+        auditLog.setTags(request.getTags());
+        return auditLog;
+    }
 
     /**
-     * 创建安全事件
+     * 从SecurityEventRequest创建安全事件
      */
-    private void createSecurityEvent(UnifiedSecurityMessage message) {
+    private void createSecurityEventFromRequest(SecurityEventRequest request) {
         try {
-            SecurityEvent securityEvent = new SecurityEvent(message);
+            SecurityEvent securityEvent = new SecurityEvent();
+            securityEvent.setEventType(request.getEventType());
+            securityEvent.setTitle(request.getTitle());
+            securityEvent.setDescription(request.getDescription());
+            securityEvent.setSeverity(request.getRiskScore() != null ? request.getRiskScore() / 20 : null);
+            securityEvent.setUserId(request.getUserId());
+            securityEvent.setUsername(request.getUsername());
+            securityEvent.setSourceIp(request.getSourceIp());
+            securityEvent.setUserAgent(request.getUserAgent());
+            securityEvent.setSessionId(request.getSessionId());
+            securityEvent.setEventTime(request.getEventTime() != null ? request.getEventTime() : LocalDateTime.now());
+            securityEvent.setStatus("NEW");
+            securityEvent.setAlerted(false);
+            securityEvent.setRiskScore(request.getRiskScore());
+            securityEvent.setRequestUri(request.getRequestUri());
+            securityEvent.setRequestMethod(request.getRequestMethod());
+            // eventData需要特殊处理
+            securityEvent.setEventData(request.getEventData() != null ? request.getEventData().toString() : null);
+            
             securityEventRepository.save(securityEvent);
             log.info("安全事件创建成功: {}", securityEvent.getId());
         } catch (Exception e) {
@@ -363,27 +396,74 @@ public class MessageConsumerService {
     }
 
     /**
-     * 处理登录失败事件（统一消息版本）
+     * 从AuditLogRequest创建安全事件
      */
-    private void handleLoginFailureEventFromUnified(UnifiedSecurityMessage message) {
+    private void createSecurityEventFromRequest(AuditLogRequest request) {
         try {
-            String key = "login_failures:" + message.getIpAddress();
+            SecurityEvent securityEvent = new SecurityEvent();
+            // 从AuditLogRequest中提取安全事件信息
+            securityEvent.setTitle(request.getOperation() != null ? request.getOperation().getName() : "安全事件");
+            securityEvent.setDescription(request.getDescription());
+            securityEvent.setSeverity(request.getRiskLevel());
+            securityEvent.setUserId(request.getUserId());
+            securityEvent.setUsername(request.getUsername());
+            securityEvent.setSourceIp(request.getIpAddress());
+            securityEvent.setUserAgent(request.getUserAgent());
+            securityEvent.setSessionId(request.getSessionId());
+            securityEvent.setEventTime(request.getTimestamp() != null ? request.getTimestamp() : LocalDateTime.now());
+            securityEvent.setStatus("NEW");
+            securityEvent.setAlerted(false);
+            securityEvent.setRiskScore(request.getRiskLevel() != null ? request.getRiskLevel() * 20 : 60);
+            
+            securityEventRepository.save(securityEvent);
+            log.info("安全事件创建成功: {}", securityEvent.getId());
+        } catch (Exception e) {
+            log.error("创建安全事件失败: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 更新AuditLogRequest的审计统计信息
+     */
+    private void updateAuditStatisticsFromRequest(AuditLogRequest request) {
+        try {
+            String dateKey = "audit_stats:" + LocalDateTime.now().toLocalDate();
+            String operationKey = dateKey + ":" + (request.getOperation() != null ? request.getOperation().getCode() : "UNKNOWN");
+            String resultKey = dateKey + ":" + request.getResult();
+            String typeKey = dateKey + ":type:" + "AUDIT_LOG"; // 默认类型
+            
+            redisTemplate.opsForValue().increment(operationKey);
+            redisTemplate.opsForValue().increment(resultKey);
+            redisTemplate.opsForValue().increment(typeKey);
+            redisTemplate.expire(dateKey, 30, TimeUnit.DAYS);
+        } catch (Exception e) {
+            log.error("更新审计统计失败: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 处理登录失败事件（AuditLogRequest版本）
+     */
+    private void handleLoginFailureEventFromRequest(AuditLogRequest request) {
+        try {
+            String key = "login_failures:" + request.getIpAddress();
             Long failures = redisTemplate.opsForValue().increment(key);
             redisTemplate.expire(key, 1, TimeUnit.HOURS);
             
             // 如果同一IP连续失败超过10次，创建安全事件
             if (failures != null && failures >= 10) {
-                UnifiedSecurityMessage securityEvent = UnifiedSecurityMessage.securityEvent(
-                    com.myweb.website_core.common.enums.SecurityEventType.BRUTE_FORCE_ATTACK,
-                    com.myweb.website_core.common.enums.AuditOperation.SUSPICIOUS_ACTIVITY,
-                    message.getUserId(),
-                    message.getUsername(),
-                    message.getIpAddress(),
-                    "检测到可疑登录活动: IP " + message.getIpAddress() + " 连续登录失败 " + failures + " 次",
-                    5
-                );
+                SecurityEventRequest securityEvent = SecurityEventRequest.builder()
+                        .eventType(com.myweb.website_core.common.enums.SecurityEventType.BRUTE_FORCE_ATTACK)
+                        .title("暴力破解攻击")
+                        .description("检测到可疑登录活动: IP " + request.getIpAddress() + " 连续登录失败 " + failures + " 次")
+                        .userId(request.getUserId())
+                        .username(request.getUsername())
+                        .sourceIp(request.getIpAddress())
+                        .riskScore(100)
+                        .eventTime(LocalDateTime.now())
+                        .build();
                 
-                createSecurityEventFromUnified(securityEvent);
+                createSecurityEventFromRequest(securityEvent);
             }
         } catch (Exception e) {
             log.error("处理登录失败事件失败: {}", e.getMessage(), e);
@@ -391,14 +471,14 @@ public class MessageConsumerService {
     }
 
     /**
-     * 处理账户锁定事件（统一消息版本）
+     * 处理账户锁定事件（AuditLogRequest版本）
      */
-    private void handleAccountLockedEventFromUnified(UnifiedSecurityMessage message) {
+    private void handleAccountLockedEventFromRequest(AuditLogRequest request) {
         try {
             // 发送账户锁定通知邮件
-            if (message.getUsername() != null) {
+            if (request.getUsername() != null) {
                 emailService.sendVerificationCode(
-                    message.getUsername() + "@example.com", // 这里应该从用户信息中获取真实邮箱
+                    request.getUsername() + "@example.com", // 这里应该从用户信息中获取真实邮箱
                     "您的账户已被锁定，请联系管理员或等待15分钟后重试。"
                 );
             }
@@ -407,15 +487,13 @@ public class MessageConsumerService {
         }
     }
 
-
-
     /**
-     * 更新搜索统计信息（统一消息版本）
+     * 更新搜索统计信息（AuditLogRequest版本）
      */
-    private void updateSearchStatisticsFromUnified(UnifiedSecurityMessage message) {
+    private void updateSearchStatisticsFromRequest(AuditLogRequest request) {
         try {
             String dateKey = "search_stats:" + LocalDateTime.now().toLocalDate();
-            String userKey = dateKey + ":user:" + message.getUserId();
+            String userKey = dateKey + ":user:" + request.getUserId();
             
             redisTemplate.opsForValue().increment(dateKey + ":total");
             redisTemplate.opsForValue().increment(userKey);
@@ -424,90 +502,4 @@ public class MessageConsumerService {
             log.error("更新搜索统计失败: {}", e.getMessage(), e);
         }
     }
-
-    // ==================== 统一安全消息处理方法 ====================
-
-    /**
-     * 从统一安全消息创建审计日志实体
-     */
-    private AuditLog createAuditLogFromUnified(UnifiedSecurityMessage message) {
-        AuditLog auditLog = new AuditLog();
-        auditLog.setUserId(message.getUserId());
-        auditLog.setUsername(message.getUsername());
-        auditLog.setOperation(message.getOperation());
-        auditLog.setResourceType(message.getResourceType());
-        auditLog.setResourceId(message.getResourceId());
-        auditLog.setIpAddress(message.getIpAddress());
-        auditLog.setUserAgent(message.getUserAgent());
-        auditLog.setResult(message.getResult());
-        auditLog.setErrorMessage(message.getErrorMessage());
-        auditLog.setRequestData(message.getRequestData());
-        auditLog.setResponseData(message.getResponseData());
-        auditLog.setExecutionTime(message.getExecutionTime());
-        auditLog.setTimestamp(message.getTimestamp() != null ? message.getTimestamp() : LocalDateTime.now());
-        auditLog.setSessionId(message.getSessionId());
-        auditLog.setRequestId(message.getRequestId());
-        auditLog.setDescription(message.getDescription());
-        auditLog.setRiskLevel(message.getRiskLevel());
-        auditLog.setLocation(message.getLocation());
-        auditLog.setTags(message.getTags());
-        return auditLog;
-    }
-
-    /**
-     * 从统一安全消息创建安全事件
-     */
-    private void createSecurityEventFromUnified(UnifiedSecurityMessage message) {
-        try {
-            SecurityEvent securityEvent = new SecurityEvent();
-            securityEvent.setEventType(message.getSecurityEventType());
-            securityEvent.setTitle(message.getTitle());
-            securityEvent.setDescription(message.getDescription());
-            securityEvent.setSeverity(message.getSeverity());
-            securityEvent.setUserId(message.getUserId());
-            securityEvent.setUsername(message.getUsername());
-            securityEvent.setSourceIp(message.getIpAddress());
-            securityEvent.setUserAgent(message.getUserAgent());
-            securityEvent.setRequestUri(message.getRequestUri());
-            securityEvent.setRequestMethod(message.getRequestMethod());
-            securityEvent.setSessionId(message.getSessionId());
-            securityEvent.setEventData(message.getEventData());
-            securityEvent.setEventTime(message.getEventTime() != null ? message.getEventTime() : LocalDateTime.now());
-            securityEvent.setStatus(message.getStatus() != null ? message.getStatus() : "NEW");
-            securityEvent.setAlerted(message.getAlerted() != null ? message.getAlerted() : false);
-            securityEvent.setAlertTime(message.getAlertTime());
-            securityEvent.setRiskScore(message.getRiskScore());
-            securityEvent.setRelatedEventCount(message.getRelatedEventCount());
-            
-            securityEventRepository.save(securityEvent);
-            log.info("安全事件创建成功: {}", securityEvent.getId());
-        } catch (Exception e) {
-            log.error("创建安全事件失败: {}", e.getMessage(), e);
-        }
-    }
-
-    /**
-     * 更新统一消息的审计统计信息
-     */
-    private void updateAuditStatisticsFromUnified(UnifiedSecurityMessage message) {
-        try {
-            String dateKey = "audit_stats:" + LocalDateTime.now().toLocalDate();
-            String operationKey = dateKey + ":" + (message.getOperation() != null ? message.getOperation().getCode() : "UNKNOWN");
-            String resultKey = dateKey + ":" + message.getResult();
-            String typeKey = dateKey + ":type:" + message.getMessageType();
-            
-            redisTemplate.opsForValue().increment(operationKey);
-            redisTemplate.opsForValue().increment(resultKey);
-            redisTemplate.opsForValue().increment(typeKey);
-            redisTemplate.expire(dateKey, 30, TimeUnit.DAYS);
-            
-            // 如果是安全事件，额外统计
-            if (Boolean.TRUE.equals(message.getIsSecurityEvent())) {
-                String eventKey = dateKey + ":security_event:" + message.getSecurityEventType().getCode();
-                redisTemplate.opsForValue().increment(eventKey);
-            }
-        } catch (Exception e) {
-            log.error("更新审计统计失败: {}", e.getMessage(), e);
-        }
-    }
-} 
+}

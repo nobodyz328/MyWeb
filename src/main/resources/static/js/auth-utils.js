@@ -122,7 +122,7 @@ class AuthUtils {
     
     /**
      * 发送认证请求
-     * 自动处理令牌刷新和重试
+     * 自动处理令牌刷新和重试，并支持CSRF保护
      */
     static async authenticatedFetch(url, options = {}) {
         // 检查是否需要登录
@@ -139,6 +139,15 @@ class AuthUtils {
         // 只有在没有FormData时才设置Content-Type
         if (!(options.body instanceof FormData) && !headers['Content-Type']) {
             headers['Content-Type'] = 'application/json';
+        }
+        
+        // 如果是非API请求且需要CSRF保护，添加CSRF令牌
+        if (AuthUtils.needsCsrfProtection(options.method || 'GET', url)) {
+            try {
+                await AuthUtils.addCsrfToken(headers);
+            } catch (csrfError) {
+                console.warn('添加CSRF令牌失败:', csrfError);
+            }
         }
         
         const requestOptions = {
@@ -170,12 +179,95 @@ class AuthUtils {
                 }
             }
             
+            // 如果是CSRF错误，尝试刷新CSRF令牌并重试
+            if (response.status === 403) {
+                try {
+                    const errorData = await response.clone().json();
+                    if (errorData.message && errorData.message.includes('CSRF')) {
+                        console.log('CSRF令牌无效，尝试刷新...');
+                        
+                        // 刷新CSRF令牌并重试
+                        await AuthUtils.addCsrfToken(requestOptions.headers, true);
+                        response = await fetch(url, requestOptions);
+                    }
+                } catch (e) {
+                    // 忽略JSON解析错误
+                }
+            }
+            
             return response;
         } catch (error) {
             console.error('认证请求失败:', error);
             throw error;
         }
     }
+    
+    /**
+     * 判断请求是否需要CSRF保护
+     */
+    static needsCsrfProtection(method, url) {
+        // GET、HEAD、OPTIONS、TRACE请求不需要CSRF保护
+        const safeMethods = ['GET', 'HEAD', 'OPTIONS', 'TRACE'];
+        if (safeMethods.includes((method).toUpperCase())) {
+            return false;
+        }
+        
+        // API接口不需要CSRF保护（使用JWT）
+        if (url && (
+            url.includes('/api/')
+        )) {
+            return false;
+        }
+        
+        // CSRF令牌获取接口不需要CSRF保护
+        // if (url && url.includes('/api/csrf/token')) {
+        //     return false;
+        // }
+        
+        return true;
+    }
+    
+    /**
+     * 添加CSRF令牌到请求头
+     */
+    static async addCsrfToken(headers, forceRefresh = false) {
+        try {
+            // 首先尝试从Cookie中获取CSRF令牌
+            const cookieToken = this.getCsrfTokenFromCookie();
+            if (cookieToken && !forceRefresh) {
+                headers['X-XSRF-TOKEN'] = cookieToken;
+                return;
+            }
+            
+            // 如果Cookie中没有或需要强制刷新，从服务器获取
+            const response = await fetch('/blog/api/csrf/token', {
+                method: 'GET',
+                credentials: 'same-origin'
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.data) {
+                    headers[data.data.headerName] = data.data.token;
+                }
+            }
+        } catch (error) {
+            console.error('获取CSRF令牌失败:', error);
+        }
+    }
+    
+    /**
+     * 从Cookie中获取CSRF令牌
+     */
+    static getCsrfTokenFromCookie() {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; XSRF-TOKEN=`);
+        if (parts.length === 2) {
+            return parts.pop().split(';').shift();
+        }
+        return null;
+    }
+
     
     /**
      * 跳转到登录页

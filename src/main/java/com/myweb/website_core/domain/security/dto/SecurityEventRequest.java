@@ -11,7 +11,7 @@ import java.util.Map;
 
 /**
  * 安全事件请求DTO
- * 
+ * <p>
  * 用于创建安全事件的请求数据传输对象
  */
 @Data

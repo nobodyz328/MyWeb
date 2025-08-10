@@ -7,17 +7,16 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * 病毒扫描服务接口
- * 
+ * <p>
  * 提供文件病毒扫描功能，支持多种扫描引擎：
  * - ClamAV 扫描引擎
  * - 模拟扫描引擎（用于开发和测试）
  * - 可扩展支持其他扫描引擎
- * 
+ * <p>
  * 符合GB/T 22239-2019二级等保要求的恶意代码防范机制
  * 
- * @author MyWeb Security Team
+ * @author MyWeb
  * @version 1.0
- * @since 2025-01-01
  */
 public interface VirusScanService {
     

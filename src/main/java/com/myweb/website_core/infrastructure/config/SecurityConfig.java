@@ -2,7 +2,8 @@ package com.myweb.website_core.infrastructure.config;
 
 import com.myweb.website_core.common.constant.SecurityConstants;
 import com.myweb.website_core.infrastructure.security.*;
-import com.myweb.website_core.infrastructure.security.filter.ContentCachingFilter;
+import com.myweb.website_core.infrastructure.security.Authentication.JwtAuthenticationEntryPoint;
+import com.myweb.website_core.infrastructure.security.config.UnifiedAccessDeniedHandler;
 import com.myweb.website_core.infrastructure.security.filter.JwtAuthenticationFilter;
 import com.myweb.website_core.infrastructure.security.filter.RateLimitingFilter;
 import lombok.RequiredArgsConstructor;
@@ -53,7 +54,12 @@ public class SecurityConfig {
                                "/", "/view/**", "/users/register", "/users/login", "/users/register/code", 
                                "/users/refresh-token", "/users/check-username", "/users/check-email",
                                "/post/*", "/api/posts", "/api/posts/*", "/api/images/*", "/posts/top-liked", 
-                               "/search", "/announcements", "/posts/*/comments", "/error/**").permitAll()
+                               "/search", "/announcements", "/posts/*/comments", "/error/**", "/profile",
+                               "/api/csrf/token","/users/check-admin").permitAll()
+                
+                // API接口 - 需要认证但不需要特定权限的接口
+                .requestMatchers("/api/posts/*/collect-status", "/api/posts/*/like-status", 
+                               "/api/posts/*/collect", "/api/posts/*/like").authenticated()
                 
                 // 需要认证的基本功能
                 .requestMatchers("/posts/new", "/posts/create").hasAuthority("POST_CREATE")
@@ -92,14 +98,15 @@ public class SecurityConfig {
             .csrf(csrf -> csrf
                 .csrfTokenRepository(csrfTokenRepository())
                 .ignoringRequestMatchers(
-                    // API接口不需要CSRF保护（使用JWT）
-                    "/api/**",
+                    // 特定API接口不需要CSRF保护（使用JWT）
+                        "/api/**",
+//                    "/api/posts", "/api/posts/**", "/api/images/**",
+//                    "/api/admin/**", "/api/users/manage/**", "/api/comments/manage/**", "/api/audit/**",
                     // 公开访问的资源不需要CSRF保护
-                    "/login", "/register", "/static/**", "/css/**", "/js/**", "/images/**",
+                    "/login", "/register", "/static/**", "/css/**", "/js/**", "/images/**","/users/*/settings/totp/enable",
                     "/", "/view/**", "/users/register", "/users/login", "/users/register/code",
                     "/users/refresh-token", "/users/logout", "/users/check-username", "/users/check-email",
-                    "/post/*", "/api/posts", "/api/posts/*", "/api/images/*", "/posts/top-liked",
-                    "/search", "/announcements", "/posts/*/comments", "/error/**",
+                    "/post/*", "/posts/top-liked", "/search", "/announcements", "/posts/*/comments", "/error/**",
                     // CSRF令牌获取接口
                     "/api/csrf/token"
                 )
@@ -188,6 +195,7 @@ public class SecurityConfig {
         repository.setCookiePath("/blog");
         repository.setSecure(true); // HTTPS环境下设置为true
         repository.setCookieMaxAge(7200); // 2小时
+        //repository.setSameSite("Strict");
         return repository;
     }
 }

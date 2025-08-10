@@ -1,22 +1,20 @@
 package com.myweb.website_core.application.service.security;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.myweb.website_core.application.service.security.audit.AuditLogServiceAdapter;
 import com.myweb.website_core.common.config.BackupProperties;
+import com.myweb.website_core.common.exception.security.ValidationException;
 import com.myweb.website_core.infrastructure.config.JwtConfig;
 import com.myweb.website_core.common.config.RateLimitProperties;
 import com.myweb.website_core.common.config.SecurityProperties;
 import com.myweb.website_core.common.enums.AuditOperation;
-import com.myweb.website_core.common.exception.ValidationException;
 import com.myweb.website_core.domain.security.dto.SecurityConfigBackupDTO;
 import com.myweb.website_core.domain.security.dto.SecurityConfigChangeDTO;
 import com.myweb.website_core.domain.security.dto.SecurityConfigDTO;
-import com.myweb.website_core.infrastructure.security.Auditable;
+import com.myweb.website_core.infrastructure.security.audit.Auditable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
-import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;

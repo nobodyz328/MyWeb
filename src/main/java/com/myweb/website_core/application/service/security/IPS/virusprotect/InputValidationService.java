@@ -1,6 +1,6 @@
 package com.myweb.website_core.application.service.security.IPS.virusprotect;
 
-import com.myweb.website_core.common.exception.ValidationException;
+import com.myweb.website_core.common.exception.security.ValidationException;
 import com.myweb.website_core.infrastructure.security.XssPatternLibrary;
 import org.springframework.stereotype.Service;
 

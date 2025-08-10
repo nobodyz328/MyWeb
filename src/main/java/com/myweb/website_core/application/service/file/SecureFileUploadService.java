@@ -1,6 +1,6 @@
 package com.myweb.website_core.application.service.file;
 
-import com.myweb.website_core.application.service.security.fileProtect.FileUploadSecurityService;
+import com.myweb.website_core.application.service.security.integeration.FileUploadSecurityService;
 import com.myweb.website_core.common.exception.FileUploadException;
 import com.myweb.website_core.common.exception.FileValidationException;
 import jakarta.servlet.http.HttpServletRequest;

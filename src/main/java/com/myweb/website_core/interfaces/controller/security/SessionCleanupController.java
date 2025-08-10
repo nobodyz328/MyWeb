@@ -4,7 +4,6 @@ import com.myweb.website_core.application.service.security.authentication.Sessio
 import com.myweb.website_core.application.service.security.authentication.SessionManagementService;
 import com.myweb.website_core.domain.security.dto.SessionInfo;
 import com.myweb.website_core.domain.security.dto.SessionStatistics;
-import com.myweb.website_core.infrastructure.security.Auditable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;

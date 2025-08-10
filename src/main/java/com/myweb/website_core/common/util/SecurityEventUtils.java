@@ -1,7 +1,10 @@
 package com.myweb.website_core.common.util;
 
+import com.myweb.website_core.common.constant.SystemConstants;
 import com.myweb.website_core.common.enums.SecurityEventType;
+import com.myweb.website_core.domain.business.entity.User;
 import com.myweb.website_core.domain.security.dto.SecurityEventRequest;
+import com.myweb.website_core.infrastructure.security.CustomUserDetailsService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -15,7 +18,7 @@ import java.util.Map;
 
 /**
  * 安全事件工具类
- * 
+ * <p>
  * 提供创建安全事件的便捷方法
  */
 @Component
@@ -43,7 +46,7 @@ public class SecurityEventUtils {
     /**
      * 创建暴力破解攻击事件
      */
-    public static SecurityEventRequest createBruteForceAttackEvent(String username, int attemptCount) {
+    public static SecurityEventRequest createForceAttackEvent(String username, int attemptCount) {
         return SecurityEventRequest.builder()
                 .eventType(SecurityEventType.BRUTE_FORCE_ATTACK)
                 .title("暴力破解攻击检测")
@@ -63,10 +66,10 @@ public class SecurityEventUtils {
     /**
      * 创建未授权访问事件
      */
-    public static SecurityEventRequest createUnauthorizedAccessEvent(String resource, String action) {
+    public static SecurityEventRequest createAccessDeniedEvent(String resource, String action) {
         String currentUser = getCurrentUsername();
         return SecurityEventRequest.builder()
-                .eventType(SecurityEventType.UNAUTHORIZED_ACCESS)
+                .eventType(SecurityEventType.ACCESS_DENIED)
                 .title("未授权访问尝试")
                 .description(String.format("用户 %s 尝试未授权访问资源：%s，操作：%s", currentUser, resource, action))
                 .username(currentUser)
@@ -252,7 +255,7 @@ public class SecurityEventUtils {
     /**
      * 获取当前用户名
      */
-    private static String getCurrentUsername() {
+    public static String getCurrentUsername() {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             if (authentication != null && authentication.isAuthenticated() && 
@@ -264,36 +267,55 @@ public class SecurityEventUtils {
         }
         return "anonymous";
     }
-    
+
     /**
-     * 获取客户端IP地址
+     * 获取当前认证用户
+     *
+     * @return 当前用户，如果未认证则返回null
      */
-    private static String getClientIpAddress() {
+    public static User getCurrentUser() {
         try {
-            HttpServletRequest request = getCurrentRequest();
-            if (request != null) {
-                String xForwardedFor = request.getHeader("X-Forwarded-For");
-                if (xForwardedFor != null && !xForwardedFor.isEmpty() && !"unknown".equalsIgnoreCase(xForwardedFor)) {
-                    return xForwardedFor.split(",")[0].trim();
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication != null && authentication.isAuthenticated() &&
+                    !"anonymousUser".equals(authentication.getPrincipal())) {
+
+                if (authentication.getPrincipal() instanceof CustomUserDetailsService.CustomUserPrincipal principal) {
+                    return principal.getUser();
                 }
-                
-                String xRealIp = request.getHeader("X-Real-IP");
-                if (xRealIp != null && !xRealIp.isEmpty() && !"unknown".equalsIgnoreCase(xRealIp)) {
-                    return xRealIp;
-                }
-                
-                return request.getRemoteAddr();
             }
         } catch (Exception e) {
-            // 忽略异常，返回默认值
+            //
         }
-        return "unknown";
+        return null;
     }
-    
+
+    /**
+     * 获取客户端真实IP地址
+     *
+     * @return 客户端IP地址
+     */
+    public static String getClientIpAddress() {
+        HttpServletRequest request = getCurrentRequest();
+        for (String headerName : SystemConstants.REAL_IP_HEADERS) {
+            String ip = null;
+            if (request != null) {
+                ip = request.getHeader(headerName);
+            }
+            if (ip != null && !ip.isEmpty() && !"unknown".equalsIgnoreCase(ip)) {
+                // 处理多个IP的情况，取第一个
+                if (ip.contains(",")) {
+                    ip = ip.split(",")[0].trim();
+                }
+                return ip;
+            }
+        }
+
+        return request.getRemoteAddr();
+    }
     /**
      * 获取用户代理
      */
-    private static String getUserAgent() {
+    public static String getUserAgent() {
         try {
             HttpServletRequest request = getCurrentRequest();
             if (request != null) {
@@ -308,7 +330,7 @@ public class SecurityEventUtils {
     /**
      * 获取请求URI
      */
-    private static String getRequestUri() {
+    public static String getRequestUri() {
         try {
             HttpServletRequest request = getCurrentRequest();
             if (request != null) {
@@ -323,7 +345,7 @@ public class SecurityEventUtils {
     /**
      * 获取请求方法
      */
-    private static String getRequestMethod() {
+    public static String getRequestMethod() {
         try {
             HttpServletRequest request = getCurrentRequest();
             if (request != null) {
@@ -334,11 +356,32 @@ public class SecurityEventUtils {
         }
         return "unknown";
     }
+    /**
+     * 获取异常信息
+     *
+     * @param exception 异常
+     * @return 异常信息字符串
+     */
+    public static String getExceptionMessage(Throwable exception) {
+        if (exception == null) {
+            return null;
+        }
+
+        StringBuilder message = new StringBuilder();
+        message.append(exception.getClass().getSimpleName());
+
+        if (exception.getMessage() != null) {
+            message.append(": ").append(exception.getMessage());
+        }
+
+        // 限制错误信息长度
+        return SystemConstants.limitStringLength(message.toString(), SystemConstants.AUDIT_MAX_ERROR_LENGTH);
+    }
     
     /**
      * 获取会话ID
      */
-    private static String getSessionId() {
+    public static String getSessionId() {
         try {
             HttpServletRequest request = getCurrentRequest();
             if (request != null && request.getSession(false) != null) {
@@ -353,7 +396,7 @@ public class SecurityEventUtils {
     /**
      * 获取当前HTTP请求
      */
-    private static HttpServletRequest getCurrentRequest() {
+    public static HttpServletRequest getCurrentRequest() {
         try {
             ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
             if (attributes != null) {
@@ -363,5 +406,33 @@ public class SecurityEventUtils {
             // 忽略异常，返回null
         }
         return null;
+    }
+
+    /**
+     * 从认证信息中获取用户ID
+     *
+     * @return 用户ID
+     */
+    public static Long getCurrentUserId() {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            Object principal = authentication.getPrincipal();
+
+            // 检查是否为自定义的CustomUserPrincipal实现
+            if (principal instanceof CustomUserDetailsService.CustomUserPrincipal userPrincipal) {
+                return userPrincipal.getUserId();
+            }
+        } catch (Exception e) {
+            //log.debug("从认证信息获取用户ID失败: {}", e.getMessage());
+        }
+        return null;
+    }
+    /**
+     * 生成请求ID
+     *
+     * @return 请求ID
+     */
+    public static String generateRequestId() {
+        return SystemConstants.generateRequestId();
     }
 }

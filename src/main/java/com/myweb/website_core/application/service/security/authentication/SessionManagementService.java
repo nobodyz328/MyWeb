@@ -116,13 +116,8 @@ public class SessionManagementService {
             
             // 记录会话活动
             recordSessionActivity(sessionId, "SESSION_CREATED", ipAddress);
-            
-            // 记录审计日志
-            auditLogService.logUserLogin(user, ipAddress, userAgent, "SUCCESS");
-            
-            log.info("用户会话创建成功: userId={}, sessionId={}, ip={}", 
-                    user.getId(), sessionId, ipAddress);
-            
+
+
             return CompletableFuture.completedFuture(sessionInfo);
             
         } catch (Exception e) {
@@ -216,11 +211,7 @@ public class SessionManagementService {
             
             // 记录会话活动
             recordSessionActivity(sessionId, "SESSION_TERMINATED", null);
-            
-            // 记录审计日志
-            auditLogService.logUserLogout(sessionInfo.getUserId(), sessionInfo.getUsername(), 
-                    sessionInfo.getIpAddress(), reason);
-            
+
             log.info("会话终止成功: sessionId={}, userId={}, reason={}", 
                     sessionId, sessionInfo.getUserId(), reason);
             
@@ -312,11 +303,7 @@ public class SessionManagementService {
             // 注意：这里不能直接注入SessionCleanupService，因为会造成循环依赖
             // 改为直接调用清理逻辑
             cleanupSessionData(sessionId, sessionInfo.getUserId());
-            
-            // 记录审计日志
-            auditLogService.logUserLogout(sessionInfo.getUserId(), sessionInfo.getUsername(), 
-                    sessionInfo.getIpAddress(), "USER_LOGOUT");
-            
+
             log.info("用户退出登录成功: sessionId={}, userId={}", sessionId, sessionInfo.getUserId());
             return CompletableFuture.completedFuture(true);
             
