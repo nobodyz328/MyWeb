@@ -188,6 +188,16 @@ public class SearchUtils {
     }
     
     /**
+     * 构建评论搜索缓存键
+     * 
+     * @param request 搜索请求
+     * @return 缓存键
+     */
+    public static String buildCommentSearchCacheKey(SearchRequestDTO request) {
+        return buildSearchCacheKey("comment", request);
+    }
+    
+    /**
      * 构建综合搜索缓存键
      * 
      * @param request 搜索请求
@@ -249,6 +259,16 @@ public class SearchUtils {
     }
     
     /**
+     * 截取评论内容摘要
+     * 
+     * @param content 原始评论内容
+     * @return 评论内容摘要
+     */
+    public static String truncateCommentContent(String content) {
+        return truncateContent(content, 150); // 评论摘要限制150字符
+    }
+    
+    /**
      * 脱敏邮箱地址
      * 
      * @param email 原始邮箱
@@ -260,6 +280,11 @@ public class SearchUtils {
         }
         
         int atIndex = email.indexOf('@');
+        if (atIndex == -1) {
+            // 没有@符号，不是有效邮箱
+            return "***";
+        }
+        
         if (atIndex <= 3) {
             return "***" + email.substring(atIndex);
         } else {
@@ -285,6 +310,20 @@ public class SearchUtils {
         return likes * SearchConstants.POPULARITY_WEIGHT_LIKE + 
                collects * SearchConstants.POPULARITY_WEIGHT_COLLECT + 
                comments * SearchConstants.POPULARITY_WEIGHT_COMMENT;
+    }
+    
+    /**
+     * 计算评论热度评分
+     * 
+     * @param likeCount 点赞数
+     * @param replyCount 回复数
+     * @return 热度评分
+     */
+    public static double calculateCommentPopularityScore(Integer likeCount, Integer replyCount) {
+        int likes = likeCount != null ? likeCount : 0;
+        int replies = replyCount != null ? replyCount : 0;
+        
+        return likes * 1.5 + replies * 2.0;
     }
     
     /**

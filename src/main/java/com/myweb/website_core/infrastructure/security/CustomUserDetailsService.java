@@ -3,7 +3,7 @@ package com.myweb.website_core.infrastructure.security;
 import com.myweb.website_core.domain.business.entity.User;
 import com.myweb.website_core.domain.security.entity.Permission;
 import com.myweb.website_core.domain.security.entity.Role;
-import com.myweb.website_core.infrastructure.persistence.repository.UserRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.user.UserRepository;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;

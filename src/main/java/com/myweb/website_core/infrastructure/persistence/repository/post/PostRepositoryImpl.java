@@ -1,6 +1,7 @@
-package com.myweb.website_core.infrastructure.persistence.repository;
+package com.myweb.website_core.infrastructure.persistence.repository.post;
 
 import com.myweb.website_core.domain.business.entity.Post;
+import com.myweb.website_core.infrastructure.persistence.repository.SafeRepositoryBase;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
@@ -8,6 +9,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 
 import java.util.HashMap;
 import java.util.List;
@@ -32,6 +35,9 @@ import java.util.Map;
 public class PostRepositoryImpl extends SafeRepositoryBase<Post, Long> implements PostRepositoryCustom {
     
     private final PostRepository postRepository;
+    
+    @PersistenceContext
+    private EntityManager entityManager;
     
     public PostRepositoryImpl(@Lazy PostRepository postRepository) {
         this.postRepository = postRepository;
@@ -178,6 +184,140 @@ public class PostRepositoryImpl extends SafeRepositoryBase<Post, Long> implement
         log.debug("执行安全帖子统计: conditions={}", conditions);
         
         return countSafe(conditions);
+    }
+    
+    /**
+     * 安全的分页查询
+     * 
+     * @param conditions 查询条件
+     * @param sortField 排序字段
+     * @param sortDirection 排序方向
+     * @param page 页码
+     * @param size 页大小
+     * @return 分页结果
+     */
+    @Override
+    public Page<Post> findSafePaginated(Map<String, Object> conditions, 
+                                      String sortField, String sortDirection, 
+                                      int page, int size) {
+        log.debug("执行安全分页查询: conditions={}, sortField={}, sortDirection={}, page={}, size={}", 
+                 conditions, sortField, sortDirection, page, size);
+        
+        return super.findSafePaginated(conditions, sortField, sortDirection, page, size);
+    }
+    
+    /**
+     * 执行复杂动态查询
+     * 
+     * @param dynamicQuery 动态查询SQL
+     * @param parameters 查询参数
+     * @return 查询结果
+     */
+    @Override
+    public List<Post> findPostsByComplexQuery(String dynamicQuery, Map<String, Object> parameters) {
+        log.debug("执行复杂动态查询: query={}, parameterCount={}", 
+                 dynamicQuery.substring(0, Math.min(100, dynamicQuery.length())), 
+                 parameters != null ? parameters.size() : 0);
+        
+        try {
+            // 使用JPA原生查询执行复杂动态查询
+            jakarta.persistence.Query query = entityManager.createNativeQuery(dynamicQuery, Post.class);
+            
+            // 设置参数
+            if (parameters != null) {
+                for (Map.Entry<String, Object> entry : parameters.entrySet()) {
+                    query.setParameter(entry.getKey(), entry.getValue());
+                }
+            }
+            
+            @SuppressWarnings("unchecked")
+            List<Post> results = query.getResultList();
+            
+            log.debug("复杂动态查询执行成功: resultCount={}", results.size());
+            return results;
+            
+        } catch (Exception e) {
+            log.error("执行复杂动态查询失败: {}", e.getMessage());
+            throw new RuntimeException("执行复杂动态查询失败: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * 执行参数化查询
+     * 
+     * @param query 参数化查询SQL
+     * @param parameters 查询参数
+     * @return 查询结果
+     */
+    @Override
+    public List<Post> findPostsByParameterizedQuery(String query, Map<String, Object> parameters) {
+        log.debug("执行参数化查询: parameterCount={}", parameters != null ? parameters.size() : 0);
+        
+        try {
+            // 使用JPA原生查询执行参数化查询
+            jakarta.persistence.Query jpqlQuery = entityManager.createNativeQuery(query, Post.class);
+            
+            // 设置参数
+            if (parameters != null) {
+                for (Map.Entry<String, Object> entry : parameters.entrySet()) {
+                    jpqlQuery.setParameter(entry.getKey(), entry.getValue());
+                }
+            }
+            
+            @SuppressWarnings("unchecked")
+            List<Post> results = jpqlQuery.getResultList();
+            
+            log.debug("参数化查询执行成功: resultCount={}", results.size());
+            return results;
+            
+        } catch (Exception e) {
+            log.error("执行参数化查询失败: {}", e.getMessage());
+            throw new RuntimeException("执行参数化查询失败: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * 执行聚合统计查询
+     * 
+     * @param aggregateQuery 聚合查询SQL
+     * @param parameters 查询参数
+     * @return 统计结果
+     */
+    @Override
+    public List<Map<String, Object>> executeAggregateQuery(String aggregateQuery, Map<String, Object> parameters) {
+        log.debug("执行聚合统计查询: parameterCount={}", parameters != null ? parameters.size() : 0);
+        
+        try {
+            // 使用JPA原生查询执行聚合查询
+            jakarta.persistence.Query query = entityManager.createNativeQuery(aggregateQuery);
+            
+            // 设置参数
+            if (parameters != null) {
+                for (Map.Entry<String, Object> entry : parameters.entrySet()) {
+                    query.setParameter(entry.getKey(), entry.getValue());
+                }
+            }
+            
+            @SuppressWarnings("unchecked")
+            List<Object[]> rawResults = query.getResultList();
+            
+            // 转换结果为Map格式
+            List<Map<String, Object>> results = new java.util.ArrayList<>();
+            for (Object[] row : rawResults) {
+                Map<String, Object> resultMap = new HashMap<>();
+                for (int i = 0; i < row.length; i++) {
+                    resultMap.put("column_" + i, row[i]);
+                }
+                results.add(resultMap);
+            }
+            
+            log.debug("聚合统计查询执行成功: resultCount={}", results.size());
+            return results;
+            
+        } catch (Exception e) {
+            log.error("执行聚合统计查询失败: {}", e.getMessage());
+            throw new RuntimeException("执行聚合统计查询失败: " + e.getMessage(), e);
+        }
     }
     
     /**

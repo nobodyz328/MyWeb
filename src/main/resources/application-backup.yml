@@ -71,8 +71,7 @@ app:
         enabled: true
         # 通知接收者
         recipients:
-          - admin@myweb.com
-          - backup@myweb.com
+          - 3281314509@qq.com
         # 是否在备份成功时发送通知
         notify-on-success: false
         # 是否在备份失败时发送通知

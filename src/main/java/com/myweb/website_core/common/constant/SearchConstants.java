@@ -24,6 +24,11 @@ public class SearchConstants {
     public static final String SEARCH_TYPE_USER = "USER";
     
     /**
+     * 搜索类型：评论
+     */
+    public static final String SEARCH_TYPE_COMMENT = "COMMENT";
+    
+    /**
      * 搜索类型：全部
      */
     public static final String SEARCH_TYPE_ALL = "ALL";
@@ -61,6 +66,11 @@ public class SearchConstants {
      * 用户搜索缓存前缀
      */
     public static final String USER_SEARCH_CACHE_PREFIX = "search:user:";
+    
+    /**
+     * 评论搜索缓存前缀
+     */
+    public static final String COMMENT_SEARCH_CACHE_PREFIX = "search:comment:";
     
     /**
      * 热门搜索关键词缓存键
@@ -153,6 +163,7 @@ public class SearchConstants {
     public static boolean isValidSearchType(String type) {
         return SEARCH_TYPE_POST.equals(type) || 
                SEARCH_TYPE_USER.equals(type) || 
+               SEARCH_TYPE_COMMENT.equals(type) ||
                SEARCH_TYPE_ALL.equals(type);
     }
     

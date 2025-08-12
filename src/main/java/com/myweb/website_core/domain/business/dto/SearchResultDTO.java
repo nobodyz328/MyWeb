@@ -3,6 +3,7 @@ package com.myweb.website_core.domain.business.dto;
 import lombok.Data;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.util.List;
 
@@ -80,7 +81,11 @@ public class SearchResultDTO<T> {
     /**
      * 获取总页数
      */
+    @JsonIgnore
     public Integer getTotalPages() {
+        if (total == null || size == null || size == 0) {
+            return 0;
+        }
         return (int) Math.ceil((double) total / size);
     }
     

@@ -23,7 +23,7 @@ import com.myweb.website_core.domain.business.dto.FollowResponse;
 import org.springframework.http.HttpStatus;
 import com.myweb.website_core.domain.business.entity.User;
 import com.myweb.website_core.domain.security.dto.SecurityEventRequest;
-import com.myweb.website_core.infrastructure.persistence.repository.UserRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.user.UserRepository;
 import com.myweb.website_core.infrastructure.security.audit.Auditable;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -37,7 +37,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 @Slf4j

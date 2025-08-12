@@ -1,4 +1,4 @@
-package com.myweb.website_core.infrastructure.persistence.repository;
+package com.myweb.website_core.infrastructure.persistence.repository.comment;
 
 import com.myweb.website_core.domain.business.entity.Comment;
 import org.springframework.data.domain.Page;

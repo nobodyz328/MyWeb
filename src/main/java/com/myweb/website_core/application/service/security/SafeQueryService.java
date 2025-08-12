@@ -1,8 +1,10 @@
 package com.myweb.website_core.application.service.security;
 
+import com.myweb.website_core.application.service.security.audit.AuditLogServiceAdapter;
+import com.myweb.website_core.common.enums.AuditOperation;
 import com.myweb.website_core.common.util.SafeSqlBuilder;
 import com.myweb.website_core.application.service.security.IPS.virusprotect.SqlInjectionProtectionService;
-import com.myweb.website_core.infrastructure.persistence.repository.SafeAuditLogRepository;
+import com.myweb.website_core.domain.security.dto.AuditLogRequest;
 import com.myweb.website_core.infrastructure.persistence.mapper.AuditLogMapperService;
 import com.myweb.website_core.domain.security.entity.AuditLog;
 import lombok.RequiredArgsConstructor;
@@ -33,8 +35,8 @@ public class SafeQueryService {
     
     private final SafeSqlBuilder safeSqlBuilder;
     private final SqlInjectionProtectionService sqlInjectionProtectionService;
-    private final SafeAuditLogRepository safeAuditLogRepository;
     private final AuditLogMapperService auditLogMapperService;
+    private final AuditLogServiceAdapter auditLogServiceAdapter;
     
     /**
      * 安全的审计日志分页查询（使用JPA）
@@ -43,19 +45,18 @@ public class SafeQueryService {
      * @param sortField 排序字段
      * @param sortDirection 排序方向
      * @param page 页码
-     * @param size 页大小
      * @return 分页结果
      */
     public Page<AuditLog> findAuditLogsSafely(Map<String, Object> conditions, 
                                             String sortField, String sortDirection,
-                                            int page, int size) {
+                                            Pageable page) {
         
         log.info("Executing safe audit logs query - JPA approach");
         
         try {
             // 使用安全的Repository进行查询
-            return safeAuditLogRepository.findSafePaginated(
-                conditions, sortField, sortDirection, page, size
+            return auditLogMapperService.findSafePaginated(
+                conditions, sortField, sortDirection, page
             );
             
         } catch (Exception e) {
@@ -84,7 +85,7 @@ public class SafeQueryService {
             Pageable pageable = PageRequest.of(page, size);
             
             // 使用安全的Repository进行搜索
-            return safeAuditLogRepository.findSafeSearch(
+            return auditLogMapperService.findSafeSearch(
                 searchFields, keyword, additionalConditions, pageable
             );
             
@@ -223,5 +224,218 @@ public class SafeQueryService {
     public void addAllowedSortFields(String tableName, List<String> fields) {
         safeSqlBuilder.addAllowedSortFields(tableName, fields);
         log.info("Added allowed sort fields for table {}: {}", tableName, fields);
+    }
+    
+    /**
+     * 构建复杂的动态查询
+     * 使用SafeSqlBuilder的DynamicQueryBuilder进行安全的复杂查询构建
+     * 
+     * @param queryBuilder 查询构建器
+     * @return 安全的动态查询字符串
+     */
+    public String buildComplexDynamicQuery(SafeSqlBuilder.DynamicQueryBuilder queryBuilder) {
+        try {
+            log.debug("构建复杂动态查询: mainTable={}", queryBuilder.getMainTable());
+            
+            // 使用SafeSqlBuilder构建查询
+            String query = safeSqlBuilder.buildComplexDynamicQuery(queryBuilder);
+
+            
+            log.debug("复杂动态查询构建成功: {}", query);
+            return query;
+            
+        } catch (Exception e) {
+            log.error("构建复杂动态查询失败: {}", e.getMessage());
+            
+            // 记录错误审计日志
+            auditLogServiceAdapter.logOperation(
+                    AuditLogRequest.system(
+                            AuditOperation.COMPLEX_QUERY_BUILD,
+                            "构建动态查询失败: " + e.getMessage()
+                    ).withResult( false)
+
+            );
+            
+            throw new RuntimeException("构建复杂动态查询失败: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * 构建参数化查询
+     * 确保所有参数都被正确参数化，防止SQL注入
+     * 
+     * @param baseQuery 基础查询模板
+     * @param parameters 查询参数
+     * @return 参数化查询结果
+     */
+    public SafeSqlBuilder.ParameterizedQuery buildParameterizedQuery(String baseQuery, Map<String, Object> parameters) {
+        try {
+            log.debug("构建参数化查询: parameterCount={}", parameters != null ? parameters.size() : 0);
+            
+            // 验证基础查询
+            boolean isValidQuery = validateUserInputSafety(baseQuery, "QUERY_TEMPLATE", "baseQuery");
+            if (!isValidQuery) {
+                throw new IllegalArgumentException("基础查询模板包含非法字符");
+            }
+            
+            // 使用SafeSqlBuilder构建参数化查询
+            SafeSqlBuilder.ParameterizedQuery result = safeSqlBuilder.buildParameterizedQuery(baseQuery, parameters);
+            
+            log.debug("参数化查询构建成功");
+            return result;
+            
+        } catch (Exception e) {
+            log.error("构建参数化查询失败: {}", e.getMessage());
+            
+            // 记录错误审计日志
+            auditLogServiceAdapter.logOperation(
+                    AuditLogRequest.system(
+                        AuditOperation.PARAMETERIZED_QUERY_BUILD,
+                        "构建参数化查询失败: " + e.getMessage()
+                    ).withResult( false)
+            );
+            
+            throw new RuntimeException("构建参数化查询失败: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * 构建安全的子查询
+     * 
+     * @param subQuery 子查询内容
+     * @param alias 子查询别名
+     * @return 安全的子查询字符串
+     */
+    public String buildSafeSubQuery(String subQuery, String alias) {
+        try {
+            log.debug("构建安全子查询: alias={}", alias);
+            
+            // 验证子查询内容
+            boolean isValidSubQuery = validateUserInputSafety(subQuery, "SUBQUERY", "subQuery");
+            if (!isValidSubQuery) {
+                throw new IllegalArgumentException("子查询内容包含非法字符");
+            }
+            
+            // 使用SafeSqlBuilder构建子查询
+            String result = safeSqlBuilder.buildSafeSubQuery(subQuery, alias);
+            
+            log.debug("安全子查询构建成功");
+            return result;
+            
+        } catch (Exception e) {
+            log.error("构建安全子查询失败: {}", e.getMessage());
+            throw new RuntimeException("构建安全子查询失败: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * 构建安全的UNION查询
+     * 
+     * @param queries 要联合的查询列表
+     * @param unionType UNION类型（UNION或UNION ALL）
+     * @return 安全的UNION查询
+     */
+    public String buildSafeUnionQuery(List<String> queries, String unionType) {
+        try {
+            log.debug("构建安全UNION查询: queryCount={}, unionType={}", 
+                     queries != null ? queries.size() : 0, unionType);
+            
+            // 验证每个查询
+            if (queries != null) {
+                for (int i = 0; i < queries.size(); i++) {
+                    String query = queries.get(i);
+                    boolean isValidQuery = validateUserInputSafety(query, "UNION_QUERY", "query" + i);
+                    if (!isValidQuery) {
+                        throw new IllegalArgumentException("UNION查询" + i + "包含非法字符");
+                    }
+                }
+            }
+            
+            // 使用SafeSqlBuilder构建UNION查询
+            String result = safeSqlBuilder.buildSafeUnionQuery(queries, unionType);
+            
+            log.debug("安全UNION查询构建成功");
+            return result;
+            
+        } catch (Exception e) {
+            log.error("构建安全UNION查询失败: {}", e.getMessage());
+            throw new RuntimeException("构建安全UNION查询失败: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * 创建动态查询构建器
+     * 
+     * @param mainTable 主表名
+     * @return 动态查询构建器
+     */
+    public SafeSqlBuilder.DynamicQueryBuilder createQueryBuilder(String mainTable) {
+        // 验证表名
+        List<String> allowedTables = List.of("posts", "users", "comments", "audit_logs");
+        if (!allowedTables.contains(mainTable)) {
+            throw new IllegalArgumentException("不允许的表名: " + mainTable);
+        }
+        
+        log.debug("创建动态查询构建器: mainTable={}", mainTable);
+        return new SafeSqlBuilder.DynamicQueryBuilder(mainTable);
+    }
+    
+    /**
+     * 验证查询构建器的安全性
+     * 
+     * @param queryBuilder 查询构建器
+     * @return 验证结果
+     */
+    public boolean validateQueryBuilder(SafeSqlBuilder.DynamicQueryBuilder queryBuilder) {
+        try {
+            if (queryBuilder == null) {
+                return false;
+            }
+            
+            // 验证主表
+            if (queryBuilder.getMainTable() == null || queryBuilder.getMainTable().trim().isEmpty()) {
+                return false;
+            }
+            
+            // 验证选择字段
+            if (queryBuilder.getSelectFields() != null) {
+                List<String> allowedFields = getAllowedSortFields(queryBuilder.getMainTable());
+                for (String field : queryBuilder.getSelectFields()) {
+                    if (!allowedFields.contains(field) && !"*".equals(field)) {
+                        log.warn("查询构建器包含不允许的字段: {}", field);
+                        return false;
+                    }
+                }
+            }
+            
+            // 验证排序字段
+            if (queryBuilder.getSortField() != null) {
+                List<String> allowedFields = getAllowedSortFields(queryBuilder.getMainTable());
+                if (!allowedFields.contains(queryBuilder.getSortField())) {
+                    log.warn("查询构建器包含不允许的排序字段: {}", queryBuilder.getSortField());
+                    return false;
+                }
+            }
+            
+            // 验证条件值
+            if (queryBuilder.getConditions() != null) {
+                for (Map.Entry<String, Object> entry : queryBuilder.getConditions().entrySet()) {
+                    if (entry.getValue() instanceof String) {
+                        boolean isValidValue = validateUserInputSafety(
+                            (String) entry.getValue(), "CONDITION", entry.getKey());
+                        if (!isValidValue) {
+                            log.warn("查询构建器包含不安全的条件值: {}={}", entry.getKey(), entry.getValue());
+                            return false;
+                        }
+                    }
+                }
+            }
+            
+            return true;
+            
+        } catch (Exception e) {
+            log.error("验证查询构建器失败: {}", e.getMessage());
+            return false;
+        }
     }
 }

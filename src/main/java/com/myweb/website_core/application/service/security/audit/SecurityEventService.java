@@ -8,7 +8,7 @@ import com.myweb.website_core.domain.security.dto.SecurityEventQuery;
 import com.myweb.website_core.domain.security.dto.SecurityEventRequest;
 import com.myweb.website_core.domain.security.dto.SecurityEventStatistics;
 import com.myweb.website_core.domain.security.entity.SecurityEvent;
-import com.myweb.website_core.infrastructure.persistence.repository.SecurityEventRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.audit.SecurityEventRepository;
 import com.myweb.website_core.infrastructure.persistence.mapper.SecurityEventMapper;
 import com.myweb.website_core.infrastructure.persistence.mapper.SecurityEventMapperService;
 import lombok.RequiredArgsConstructor;
@@ -25,8 +25,6 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 /**
  * 安全事件监控服务

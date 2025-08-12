@@ -4,7 +4,12 @@ import com.myweb.website_core.application.service.security.audit.AuditLogService
 import com.myweb.website_core.application.service.security.confirm.ConfirmationService;
 import com.myweb.website_core.application.service.security.integeration.dataManage.DataDeletionService;
 import com.myweb.website_core.domain.business.entity.*;
-import com.myweb.website_core.infrastructure.persistence.repository.*;
+import com.myweb.website_core.infrastructure.persistence.repository.comment.CommentRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.interaction.ImageRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.interaction.PostCollectRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.interaction.PostLikeRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.post.PostRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

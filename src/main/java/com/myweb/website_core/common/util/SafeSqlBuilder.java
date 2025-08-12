@@ -42,15 +42,15 @@ public class SafeSqlBuilder {
     private static final Pattern SAFE_FIELD_PATTERN = Pattern.compile("^[a-zA-Z_][a-zA-Z0-9_]*$");
     
     static {
-        // 初始化允许的排序字段
+        // 初始化允许的排序字段 - 使用JPA字段名
         ALLOWED_SORT_FIELDS.put("users", List.of(
-            "id", "username", "email", "created_at", "liked_count"
+            "id", "username", "email", "bio", "createdAt", "likedCount", "followerCount", "followCount"
         ));
         ALLOWED_SORT_FIELDS.put("posts", List.of(
-            "id", "title", "created_at", "like_count", "collect_count", "comment_count"
+            "id", "title", "content", "createdAt", "likeCount", "collectCount", "commentCount"
         ));
         ALLOWED_SORT_FIELDS.put("comments", List.of(
-            "id", "created_at", "like_count"
+            "id", "content", "createdAt", "likeCount"
         ));
         ALLOWED_SORT_FIELDS.put("audit_logs", List.of(
             "id", "timestamp", "operation", "result", "username", "user_id", 
@@ -299,23 +299,63 @@ public class SafeSqlBuilder {
             return false;
         }
         
+        // 允许通配符
+        if ("*".equals(fieldName)) {
+            return true;
+        }
+        
+        // 处理带表别名的字段名（如 p.id, u.username）
+        String actualFieldName = fieldName;
+        if (fieldName.contains(".")) {
+            String[] parts = fieldName.split("\\.");
+            if (parts.length == 2) {
+                // 验证表别名部分
+                if (!isValidIdentifier(parts[0])) {
+                    return false;
+                }
+                actualFieldName = parts[1];
+            } else {
+                return false; // 不允许多层嵌套
+            }
+        }
+        
         // 检查是否符合安全的字段名模式
-        if (!SAFE_FIELD_PATTERN.matcher(fieldName).matches()) {
+        if (!isValidIdentifier(actualFieldName)) {
             return false;
         }
         
         // 检查长度限制
-        if (fieldName.length() > 64) {
+        if (fieldName.length() > 128) { // 增加长度限制以支持表别名
+            return false;
+        }
+        
+        return true;
+    }
+    
+    /**
+     * 验证标识符是否有效（表名、字段名、别名等）
+     * 
+     * @param identifier 标识符
+     * @return 如果有效返回true
+     */
+    private boolean isValidIdentifier(String identifier) {
+        if (identifier == null || identifier.trim().isEmpty()) {
+            return false;
+        }
+        
+        // 检查是否符合安全的标识符模式
+        if (!SAFE_FIELD_PATTERN.matcher(identifier).matches()) {
             return false;
         }
         
         // 检查是否为SQL关键词
         List<String> sqlKeywords = List.of(
             "SELECT", "INSERT", "UPDATE", "DELETE", "DROP", "CREATE", "ALTER",
-            "UNION", "WHERE", "ORDER", "GROUP", "HAVING", "LIMIT", "OFFSET"
+            "UNION", "WHERE", "ORDER", "GROUP", "HAVING", "LIMIT", "OFFSET",
+            "FROM", "JOIN", "INNER", "LEFT", "RIGHT", "FULL", "ON", "AS"
         );
         
-        return !sqlKeywords.contains(fieldName.toUpperCase());
+        return !sqlKeywords.contains(identifier.toUpperCase());
     }
     
     /**
@@ -336,5 +376,417 @@ public class SafeSqlBuilder {
      */
     public List<String> getAllowedSortFields(String tableName) {
         return ALLOWED_SORT_FIELDS.getOrDefault(tableName, new ArrayList<>());
+    }
+    
+    /**
+     * 构建复杂的动态查询
+     * 支持多表关联、子查询、聚合函数等复杂场景
+     * 
+     * @param queryBuilder 查询构建器
+     * @return 安全的动态查询
+     */
+    public String buildComplexDynamicQuery(DynamicQueryBuilder queryBuilder) {
+        validateQueryBuilder(queryBuilder);
+        
+        StringBuilder query = new StringBuilder();
+        
+        // 构建SELECT子句
+        query.append(buildSelectClause(queryBuilder.getSelectFields(), queryBuilder.getAggregations()));
+        
+        // 构建FROM子句
+        query.append(" FROM ").append(queryBuilder.getMainTable());
+        if (queryBuilder.getMainTableAlias() != null) {
+            query.append(" ").append(queryBuilder.getMainTableAlias());
+        }
+        
+        // 构建JOIN子句
+        for (JoinClause join : queryBuilder.getJoins()) {
+            query.append(buildSafeJoinClause(join.getJoinType(), join.getTableName(), 
+                                           join.getAlias(), join.getOnCondition()));
+        }
+        
+        // 构建WHERE子句
+        if (!queryBuilder.getConditions().isEmpty()) {
+            query.append(buildSafeWhereClause(queryBuilder.getConditions()));
+        }
+        
+        // 构建GROUP BY子句
+        if (!queryBuilder.getGroupByFields().isEmpty()) {
+            query.append(buildGroupByClause(queryBuilder.getGroupByFields(), queryBuilder.getMainTable()));
+        }
+        
+        // 构建HAVING子句
+        if (!queryBuilder.getHavingConditions().isEmpty()) {
+            query.append(buildHavingClause(queryBuilder.getHavingConditions()));
+        }
+        
+        // 构建ORDER BY子句
+        if (queryBuilder.getSortField() != null) {
+            query.append(buildSafeOrderByClause(queryBuilder.getMainTable(), 
+                                              queryBuilder.getSortField(), 
+                                              queryBuilder.getSortDirection()));
+        }
+        
+        // 构建LIMIT子句
+        if (queryBuilder.getLimit() != null || queryBuilder.getOffset() != null) {
+            query.append(buildSafeLimitClause(queryBuilder.getLimit(), queryBuilder.getOffset()));
+        }
+        
+        return query.toString();
+    }
+    
+    /**
+     * 构建参数化的动态查询
+     * 确保所有参数都被正确参数化，防止SQL注入
+     * 
+     * @param baseQuery 基础查询模板
+     * @param parameters 查询参数
+     * @return 参数化查询结果
+     */
+    public ParameterizedQuery buildParameterizedQuery(String baseQuery, Map<String, Object> parameters) {
+        // 验证基础查询模板
+        sqlInjectionProtectionService.validateAndSanitizeInput(baseQuery, "QUERY_TEMPLATE", "baseQuery");
+        
+        Map<String, Object> safeParameters = new HashMap<>();
+        StringBuilder processedQuery = new StringBuilder(baseQuery);
+        
+        // 处理参数化
+        for (Map.Entry<String, Object> entry : parameters.entrySet()) {
+            String paramName = entry.getKey();
+            Object paramValue = entry.getValue();
+            
+            // 验证参数名安全性
+            if (!isSafeFieldName(paramName)) {
+                throw new IllegalArgumentException("Unsafe parameter name: " + paramName);
+            }
+            
+            // 验证参数值
+            if (paramValue instanceof String) {
+                sqlInjectionProtectionService.validateAndSanitizeInput(
+                    (String) paramValue, "PARAMETER", paramName);
+            }
+            
+            safeParameters.put(paramName, paramValue);
+        }
+        
+        return new ParameterizedQuery(processedQuery.toString(), safeParameters);
+    }
+    
+    /**
+     * 构建安全的子查询
+     * 
+     * @param subQuery 子查询内容
+     * @param alias 子查询别名
+     * @return 安全的子查询字符串
+     */
+    public String buildSafeSubQuery(String subQuery, String alias) {
+        // 验证子查询
+        sqlInjectionProtectionService.validateAndSanitizeInput(subQuery, "SUBQUERY", "subQuery");
+        
+        // 验证别名
+        if (alias != null && !isSafeFieldName(alias)) {
+            throw new IllegalArgumentException("Unsafe subquery alias: " + alias);
+        }
+        
+        StringBuilder result = new StringBuilder("(");
+        result.append(subQuery);
+        result.append(")");
+        
+        if (alias != null) {
+            result.append(" AS ").append(alias);
+        }
+        
+        return result.toString();
+    }
+    
+    /**
+     * 构建安全的UNION查询
+     * 
+     * @param queries 要联合的查询列表
+     * @param unionType UNION类型（UNION或UNION ALL）
+     * @return 安全的UNION查询
+     */
+    public String buildSafeUnionQuery(List<String> queries, String unionType) {
+        if (queries == null || queries.isEmpty()) {
+            throw new IllegalArgumentException("Union queries cannot be empty");
+        }
+        
+        // 验证UNION类型
+        if (!"UNION".equalsIgnoreCase(unionType) && !"UNION ALL".equalsIgnoreCase(unionType)) {
+            throw new IllegalArgumentException("Invalid union type: " + unionType);
+        }
+        
+        // 验证每个查询
+        for (String query : queries) {
+            sqlInjectionProtectionService.validateAndSanitizeInput(query, "UNION_QUERY", "query");
+        }
+        
+        return String.join(" " + unionType.toUpperCase() + " ", queries);
+    }
+    
+    /**
+     * 构建SELECT子句
+     */
+    private String buildSelectClause(List<String> selectFields, List<String> aggregations) {
+        StringBuilder select = new StringBuilder("SELECT ");
+        List<String> allFields = new ArrayList<>();
+        
+        // 添加普通字段
+        if (selectFields != null && !selectFields.isEmpty()) {
+            for (String field : selectFields) {
+                if (!isSafeFieldName(field)) {
+                    throw new IllegalArgumentException("Unsafe select field: " + field);
+                }
+                allFields.add(field);
+            }
+        }
+        
+        // 添加聚合函数
+        if (aggregations != null && !aggregations.isEmpty()) {
+            for (String aggregation : aggregations) {
+                validateAggregationFunction(aggregation);
+                allFields.add(aggregation);
+            }
+        }
+        
+        if (allFields.isEmpty()) {
+            allFields.add("*");
+        }
+        
+        select.append(String.join(", ", allFields));
+        return select.toString();
+    }
+    
+    /**
+     * 构建GROUP BY子句
+     */
+    private String buildGroupByClause(List<String> groupByFields, String tableName) {
+        if (groupByFields == null || groupByFields.isEmpty()) {
+            return "";
+        }
+        
+        // 验证GROUP BY字段
+        List<String> allowedFields = ALLOWED_SORT_FIELDS.get(tableName);
+        for (String field : groupByFields) {
+            if (!isSafeFieldName(field)) {
+                throw new IllegalArgumentException("Unsafe GROUP BY field: " + field);
+            }
+            
+            // 对于GROUP BY字段，需要更灵活的验证
+            String actualField = field;
+            if (field.contains(".")) {
+                actualField = field.split("\\.")[1]; // 获取字段名部分
+            }
+            
+            // 如果有允许字段列表，检查字段是否在列表中
+            if (allowedFields != null && !allowedFields.isEmpty() && !allowedFields.contains(actualField)) {
+                // 对于一些常见的GROUP BY字段，给予特殊处理
+                List<String> commonGroupByFields = List.of("author_id", "user_id", "category_id", "status", "created_at", "updated_at");
+                if (!commonGroupByFields.contains(actualField)) {
+                    throw new IllegalArgumentException("GROUP BY field not allowed: " + field);
+                }
+            }
+        }
+        
+        return " GROUP BY " + String.join(", ", groupByFields);
+    }
+    
+    /**
+     * 构建HAVING子句
+     */
+    private String buildHavingClause(Map<String, Object> havingConditions) {
+        if (havingConditions == null || havingConditions.isEmpty()) {
+            return "";
+        }
+        
+        StringBuilder having = new StringBuilder(" HAVING ");
+        List<String> conditions = new ArrayList<>();
+        
+        for (Map.Entry<String, Object> entry : havingConditions.entrySet()) {
+            String condition = entry.getKey();
+            Object value = entry.getValue();
+            
+            // 验证HAVING条件
+            validateAggregationFunction(condition);
+            
+            if (value instanceof String) {
+                sqlInjectionProtectionService.validateAndSanitizeInput(
+                    (String) value, "HAVING_CONDITION", condition);
+            }
+            
+            // 为HAVING条件生成安全的参数名
+            String paramName = "HAVING_" + condition.replaceAll("[^a-zA-Z0-9_]", "_");
+            conditions.add(condition + " = #{" + paramName + "}");
+        }
+        
+        having.append(String.join(" AND ", conditions));
+        return having.toString();
+    }
+    
+    /**
+     * 验证聚合函数
+     */
+    private void validateAggregationFunction(String aggregation) {
+        if (aggregation == null || aggregation.trim().isEmpty()) {
+            throw new IllegalArgumentException("Aggregation function cannot be empty");
+        }
+        
+        // 允许的聚合函数
+        List<String> allowedFunctions = List.of("COUNT", "SUM", "AVG", "MAX", "MIN", "GROUP_CONCAT");
+        
+        String upperAggregation = aggregation.toUpperCase();
+        boolean isValidFunction = allowedFunctions.stream()
+            .anyMatch(func -> upperAggregation.startsWith(func + "("));
+        
+        if (!isValidFunction) {
+            throw new IllegalArgumentException("Invalid aggregation function: " + aggregation);
+        }
+    }
+    
+    /**
+     * 验证查询构建器
+     */
+    private void validateQueryBuilder(DynamicQueryBuilder queryBuilder) {
+        if (queryBuilder == null) {
+            throw new IllegalArgumentException("Query builder cannot be null");
+        }
+        
+        if (queryBuilder.getMainTable() == null || queryBuilder.getMainTable().trim().isEmpty()) {
+            throw new IllegalArgumentException("Main table cannot be empty");
+        }
+        
+        if (!isSafeFieldName(queryBuilder.getMainTable())) {
+            throw new IllegalArgumentException("Unsafe main table name: " + queryBuilder.getMainTable());
+        }
+    }
+    
+    /**
+     * 动态查询构建器类
+     */
+    public static class DynamicQueryBuilder {
+        private String mainTable;
+        private String mainTableAlias;
+        private List<String> selectFields = new ArrayList<>();
+        private List<String> aggregations = new ArrayList<>();
+        private List<JoinClause> joins = new ArrayList<>();
+        private Map<String, Object> conditions = new HashMap<>();
+        private List<String> groupByFields = new ArrayList<>();
+        private Map<String, Object> havingConditions = new HashMap<>();
+        private String sortField;
+        private String sortDirection;
+        private Integer limit;
+        private Integer offset;
+        
+        public DynamicQueryBuilder(String mainTable) {
+            this.mainTable = mainTable;
+        }
+        
+        public DynamicQueryBuilder alias(String alias) {
+            this.mainTableAlias = alias;
+            return this;
+        }
+        
+        public DynamicQueryBuilder select(String... fields) {
+            this.selectFields.addAll(List.of(fields));
+            return this;
+        }
+        
+        public DynamicQueryBuilder aggregate(String... aggregations) {
+            this.aggregations.addAll(List.of(aggregations));
+            return this;
+        }
+        
+        public DynamicQueryBuilder join(String joinType, String tableName, String alias, String onCondition) {
+            this.joins.add(new JoinClause(joinType, tableName, alias, onCondition));
+            return this;
+        }
+        
+        public DynamicQueryBuilder where(String field, Object value) {
+            this.conditions.put(field, value);
+            return this;
+        }
+        
+        public DynamicQueryBuilder where(Map<String, Object> conditions) {
+            this.conditions.putAll(conditions);
+            return this;
+        }
+        
+        public DynamicQueryBuilder groupBy(String... fields) {
+            this.groupByFields.addAll(List.of(fields));
+            return this;
+        }
+        
+        public DynamicQueryBuilder having(String condition, Object value) {
+            this.havingConditions.put(condition, value);
+            return this;
+        }
+        
+        public DynamicQueryBuilder orderBy(String field, String direction) {
+            this.sortField = field;
+            this.sortDirection = direction;
+            return this;
+        }
+        
+        public DynamicQueryBuilder limit(int limit) {
+            this.limit = limit;
+            return this;
+        }
+        
+        public DynamicQueryBuilder offset(int offset) {
+            this.offset = offset;
+            return this;
+        }
+        
+        // Getters
+        public String getMainTable() { return mainTable; }
+        public String getMainTableAlias() { return mainTableAlias; }
+        public List<String> getSelectFields() { return selectFields; }
+        public List<String> getAggregations() { return aggregations; }
+        public List<JoinClause> getJoins() { return joins; }
+        public Map<String, Object> getConditions() { return conditions; }
+        public List<String> getGroupByFields() { return groupByFields; }
+        public Map<String, Object> getHavingConditions() { return havingConditions; }
+        public String getSortField() { return sortField; }
+        public String getSortDirection() { return sortDirection; }
+        public Integer getLimit() { return limit; }
+        public Integer getOffset() { return offset; }
+    }
+    
+    /**
+     * JOIN子句类
+     */
+    public static class JoinClause {
+        private final String joinType;
+        private final String tableName;
+        private final String alias;
+        private final String onCondition;
+        
+        public JoinClause(String joinType, String tableName, String alias, String onCondition) {
+            this.joinType = joinType;
+            this.tableName = tableName;
+            this.alias = alias;
+            this.onCondition = onCondition;
+        }
+        
+        public String getJoinType() { return joinType; }
+        public String getTableName() { return tableName; }
+        public String getAlias() { return alias; }
+        public String getOnCondition() { return onCondition; }
+    }
+    
+    /**
+     * 参数化查询结果类
+     */
+    public static class ParameterizedQuery {
+        private final String query;
+        private final Map<String, Object> parameters;
+        
+        public ParameterizedQuery(String query, Map<String, Object> parameters) {
+            this.query = query;
+            this.parameters = parameters;
+        }
+        
+        public String getQuery() { return query; }
+        public Map<String, Object> getParameters() { return parameters; }
     }
 }

@@ -2,7 +2,7 @@ package com.myweb.website_core.infrastructure.mapper;
 
 import com.myweb.website_core.common.enums.AuditOperation;
 import com.myweb.website_core.domain.security.entity.AuditLog;
-import com.myweb.website_core.infrastructure.persistence.repository.AuditLogRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.audit.AuditLogRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;

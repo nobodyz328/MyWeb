@@ -13,7 +13,7 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * 安全告警服务
- * 
+ * <p>
  * 负责发送安全事件的告警通知，支持邮件和短信等多种方式
  * 符合GB/T 22239-2019二级等保要求的安全监控和告警机制
  */
@@ -28,10 +28,10 @@ public class SecurityAlertService {
     
  //   @Value("${app.security.event.alert.email-recipients:}")
     private final List<String> alertEmailRecipients= List.of(
-            "3281314509@qq.com",
-            "admin@myweb.com",
-         "security@myweb.com",
-         "ops@myweb.com"
+            "3281314509@qq.com"
+//            "admin@myweb.com",
+//         "security@myweb.com",
+//         "ops@myweb.com"
  );
     
     //@Value("${app.security.event.alert.email-from:security@myweb.com}")

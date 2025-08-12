@@ -9,14 +9,14 @@ import com.myweb.website_core.domain.business.dto.FollowResponse;
 import com.myweb.website_core.domain.business.entity.User;
 import java.util.List;
 import java.util.stream.Collectors;
-import com.myweb.website_core.infrastructure.persistence.repository.UserRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.user.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.scheduling.annotation.Async;
 import java.util.concurrent.CompletableFuture;
 
-import com.myweb.website_core.infrastructure.persistence.repository.PostRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.post.PostRepository;
 
 @Slf4j
 @Service

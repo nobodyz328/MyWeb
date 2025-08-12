@@ -1,6 +1,9 @@
-package com.myweb.website_core.infrastructure.persistence.repository;
+package com.myweb.website_core.infrastructure.persistence.repository.comment;
 
 import com.myweb.website_core.domain.business.entity.Comment;
+import com.myweb.website_core.infrastructure.persistence.repository.SafeRepositoryBase;
+import com.myweb.website_core.infrastructure.persistence.repository.comment.CommentRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.comment.CommentRepositoryCustom;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;

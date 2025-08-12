@@ -1,8 +1,8 @@
 package com.myweb.website_core.application.service;
 
 import com.myweb.website_core.domain.security.entity.Permission;
-import com.myweb.website_core.infrastructure.persistence.repository.PermissionRepository;
-import com.myweb.website_core.infrastructure.persistence.repository.RoleRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.access.PermissionRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.access.RoleRepository;
 import com.myweb.website_core.application.service.security.audit.AuditLogService;
 import com.myweb.website_core.application.service.security.authorization.PermissionService;
 import org.junit.jupiter.api.BeforeEach;

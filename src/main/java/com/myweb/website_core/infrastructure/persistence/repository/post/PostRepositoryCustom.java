@@ -1,4 +1,4 @@
-package com.myweb.website_core.infrastructure.persistence.repository;
+package com.myweb.website_core.infrastructure.persistence.repository.post;
 
 import com.myweb.website_core.domain.business.entity.Post;
 import org.springframework.data.domain.Page;
@@ -90,4 +90,45 @@ public interface PostRepositoryCustom {
      * @return 帖子数量
      */
     long countPostsSafely(Map<String, Object> conditions);
+    
+    /**
+     * 安全的分页查询
+     * 
+     * @param conditions 查询条件
+     * @param sortField 排序字段
+     * @param sortDirection 排序方向
+     * @param page 页码
+     * @param size 页大小
+     * @return 分页结果
+     */
+    Page<Post> findSafePaginated(Map<String, Object> conditions, 
+                               String sortField, String sortDirection, 
+                               int page, int size);
+    
+    /**
+     * 执行复杂动态查询
+     * 
+     * @param dynamicQuery 动态查询SQL
+     * @param parameters 查询参数
+     * @return 查询结果
+     */
+    List<Post> findPostsByComplexQuery(String dynamicQuery, Map<String, Object> parameters);
+    
+    /**
+     * 执行参数化查询
+     * 
+     * @param query 参数化查询SQL
+     * @param parameters 查询参数
+     * @return 查询结果
+     */
+    List<Post> findPostsByParameterizedQuery(String query, Map<String, Object> parameters);
+    
+    /**
+     * 执行聚合统计查询
+     * 
+     * @param aggregateQuery 聚合查询SQL
+     * @param parameters 查询参数
+     * @return 统计结果
+     */
+    List<Map<String, Object>> executeAggregateQuery(String aggregateQuery, Map<String, Object> parameters);
 }

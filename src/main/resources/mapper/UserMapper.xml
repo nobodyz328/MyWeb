@@ -45,59 +45,6 @@
         COALESCE(posts.count, 0) as posts_count
     </sql>
 
-    <!-- ========== 基础CRUD操作 ========== -->
-    
-    <!-- 插入用户 -->
-    <insert id="insertUser" parameterType="com.myweb.website_core.domain.business.entity.User" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO users (username, email, password, avatar_url, bio, liked_count)
-        VALUES (#{username}, #{email}, #{password}, #{avatarUrl}, #{bio}, #{likedCount})
-    </insert>
-
-    <!-- 根据ID查询用户 -->
-    <select id="selectUserById" resultMap="UserResultMap">
-        SELECT <include refid="Base_Column_List"/>
-        FROM users u
-        WHERE u.id = #{id}
-    </select>
-
-    <!-- 根据用户名查询用户 -->
-    <select id="selectUserByUsername" resultMap="UserResultMap">
-        SELECT <include refid="Base_Column_List"/>
-        FROM users u
-        WHERE u.username = #{username}
-    </select>
-
-    <!-- 根据邮箱查询用户 -->
-    <select id="selectUserByEmail" resultMap="UserResultMap">
-        SELECT <include refid="Base_Column_List"/>
-        FROM users u
-        WHERE u.email = #{email}
-    </select>
-
-    <!-- 查询所有用户 -->
-    <select id="selectAllUsers" resultMap="UserResultMap">
-        SELECT <include refid="Base_Column_List"/>
-        FROM users u
-        ORDER BY u.id DESC
-    </select>
-
-    <!-- 更新用户信息 -->
-    <update id="updateUser" parameterType="com.myweb.website_core.domain.business.entity.User">
-        UPDATE users
-        SET username = #{username},
-            email = #{email},
-            <if test="password != null">password = #{password},</if>
-            avatar_url = #{avatarUrl},
-            bio = #{bio},
-            liked_count = #{likedCount}
-        WHERE id = #{id}
-    </update>
-
-    <!-- 删除用户 -->
-    <delete id="deleteUser">
-        DELETE FROM users WHERE id = #{id}
-    </delete>
-
     <!-- ========== 搜索功能相关SQL ========== -->
     
     <!-- 高性能用户搜索 - 支持用户名和昵称模糊搜索 -->
@@ -233,33 +180,6 @@
     </select>
 
     <!-- ========== 统计相关方法 ========== -->
-    
-    <!-- 更新用户获赞数 -->
-    <update id="updateLikedCount">
-        UPDATE users SET liked_count = #{likedCount} WHERE id = #{id}
-    </update>
-    
-    <!-- 获取用户统计信息 -->
-    <select id="getUserStats" resultMap="UserSearchResultMap">
-        SELECT <include refid="Search_Column_List"/>, 0.0 as relevance_score
-        FROM users u
-        LEFT JOIN (
-            SELECT user_id, COUNT(*) as count
-            FROM user_followers
-            GROUP BY user_id
-        ) followers ON u.id = followers.user_id
-        LEFT JOIN (
-            SELECT follower_id, COUNT(*) as count
-            FROM user_followers
-            GROUP BY follower_id
-        ) following ON u.id = following.follower_id
-        LEFT JOIN (
-            SELECT author_id, COUNT(*) as count
-            FROM posts
-            GROUP BY author_id
-        ) posts ON u.id = posts.author_id
-        WHERE u.id = #{userId}
-    </select>
     
     <!-- 游标分页搜索用户（用于无限滚动） - 使用安全的参数化查询 -->
     <select id="searchUsersWithCursor" resultMap="UserSearchResultMap">

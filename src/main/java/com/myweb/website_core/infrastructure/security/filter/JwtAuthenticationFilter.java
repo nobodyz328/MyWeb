@@ -2,7 +2,6 @@ package com.myweb.website_core.infrastructure.security.filter;
 
 import com.myweb.website_core.application.service.security.authentication.JWT.JwtService;
 import com.myweb.website_core.application.service.security.authentication.JWT.JwtTokenService;
-import com.myweb.website_core.infrastructure.persistence.repository.UserRepository;
 import com.myweb.website_core.infrastructure.security.CustomUserDetailsService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

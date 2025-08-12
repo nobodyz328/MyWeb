@@ -8,7 +8,7 @@ import com.myweb.website_core.application.service.security.IPS.virusprotect.Inpu
 import com.myweb.website_core.common.exception.security.ValidationException;
 import com.myweb.website_core.domain.business.entity.Post;
 import com.myweb.website_core.domain.business.entity.User;
-import com.myweb.website_core.infrastructure.persistence.repository.UserRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.user.UserRepository;
 import com.myweb.website_core.infrastructure.security.aspect.SecurityValidationAspect;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

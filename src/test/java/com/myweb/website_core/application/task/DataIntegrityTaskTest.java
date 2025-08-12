@@ -4,9 +4,8 @@ import com.myweb.website_core.application.service.security.integeration.dataMana
 import com.myweb.website_core.application.service.security.audit.AuditLogService;
 import com.myweb.website_core.domain.business.entity.Post;
 import com.myweb.website_core.domain.business.entity.Comment;
-import com.myweb.website_core.domain.business.entity.User;
-import com.myweb.website_core.infrastructure.persistence.repository.PostRepository;
-import com.myweb.website_core.infrastructure.persistence.repository.CommentRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.post.PostRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.comment.CommentRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

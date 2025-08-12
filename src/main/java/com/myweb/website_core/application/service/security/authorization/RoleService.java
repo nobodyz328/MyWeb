@@ -4,9 +4,9 @@ import com.myweb.website_core.application.service.security.audit.AuditLogService
 import com.myweb.website_core.domain.security.entity.Permission;
 import com.myweb.website_core.domain.security.entity.Role;
 import com.myweb.website_core.domain.business.entity.User;
-import com.myweb.website_core.infrastructure.persistence.repository.PermissionRepository;
-import com.myweb.website_core.infrastructure.persistence.repository.RoleRepository;
-import com.myweb.website_core.infrastructure.persistence.repository.UserRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.access.PermissionRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.access.RoleRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -19,11 +19,11 @@ import java.util.*;
 
 /**
  * 角色管理服务
- * 
+ * <p>
  * 提供角色的创建、修改、删除和查询功能
  * 实现基于角色的访问控制(RBAC)模型
  * 符合GB/T 22239-2019二级等保要求的访问控制机制
- * 
+ * <p>
  * 主要功能：
  * - 角色的CRUD操作
  * - 角色权限管理
@@ -39,8 +39,6 @@ public class RoleService {
     private final RoleRepository roleRepository;
     private final PermissionRepository permissionRepository;
     private final UserRepository userRepository;
-    private final AuditLogService auditLogService;
-    
     // ==================== 角色CRUD操作 ====================
     
     /**

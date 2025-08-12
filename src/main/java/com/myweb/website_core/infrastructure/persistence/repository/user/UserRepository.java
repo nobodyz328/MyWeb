@@ -1,4 +1,4 @@
-package com.myweb.website_core.infrastructure.persistence.repository;
+package com.myweb.website_core.infrastructure.persistence.repository.user;
 
 import com.myweb.website_core.domain.business.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;

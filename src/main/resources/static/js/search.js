@@ -6,6 +6,7 @@ let currentSortBy = 'RELEVANCE';
 let currentKeyword = '';
 let lastPostId = 0;
 let lastUserId = 0;
+let lastCommentId = 0;
 let isLoading = false;
 let hasMoreResults = true;
 
@@ -247,6 +248,7 @@ async function performSearch() {
 function resetSearchState() {
   lastPostId = 0;
   lastUserId = 0;
+  lastCommentId = 0;
   hasMoreResults = true;
   document.getElementById('searchResults').innerHTML = '';
   document.getElementById('resultsCount').textContent = '0';
@@ -276,6 +278,10 @@ async function loadSearchResults() {
       case 'USER':
         params.append('lastId', lastUserId.toString());
         url = `/blog/api/search/users?${params}`;
+        break;
+      case 'COMMENT':
+        params.append('lastId', lastCommentId.toString());
+        url = `/blog/api/search/comments?${params}`;
         break;
       case 'ALL':
       default:
@@ -338,6 +344,9 @@ function displaySearchResults(items, type) {
       } else if (item.username) {
         // 用户
         resultHtml = createUserResultCard(item);
+      } else if (item.contentSummary && item.postId) {
+        // 评论
+        resultHtml = createCommentResultCard(item);
       }
     } else if (type === 'POST' || currentSearchType === 'POST') {
       // 帖子搜索
@@ -345,6 +354,9 @@ function displaySearchResults(items, type) {
     } else if (type === 'USER' || currentSearchType === 'USER') {
       // 用户搜索
       resultHtml = createUserResultCard(item);
+    } else if (type === 'COMMENT' || currentSearchType === 'COMMENT') {
+      // 评论搜索
+      resultHtml = createCommentResultCard(item);
     }
     
     if (resultHtml) {
@@ -423,6 +435,41 @@ function createUserResultCard(user) {
   `;
 }
 
+// 创建评论结果卡片
+function createCommentResultCard(comment) {
+  return `
+    <div class="comment-result-card">
+      <div class="post-result-header">
+        <span class="result-type-badge">评论</span>
+        ${comment.isReply ? '<span class="reply-badge">回复</span>' : ''}
+      </div>
+      <div class="comment-result-content">
+        <div class="comment-result-text">
+          ${escapeHtml(comment.contentSummary || '暂无内容')}
+        </div>
+      </div>
+      <div class="comment-result-meta">
+        <div class="comment-result-author">
+          <img src="${comment.authorAvatarUrl || '/blog/static/images/noface.gif'}" alt="作者头像" class="author-avatar">
+          <span>${escapeHtml(comment.authorUsername || '未知用户')}</span>
+          <span>•</span>
+          <span>${formatTime(comment.createdAt)}</span>
+        </div>
+        <div class="comment-result-stats">
+          <span class="comment-result-stat">❤️ ${comment.likeCount || 0}</span>
+          <span class="comment-result-stat">💬 ${comment.replyCount || 0}</span>
+        </div>
+      </div>
+      <div class="comment-result-post">
+        <span class="comment-result-post-label">来自帖子：</span>
+        <a href="/blog/post/${comment.postId}" class="comment-result-post-link">
+          ${escapeHtml(comment.postTitle || '未知帖子')}
+        </a>
+      </div>
+    </div>
+  `;
+}
+
 // 更新结果计数
 function updateResultsCount(newCount) {
   const resultsCountElement = document.getElementById('resultsCount');
@@ -439,6 +486,7 @@ function updateCursors(searchData) {
         const cursors = JSON.parse(searchData.nextCursor);
         lastPostId = parseInt(cursors.postCursor) || lastPostId;
         lastUserId = parseInt(cursors.userCursor) || lastUserId;
+        lastCommentId = parseInt(cursors.commentCursor) || lastCommentId;
       } catch (e) {
         console.error('解析游标失败:', e);
       }
@@ -449,6 +497,8 @@ function updateCursors(searchData) {
         lastPostId = cursorId;
       } else if (currentSearchType === 'USER') {
         lastUserId = cursorId;
+      } else if (currentSearchType === 'COMMENT') {
+        lastCommentId = cursorId;
       }
     }
   }

@@ -6,7 +6,7 @@ import com.myweb.website_core.common.enums.AuditOperation;
 import com.myweb.website_core.common.exception.security.ValidationException;
 import com.myweb.website_core.domain.business.entity.User;
 import com.myweb.website_core.domain.security.dto.AuditLogRequest;
-import com.myweb.website_core.infrastructure.persistence.repository.UserRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.user.UserRepository;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -1,8 +1,12 @@
-package com.myweb.website_core.infrastructure.persistence.repository;
+package com.myweb.website_core.infrastructure.persistence.repository.user;
 
 import com.myweb.website_core.domain.business.entity.User;
-import lombok.RequiredArgsConstructor;
+
+import com.myweb.website_core.infrastructure.persistence.repository.SafeRepositoryBase;
+import com.myweb.website_core.infrastructure.persistence.repository.user.UserRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.user.UserRepositoryCustom;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

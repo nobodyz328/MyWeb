@@ -10,7 +10,7 @@ import com.myweb.website_core.domain.business.dto.*;
 //import com.myweb.website_core.domain.dto.*;
 import com.myweb.website_core.domain.business.entity.Comment;
 import com.myweb.website_core.application.service.business.CommentService;
-import com.myweb.website_core.infrastructure.persistence.repository.UserRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.user.UserRepository;
 import com.myweb.website_core.domain.business.entity.Post;
 import com.myweb.website_core.infrastructure.security.audit.Auditable;
 import lombok.Getter;
@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import org.springframework.data.domain.Page;
 
 @Slf4j
 @RestController
@@ -217,6 +218,108 @@ public class PostController {
         } catch (Exception e) {
             log.error("获取所有帖子时发生错误：" + e.getMessage()); // 添加异常打印用于调试
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    
+    /**
+     * 安全的帖子搜索接口
+     * 使用SafeQueryService进行安全验证和SQL注入检测
+     */
+    @GetMapping("/search")
+    @Auditable(operation = AuditOperation.SEARCH_OPERATION, resourceType = "POST", description = "搜索帖子")
+    public ResponseEntity<ApiResponse<Page<PostDTO>>> searchPosts(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "created_at") String sortField,
+            @RequestParam(defaultValue = "DESC") String sortDirection,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        try {
+            Page<PostDTO> result = postService.searchPostsSafely(keyword, sortField, sortDirection, page, size);
+            return ResponseEntity.ok(ApiResponse.success(result));
+        } catch (IllegalArgumentException e) {
+            log.warn("帖子搜索参数验证失败：{}", e.getMessage());
+            return ResponseEntity.badRequest().body(ApiResponse.error("搜索参数无效：" + e.getMessage()));
+        } catch (Exception e) {
+            log.error("搜索帖子时发生错误：{}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("搜索失败"));
+        }
+    }
+    
+    /**
+     * 安全的分页查询帖子接口
+     */
+    @GetMapping("/paginated")
+    public ResponseEntity<ApiResponse<Page<PostDTO>>> getPostsPaginated(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String sortField,
+            @RequestParam(defaultValue = "DESC") String sortDirection) {
+        try {
+            Page<PostDTO> result = postService.getPostsWithSafePagination(page, size, sortField, sortDirection);
+            return ResponseEntity.ok(ApiResponse.success(result));
+        } catch (IllegalArgumentException e) {
+            log.warn("分页查询参数验证失败：{}", e.getMessage());
+            return ResponseEntity.badRequest().body(ApiResponse.error("分页参数无效：" + e.getMessage()));
+        } catch (Exception e) {
+            log.error("分页查询帖子时发生错误：{}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("查询失败"));
+        }
+    }
+    
+    /**
+     * 安全的热门帖子查询接口
+     */
+    @GetMapping("/top-liked-safe")
+    public ResponseEntity<ApiResponse<List<PostDTO>>> getTopLikedPostsSafely(
+            @RequestParam(defaultValue = "10") int limit) {
+        try {
+            List<PostDTO> result = postService.getTopLikedPostsSafely(limit);
+            return ResponseEntity.ok(ApiResponse.success(result));
+        } catch (IllegalArgumentException e) {
+            log.warn("热门帖子查询参数验证失败：{}", e.getMessage());
+            return ResponseEntity.badRequest().body(ApiResponse.error("查询参数无效：" + e.getMessage()));
+        } catch (Exception e) {
+            log.error("查询热门帖子时发生错误：{}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("查询失败"));
+        }
+    }
+    
+    /**
+     * 根据作者ID安全查询帖子接口
+     */
+    @GetMapping("/by-author/{authorId}")
+    public ResponseEntity<ApiResponse<Page<PostDTO>>> getPostsByAuthor(
+            @PathVariable Long authorId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        try {
+            Page<PostDTO> result = postService.getPostsByAuthorSafely(authorId, page, size);
+            return ResponseEntity.ok(ApiResponse.success(result));
+        } catch (IllegalArgumentException e) {
+            log.warn("作者帖子查询参数验证失败：{}", e.getMessage());
+            return ResponseEntity.badRequest().body(ApiResponse.error("查询参数无效：" + e.getMessage()));
+        } catch (Exception e) {
+            log.error("查询作者帖子时发生错误：{}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("查询失败"));
+        }
+    }
+    
+    /**
+     * 获取允许的排序字段接口
+     */
+    @GetMapping("/allowed-sort-fields")
+    public ResponseEntity<ApiResponse<List<String>>> getAllowedSortFields() {
+        try {
+            List<String> allowedFields = postService.getAllowedSortFields();
+            return ResponseEntity.ok(ApiResponse.success(allowedFields));
+        } catch (Exception e) {
+            log.error("获取允许排序字段时发生错误：{}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("获取失败"));
         }
     }
 

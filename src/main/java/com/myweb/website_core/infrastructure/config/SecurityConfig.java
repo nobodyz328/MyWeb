@@ -58,7 +58,8 @@ public class SecurityConfig {
                                "/users/refresh-token", "/users/check-username", "/users/check-email",
                                "/post/*", "/api/posts", "/api/posts/*", "/api/images/*", "/posts/top-liked", 
                                "/search", "/announcements", "/posts/*/comments", "/error/**", "*/profile",
-                               "/api/csrf/token","/users/check-admin","/users/*/profile").permitAll()
+                               "/api/csrf/token","/users/check-admin","/users/*/profile",
+                               "/debug/authorities", "/debug/user-roles").permitAll()
                 
                 // API接口
                 .requestMatchers("/api/posts/*/collect-status", "/api/posts/*/like-status", 

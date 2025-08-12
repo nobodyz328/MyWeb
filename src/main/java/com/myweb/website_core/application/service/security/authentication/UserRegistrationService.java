@@ -9,7 +9,7 @@ import com.myweb.website_core.common.util.RedisKey;
 import com.myweb.website_core.domain.business.dto.UserRegistrationDTO;
 import com.myweb.website_core.domain.business.dto.UserRegistrationResult;
 import com.myweb.website_core.domain.business.entity.User;
-import com.myweb.website_core.infrastructure.persistence.repository.UserRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;

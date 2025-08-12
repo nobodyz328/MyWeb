@@ -581,8 +581,8 @@ footer {
     align-items: flex-start;
     gap: 8px;
   }
-}/
-* Follow button styles */
+}
+/** Follow button styles **/
 .follow-container {
   margin-top: 8px;
 }

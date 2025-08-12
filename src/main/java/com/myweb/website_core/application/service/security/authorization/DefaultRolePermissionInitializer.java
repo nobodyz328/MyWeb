@@ -2,8 +2,8 @@ package com.myweb.website_core.application.service.security.authorization;
 
 import com.myweb.website_core.domain.security.entity.Permission;
 import com.myweb.website_core.domain.security.entity.Role;
-import com.myweb.website_core.infrastructure.persistence.repository.PermissionRepository;
-import com.myweb.website_core.infrastructure.persistence.repository.RoleRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.access.PermissionRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.access.RoleRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -35,6 +35,7 @@ public class DefaultRolePermissionInitializer implements CommandLineRunner {
     
     private final PermissionRepository permissionRepository;
     private final RoleRepository roleRepository;
+    private final com.myweb.website_core.infrastructure.persistence.repository.user.UserRepository userRepository;
     
     @Override
     @Transactional
@@ -50,6 +51,9 @@ public class DefaultRolePermissionInitializer implements CommandLineRunner {
             
             // 3. 分配角色权限
             assignRolePermissions();
+            
+            // 4. 确保现有用户有正确的RBAC角色
+            ensureUsersHaveRbacRoles();
             
             log.info("默认角色和权限初始化完成");
         } catch (Exception e) {
@@ -264,6 +268,50 @@ public class DefaultRolePermissionInitializer implements CommandLineRunner {
                 "拥有基本权限，可以创建和管理自己的内容", 10));
         
         return roles;
+    }
+    
+    /**
+     * 确保现有用户有正确的RBAC角色
+     */
+    private void ensureUsersHaveRbacRoles() {
+        log.info("检查并分配用户RBAC角色...");
+        
+        List<com.myweb.website_core.domain.business.entity.User> users = userRepository.findAll();
+        int updatedCount = 0;
+        
+        for (com.myweb.website_core.domain.business.entity.User user : users) {
+            // 检查用户是否已有RBAC角色
+            if (user.getRoles() == null || user.getRoles().isEmpty()) {
+                // 根据传统角色分配RBAC角色
+                String rbacRoleName = mapTraditionalRoleToRbac(user.getRole());
+                if (rbacRoleName != null) {
+                    Role rbacRole = roleRepository.findByName(rbacRoleName).orElse(null);
+                    if (rbacRole != null) {
+                        user.addRole(rbacRole);
+                        userRepository.save(user);
+                        updatedCount++;
+                        log.debug("为用户{}分配RBAC角色: {}", user.getUsername(), rbacRoleName);
+                    }
+                }
+            }
+        }
+        
+        log.info("用户RBAC角色检查完成，更新了{}个用户", updatedCount);
+    }
+    
+    /**
+     * 映射传统角色到RBAC角色
+     */
+    private String mapTraditionalRoleToRbac(com.myweb.website_core.common.enums.UserRole traditionalRole) {
+        if (traditionalRole == null) {
+            return "USER"; // 默认为普通用户
+        }
+        
+        return switch (traditionalRole) {
+            case ADMIN -> "ADMIN";
+            case MODERATOR -> "MODERATOR";
+            case USER -> "USER";
+        };
     }
     
     /**

@@ -6,7 +6,7 @@ import com.myweb.website_core.domain.business.entity.User;
 import com.myweb.website_core.domain.security.dto.AuditLogQuery;
 import com.myweb.website_core.domain.security.dto.AuditLogRequest;
 import com.myweb.website_core.domain.security.entity.AuditLog;
-import com.myweb.website_core.infrastructure.persistence.repository.AuditLogRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.audit.AuditLogRepository;
 import com.myweb.website_core.application.service.security.audit.AuditLogService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

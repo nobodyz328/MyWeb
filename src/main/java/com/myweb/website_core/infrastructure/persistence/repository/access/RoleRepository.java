@@ -1,4 +1,4 @@
-package com.myweb.website_core.infrastructure.persistence.repository;
+package com.myweb.website_core.infrastructure.persistence.repository.access;
 
 import com.myweb.website_core.domain.security.entity.Role;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -12,7 +12,7 @@ import java.util.Set;
 
 /**
  * 角色数据访问接口
- * 
+ * <p>
  * 提供角色实体的数据库操作方法
  * 符合GB/T 22239-2019二级等保要求的访问控制机制
  */

@@ -84,5 +84,4 @@ app:
       threshold: 0.8
       interval-minutes: 5
       recipients:
-        - admin@myweb.com
-        - security@myweb.com
+        - 3281314509@qq.com

@@ -8,7 +8,7 @@ import com.myweb.website_core.application.service.security.authentication.EmailV
 import com.myweb.website_core.application.service.security.authentication.UserRegistrationService;
 import com.myweb.website_core.application.service.security.authorization.AccessControlService;
 import com.myweb.website_core.common.exception.security.ValidationException;
-import com.myweb.website_core.infrastructure.persistence.repository.UserRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

@@ -2,8 +2,8 @@ package com.myweb.website_core.application.service.security.authorization;
 
 import com.myweb.website_core.application.service.security.audit.AuditLogService;
 import com.myweb.website_core.domain.security.entity.Permission;
-import com.myweb.website_core.infrastructure.persistence.repository.PermissionRepository;
-import com.myweb.website_core.infrastructure.persistence.repository.RoleRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.access.PermissionRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.access.RoleRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;

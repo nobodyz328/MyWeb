@@ -16,7 +16,7 @@ import com.myweb.website_core.domain.security.entity.Role;
 import com.myweb.website_core.common.enums.SecurityEventType;
 import com.myweb.website_core.domain.business.entity.User;
 import com.myweb.website_core.infrastructure.security.audit.Auditable;
-import com.myweb.website_core.infrastructure.persistence.repository.UserRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;

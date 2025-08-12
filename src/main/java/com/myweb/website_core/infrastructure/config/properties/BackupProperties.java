@@ -438,7 +438,7 @@ public class BackupProperties {
             /**
              * 通知接收者
              */
-            private String[] recipients = {"admin@myweb.com"};
+            private String[] recipients = {"3281314509@qq.com"};
             
             /**
              * 是否在备份成功时发送通知

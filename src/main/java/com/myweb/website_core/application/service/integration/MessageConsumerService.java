@@ -10,14 +10,13 @@ import com.myweb.website_core.domain.security.dto.SecurityEventRequest;
 import com.myweb.website_core.domain.security.entity.AuditLog;
 import com.myweb.website_core.domain.security.entity.SecurityEvent;
 import com.myweb.website_core.infrastructure.config.RabbitMQConfig;
-import com.myweb.website_core.infrastructure.persistence.repository.PostCollectRepository;
-import com.myweb.website_core.infrastructure.persistence.repository.PostLikeRepository;
-import com.myweb.website_core.infrastructure.persistence.repository.PostRepository;
-import com.myweb.website_core.infrastructure.persistence.repository.UserRepository;
-import com.myweb.website_core.infrastructure.persistence.repository.UserFollowRepository;
-import com.myweb.website_core.infrastructure.persistence.repository.AuditLogRepository;
-import com.myweb.website_core.infrastructure.persistence.repository.SecurityEventRepository;
-import com.myweb.website_core.application.service.security.audit.SecurityEventService;
+import com.myweb.website_core.infrastructure.persistence.repository.interaction.PostCollectRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.interaction.PostLikeRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.post.PostRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.user.UserRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.interaction.UserFollowRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.audit.AuditLogRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.audit.SecurityEventRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -219,7 +218,7 @@ public class MessageConsumerService {
             // 更新Redis中的审计统计
             updateAuditStatisticsFromRequest(request);
             
-            log.debug("安全审计日志保存成功: {}", auditLog.getId());
+            log.debug("安全审计日志保存成功: {}", auditLog.getOperation());
             
         } catch (Exception e) {
             log.error("处理安全审计消息失败: {}", e.getMessage(), e);

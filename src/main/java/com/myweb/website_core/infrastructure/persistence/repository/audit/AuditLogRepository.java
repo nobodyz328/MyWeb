@@ -1,4 +1,4 @@
-package com.myweb.website_core.infrastructure.persistence.repository;
+package com.myweb.website_core.infrastructure.persistence.repository.audit;
 
 import com.myweb.website_core.common.enums.AuditOperation;
 import com.myweb.website_core.domain.security.entity.AuditLog;

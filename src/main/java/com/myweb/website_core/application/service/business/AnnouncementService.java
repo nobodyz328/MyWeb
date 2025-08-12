@@ -1,7 +1,7 @@
 package com.myweb.website_core.application.service.business;
 
 import com.myweb.website_core.domain.business.entity.Announcement;
-import com.myweb.website_core.infrastructure.persistence.repository.AnnouncementRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.interaction.AnnouncementRepository;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import java.util.concurrent.CompletableFuture;

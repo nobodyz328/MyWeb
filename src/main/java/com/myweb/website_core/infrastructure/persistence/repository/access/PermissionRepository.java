@@ -1,4 +1,4 @@
-package com.myweb.website_core.infrastructure.persistence.repository;
+package com.myweb.website_core.infrastructure.persistence.repository.access;
 
 import com.myweb.website_core.domain.security.entity.Permission;
 import org.springframework.data.jpa.repository.JpaRepository;

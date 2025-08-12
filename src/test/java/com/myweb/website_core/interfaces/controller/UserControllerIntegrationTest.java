@@ -2,7 +2,7 @@ package com.myweb.website_core.interfaces.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.myweb.website_core.domain.business.entity.User;
-import com.myweb.website_core.infrastructure.persistence.repository.UserRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

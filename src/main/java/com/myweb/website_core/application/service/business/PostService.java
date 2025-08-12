@@ -4,8 +4,10 @@ import com.myweb.website_core.application.service.file.ImageService;
 import com.myweb.website_core.application.service.integration.MessageProducerService;
 import com.myweb.website_core.application.service.security.integeration.dataManage.DataIntegrityService;
 import com.myweb.website_core.application.service.security.audit.AuditLogService;
+import com.myweb.website_core.application.service.security.SafeQueryService;
+import com.myweb.website_core.application.service.security.QueryPerformanceMonitorService;
+import com.myweb.website_core.common.util.SafeSqlBuilder;
 import com.myweb.website_core.common.util.SecurityUtils;
-import com.myweb.website_core.common.util.ValidationUtils;
 import com.myweb.website_core.common.util.LoggingUtils;
 import com.myweb.website_core.common.exception.DataIntegrityException;
 import com.myweb.website_core.common.enums.AuditOperation;
@@ -14,8 +16,8 @@ import com.myweb.website_core.domain.business.entity.Post;
 import com.myweb.website_core.domain.business.dto.CollectResponse;
 import com.myweb.website_core.domain.business.dto.LikeResponse;
 import com.myweb.website_core.domain.business.entity.PostCollect;
-import com.myweb.website_core.infrastructure.persistence.repository.PostCollectRepository;
-import com.myweb.website_core.infrastructure.persistence.repository.PostRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.interaction.PostCollectRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.post.PostRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CachePut;
@@ -30,10 +32,14 @@ import java.util.ArrayList;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import com.myweb.website_core.domain.business.entity.User;
-import com.myweb.website_core.infrastructure.persistence.repository.UserRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.user.UserRepository;
 import com.myweb.website_core.infrastructure.persistence.mapper.PostMapper;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.domain.Page;
+
+import java.util.Map;
+import java.util.HashMap;
 
 @Slf4j
 @Service
@@ -49,6 +55,8 @@ public class PostService {
     private final ImageService imageService;
     private final DataIntegrityService dataIntegrityService;
     private final AuditLogService auditLogService;
+    private final SafeQueryService safeQueryService;
+    private final QueryPerformanceMonitorService queryPerformanceMonitorService;
 
 
     //@Async
@@ -504,6 +512,596 @@ public class PostService {
             return String.format("PostIntegrityStats{总帖子数=%d, 有哈希帖子数=%d, 有效帖子数=%d, 无效帖子数=%d, 完整性率=%.2f%%}",
                     totalPosts, postsWithHash, validPosts, invalidPosts, integrityRate * 100);
         }
+    }
+
+    /**
+     * 安全的帖子搜索功能
+     * 使用SafeQueryService进行安全验证和SQL注入检测
+     * 
+     * @param keyword 搜索关键词
+     * @param sortField 排序字段
+     * @param sortDirection 排序方向
+     * @param page 页码
+     * @param size 页大小
+     * @return 搜索结果
+     */
+    public Page<PostDTO> searchPostsSafely(String keyword, String sortField, 
+                                         String sortDirection, int page, int size) {
+        long startTime = System.currentTimeMillis();
+        String username = "anonymous";
+        
+        try {
+            log.info("开始执行安全帖子搜索: keyword={}, sortField={}, sortDirection={}, page={}, size={}", 
+                    keyword, sortField, sortDirection, page, size);
+            
+            // 使用SafeQueryService验证搜索关键词
+            if (keyword != null && !keyword.trim().isEmpty()) {
+                boolean isValidInput = safeQueryService.validateUserInputSafety(keyword, "SEARCH", "keyword");
+                if (!isValidInput) {
+                    throw new IllegalArgumentException("搜索关键词包含非法字符或潜在的安全威胁");
+                }
+                
+                // 检测SQL注入攻击
+                boolean isSqlInjection = safeQueryService.detectSqlInjectionAttempt(keyword, "POST_SEARCH");
+                if (isSqlInjection) {
+                    log.warn("检测到SQL注入攻击尝试: keyword={}", keyword);
+                    auditLogService.logSecurityEvent(
+                        AuditOperation.SECURITY_EVENT,
+                        username,
+                        String.format("帖子搜索中检测到SQL注入攻击: keyword=%s", keyword)
+                    );
+                    throw new IllegalArgumentException("检测到潜在的SQL注入攻击");
+                }
+            }
+            
+            // 验证排序字段是否在白名单中
+            if (sortField != null && !sortField.trim().isEmpty()) {
+                List<String> allowedSortFields = safeQueryService.getAllowedSortFields("posts");
+                if (!allowedSortFields.contains(sortField)) {
+                    log.warn("尝试使用不允许的排序字段: {}", sortField);
+                    throw new IllegalArgumentException("不允许的排序字段: " + sortField);
+                }
+            }
+            
+            // 使用安全的Repository进行搜索
+            Page<Post> posts = postRepository.findPostsWithSafeSearch(
+                keyword, sortField, sortDirection, page, size);
+            
+            // 转换为DTO
+            List<PostDTO> postDTOs = posts.getContent().stream()
+                    .map(this::convertToDTO)
+                    .collect(Collectors.toList());
+            
+            // 创建分页结果
+            Page<PostDTO> result = new org.springframework.data.domain.PageImpl<>(
+                postDTOs, posts.getPageable(), posts.getTotalElements());
+            
+            // 记录操作日志
+            long executionTime = System.currentTimeMillis() - startTime;
+            String logMessage = LoggingUtils.formatOperationLog(
+                "SEARCH_POSTS", username, "SEARCH", "SUCCESS", 
+                String.format("搜索关键词: %s, 结果数: %d", keyword, result.getTotalElements()), 
+                executionTime);
+            log.info(logMessage);
+            
+            return result;
+            
+        } catch (Exception e) {
+            // 记录错误日志
+            long executionTime = System.currentTimeMillis() - startTime;
+            String errorLog = LoggingUtils.formatErrorLog(
+                "POST_SEARCH_ERROR", e.getMessage(), username, 
+                null, String.format("搜索帖子失败: keyword=%s", keyword), null);
+            log.error(errorLog);
+            throw e;
+        }
+    }
+    
+    /**
+     * 安全的分页查询帖子
+     * 
+     * @param page 页码
+     * @param size 页大小
+     * @param sortField 排序字段
+     * @param sortDirection 排序方向
+     * @return 分页结果
+     */
+    public Page<PostDTO> getPostsWithSafePagination(int page, int size, 
+                                                  String sortField, String sortDirection) {
+        long startTime = System.currentTimeMillis();
+        String username = "anonymous";
+        
+        try {
+            log.debug("执行安全分页查询: page={}, size={}, sortField={}, sortDirection={}", 
+                     page, size, sortField, sortDirection);
+            
+            // 验证分页参数
+            if (page < 0) {
+                throw new IllegalArgumentException("页码不能为负数");
+            }
+            if (size <= 0 || size > 100) {
+                throw new IllegalArgumentException("页大小必须在1-100之间");
+            }
+            
+            // 验证排序字段
+            if (sortField != null && !sortField.trim().isEmpty()) {
+                List<String> allowedSortFields = safeQueryService.getAllowedSortFields("posts");
+                if (!allowedSortFields.contains(sortField)) {
+                    throw new IllegalArgumentException("不允许的排序字段: " + sortField);
+                }
+            }
+            
+            // 使用安全的Repository进行分页查询
+            Map<String, Object> conditions = new HashMap<>();
+            Page<Post> posts = postRepository.findSafePaginated(
+                conditions, sortField, sortDirection, page, size);
+            
+            // 转换为DTO
+            List<PostDTO> postDTOs = posts.getContent().stream()
+                    .map(this::convertToDTO)
+                    .collect(Collectors.toList());
+            
+            Page<PostDTO> result = new org.springframework.data.domain.PageImpl<>(
+                postDTOs, posts.getPageable(), posts.getTotalElements());
+            
+            // 记录操作日志
+            long executionTime = System.currentTimeMillis() - startTime;
+            String logMessage = LoggingUtils.formatOperationLog(
+                "GET_POSTS_PAGINATED", username, "QUERY", "SUCCESS", 
+                String.format("分页查询: page=%d, size=%d, 结果数=%d", page, size, result.getTotalElements()), 
+                executionTime);
+            log.debug(logMessage);
+            
+            return result;
+            
+        } catch (Exception e) {
+            // 记录错误日志
+            long executionTime = System.currentTimeMillis() - startTime;
+            String errorLog = LoggingUtils.formatErrorLog(
+                "POST_PAGINATION_ERROR", e.getMessage(), username, 
+                null, String.format("分页查询失败: page=%d, size=%d", page, size), null);
+            log.error(errorLog);
+            throw e;
+        }
+    }
+    
+    /**
+     * 根据作者ID安全查询帖子
+     * 
+     * @param authorId 作者ID
+     * @param page 页码
+     * @param size 页大小
+     * @return 分页结果
+     */
+    public Page<PostDTO> getPostsByAuthorSafely(Long authorId, int page, int size) {
+        long startTime = System.currentTimeMillis();
+        String username = "anonymous";
+        
+        try {
+            log.debug("执行安全作者帖子查询: authorId={}, page={}, size={}", authorId, page, size);
+            
+            // 验证作者ID
+            if (authorId == null || authorId <= 0) {
+                throw new IllegalArgumentException("无效的作者ID");
+            }
+            
+            // 验证分页参数
+            if (page < 0) {
+                throw new IllegalArgumentException("页码不能为负数");
+            }
+            if (size <= 0 || size > 100) {
+                throw new IllegalArgumentException("页大小必须在1-100之间");
+            }
+            
+            // 使用安全的Repository进行查询
+            Page<Post> posts = postRepository.findPostsByAuthorWithSafePagination(authorId, page, size);
+            
+            // 转换为DTO
+            List<PostDTO> postDTOs = posts.getContent().stream()
+                    .map(this::convertToDTO)
+                    .collect(Collectors.toList());
+            
+            Page<PostDTO> result = new org.springframework.data.domain.PageImpl<>(
+                postDTOs, posts.getPageable(), posts.getTotalElements());
+            
+            // 记录操作日志
+            long executionTime = System.currentTimeMillis() - startTime;
+            String logMessage = LoggingUtils.formatOperationLog(
+                "GET_POSTS_BY_AUTHOR", username, "QUERY", "SUCCESS", 
+                String.format("作者帖子查询: authorId=%d, 结果数=%d", authorId, result.getTotalElements()), 
+                executionTime);
+            log.debug(logMessage);
+            
+            return result;
+            
+        } catch (Exception e) {
+            // 记录错误日志
+            long executionTime = System.currentTimeMillis() - startTime;
+            String errorLog = LoggingUtils.formatErrorLog(
+                "POST_BY_AUTHOR_ERROR", e.getMessage(), username, 
+                null, String.format("作者帖子查询失败: authorId=%d", authorId), null);
+            log.error(errorLog);
+            throw e;
+        }
+    }
+    
+    /**
+     * 安全的热门帖子查询
+     * 
+     * @param limit 限制数量
+     * @return 热门帖子列表
+     */
+    public List<PostDTO> getTopLikedPostsSafely(int limit) {
+        long startTime = System.currentTimeMillis();
+        String username = "anonymous";
+        
+        try {
+            log.debug("执行安全热门帖子查询: limit={}", limit);
+            
+            // 验证限制参数
+            if (limit <= 0 || limit > 100) {
+                throw new IllegalArgumentException("限制数量必须在1-100之间");
+            }
+            
+            // 使用安全的Repository进行查询
+            List<Post> posts = postRepository.findTopLikedPostsSafely(limit);
+            
+            // 转换为DTO
+            List<PostDTO> postDTOs = posts.stream()
+                    .map(this::convertToDTO)
+                    .collect(Collectors.toList());
+            
+            // 记录操作日志
+            long executionTime = System.currentTimeMillis() - startTime;
+            String logMessage = LoggingUtils.formatOperationLog(
+                "GET_TOP_LIKED_POSTS", username, "QUERY", "SUCCESS", 
+                String.format("热门帖子查询: limit=%d, 结果数=%d", limit, postDTOs.size()), 
+                executionTime);
+            log.debug(logMessage);
+            
+            return postDTOs;
+            
+        } catch (Exception e) {
+            // 记录错误日志
+            long executionTime = System.currentTimeMillis() - startTime;
+            String errorLog = LoggingUtils.formatErrorLog(
+                "TOP_LIKED_POSTS_ERROR", e.getMessage(), username, 
+                null, String.format("热门帖子查询失败: limit=%d", limit), null);
+            log.error(errorLog);
+            throw e;
+        }
+    }
+    
+    /**
+     * 安全的复合条件查询
+     * 
+     * @param conditions 查询条件
+     * @param sortField 排序字段
+     * @param sortDirection 排序方向
+     * @return 查询结果
+     */
+    public List<PostDTO> findPostsByConditionsSafely(Map<String, Object> conditions, 
+                                                    String sortField, String sortDirection) {
+        long startTime = System.currentTimeMillis();
+        String username = "anonymous";
+        
+        try {
+            log.debug("执行安全复合条件查询: conditions={}, sortField={}, sortDirection={}", 
+                     conditions, sortField, sortDirection);
+            
+            // 验证查询条件中的字符串值
+            if (conditions != null) {
+                for (Map.Entry<String, Object> entry : conditions.entrySet()) {
+                    if (entry.getValue() instanceof String) {
+                        String value = (String) entry.getValue();
+                        boolean isValidInput = safeQueryService.validateUserInputSafety(
+                            value, "CONDITION", entry.getKey());
+                        if (!isValidInput) {
+                            throw new IllegalArgumentException(
+                                String.format("查询条件包含非法字符: %s=%s", entry.getKey(), value));
+                        }
+                    }
+                }
+            }
+            
+            // 验证排序字段
+            if (sortField != null && !sortField.trim().isEmpty()) {
+                List<String> allowedSortFields = safeQueryService.getAllowedSortFields("posts");
+                if (!allowedSortFields.contains(sortField)) {
+                    throw new IllegalArgumentException("不允许的排序字段: " + sortField);
+                }
+            }
+            
+            // 使用安全的Repository进行查询
+            List<Post> posts = postRepository.findPostsByConditionsSafely(
+                conditions, sortField, sortDirection);
+            
+            // 转换为DTO
+            List<PostDTO> postDTOs = posts.stream()
+                    .map(this::convertToDTO)
+                    .collect(Collectors.toList());
+            
+            // 记录操作日志
+            long executionTime = System.currentTimeMillis() - startTime;
+            String logMessage = LoggingUtils.formatOperationLog(
+                "FIND_POSTS_BY_CONDITIONS", username, "QUERY", "SUCCESS", 
+                String.format("复合条件查询: 结果数=%d", postDTOs.size()), 
+                executionTime);
+            log.debug(logMessage);
+            
+            return postDTOs;
+            
+        } catch (Exception e) {
+            // 记录错误日志
+            long executionTime = System.currentTimeMillis() - startTime;
+            String errorLog = LoggingUtils.formatErrorLog(
+                "POSTS_BY_CONDITIONS_ERROR", e.getMessage(), username, 
+                null, "复合条件查询失败", null);
+            log.error(errorLog);
+            throw e;
+        }
+    }
+    
+    /**
+     * 获取允许的排序字段列表
+     * 
+     * @return 允许的排序字段列表
+     */
+    public List<String> getAllowedSortFields() {
+        return safeQueryService.getAllowedSortFields("posts");
+    }
+    
+    /**
+     * 添加允许的排序字段
+     * 
+     * @param fields 字段列表
+     */
+    public void addAllowedSortFields(List<String> fields) {
+        safeQueryService.addAllowedSortFields("posts", fields);
+        log.info("为posts表添加允许的排序字段: {}", fields);
+    }
+    
+    /**
+     * 使用动态查询构建器进行复杂查询
+     * 支持多表关联、聚合函数、子查询等复杂场景
+     * 
+     * @param queryBuilder 查询构建器
+     * @return 查询结果
+     */
+    public List<PostDTO> executeComplexDynamicQuery(SafeSqlBuilder.DynamicQueryBuilder queryBuilder) {
+        QueryPerformanceMonitorService.QueryPerformanceMonitor monitor = 
+            queryPerformanceMonitorService.startMonitoring("COMPLEX_DYNAMIC_QUERY", 
+                "复杂动态查询: " + queryBuilder.getMainTable());
+        
+        long startTime = System.currentTimeMillis();
+        String username = "anonymous";
+        
+        try {
+            log.debug("执行复杂动态查询: mainTable={}", queryBuilder.getMainTable());
+            
+            // 验证查询构建器的安全性
+            boolean isValidBuilder = safeQueryService.validateQueryBuilder(queryBuilder);
+            if (!isValidBuilder) {
+                throw new IllegalArgumentException("查询构建器包含不安全的内容");
+            }
+            
+            // 构建安全的动态查询
+            String dynamicQuery = safeQueryService.buildComplexDynamicQuery(queryBuilder);
+            
+            // 执行查询（这里使用Repository的安全查询方法）
+            List<Post> posts = postRepository.findPostsByComplexQuery(dynamicQuery, queryBuilder.getConditions());
+            
+            // 转换为DTO
+            List<PostDTO> postDTOs = posts.stream()
+                    .map(this::convertToDTO)
+                    .collect(Collectors.toList());
+            
+            // 记录成功的性能监控
+            monitor.finish(postDTOs.size());
+            
+            // 记录操作日志
+            long executionTime = System.currentTimeMillis() - startTime;
+            String logMessage = LoggingUtils.formatOperationLog(
+                "COMPLEX_DYNAMIC_QUERY", username, "QUERY", "SUCCESS", 
+                String.format("复杂动态查询: 结果数=%d", postDTOs.size()), 
+                executionTime);
+            log.debug(logMessage);
+            
+            return postDTOs;
+            
+        } catch (Exception e) {
+            // 记录失败的性能监控
+            monitor.finishWithError(e);
+            
+            // 记录错误日志
+            long executionTime = System.currentTimeMillis() - startTime;
+            String errorLog = LoggingUtils.formatErrorLog(
+                "COMPLEX_DYNAMIC_QUERY_ERROR", e.getMessage(), username, 
+                null, "复杂动态查询失败", null);
+            log.error(errorLog);
+            throw e;
+        }
+    }
+    
+    /**
+     * 构建并执行参数化查询
+     * 确保所有参数都被正确参数化，防止SQL注入
+     * 
+     * @param queryTemplate 查询模板
+     * @param parameters 查询参数
+     * @return 查询结果
+     */
+    public List<PostDTO> executeParameterizedQuery(String queryTemplate, Map<String, Object> parameters) {
+        QueryPerformanceMonitorService.QueryPerformanceMonitor monitor = 
+            queryPerformanceMonitorService.startMonitoring("PARAMETERIZED_QUERY", 
+                "参数化查询: " + queryTemplate.substring(0, Math.min(50, queryTemplate.length())));
+        
+        long startTime = System.currentTimeMillis();
+        String username = "anonymous";
+        
+        try {
+            log.debug("执行参数化查询: parameterCount={}", parameters != null ? parameters.size() : 0);
+            
+            // 构建参数化查询
+            SafeSqlBuilder.ParameterizedQuery parameterizedQuery = 
+                safeQueryService.buildParameterizedQuery(queryTemplate, parameters);
+            
+            // 执行查询
+            List<Post> posts = postRepository.findPostsByParameterizedQuery(
+                parameterizedQuery.getQuery(), parameterizedQuery.getParameters());
+            
+            // 转换为DTO
+            List<PostDTO> postDTOs = posts.stream()
+                    .map(this::convertToDTO)
+                    .collect(Collectors.toList());
+            
+            // 记录成功的性能监控
+            monitor.finish(postDTOs.size());
+            
+            // 记录操作日志
+            long executionTime = System.currentTimeMillis() - startTime;
+            String logMessage = LoggingUtils.formatOperationLog(
+                "PARAMETERIZED_QUERY", username, "QUERY", "SUCCESS", 
+                String.format("参数化查询: 参数数=%d, 结果数=%d", 
+                             parameters != null ? parameters.size() : 0, postDTOs.size()), 
+                executionTime);
+            log.debug(logMessage);
+            
+            return postDTOs;
+            
+        } catch (Exception e) {
+            // 记录失败的性能监控
+            monitor.finishWithError(e);
+            
+            // 记录错误日志
+            long executionTime = System.currentTimeMillis() - startTime;
+            String errorLog = LoggingUtils.formatErrorLog(
+                "PARAMETERIZED_QUERY_ERROR", e.getMessage(), username, 
+                null, "参数化查询失败", null);
+            log.error(errorLog);
+            throw e;
+        }
+    }
+    
+    /**
+     * 构建复杂的统计查询
+     * 支持聚合函数、分组、HAVING等复杂统计场景
+     * 
+     * @param aggregateFields 聚合字段列表
+     * @param groupByFields 分组字段列表
+     * @param conditions 查询条件
+     * @param havingConditions HAVING条件
+     * @return 统计结果
+     */
+    public List<Map<String, Object>> executeAggregateQuery(List<String> aggregateFields, 
+                                                          List<String> groupByFields,
+                                                          Map<String, Object> conditions,
+                                                          Map<String, Object> havingConditions) {
+        QueryPerformanceMonitorService.QueryPerformanceMonitor monitor = 
+            queryPerformanceMonitorService.startMonitoring("AGGREGATE_QUERY", 
+                "聚合统计查询: " + String.join(",", aggregateFields));
+        
+        long startTime = System.currentTimeMillis();
+        String username = "anonymous";
+        
+        try {
+            log.debug("执行聚合统计查询: aggregateFields={}, groupByFields={}", 
+                     aggregateFields, groupByFields);
+            
+            // 创建动态查询构建器
+            SafeSqlBuilder.DynamicQueryBuilder queryBuilder = safeQueryService.createQueryBuilder("posts");
+            
+            // 添加聚合字段
+            if (aggregateFields != null && !aggregateFields.isEmpty()) {
+                queryBuilder.aggregate(aggregateFields.toArray(new String[0]));
+            }
+            
+            // 添加分组字段
+            if (groupByFields != null && !groupByFields.isEmpty()) {
+                queryBuilder.groupBy(groupByFields.toArray(new String[0]));
+            }
+            
+            // 添加WHERE条件
+            if (conditions != null && !conditions.isEmpty()) {
+                queryBuilder.where(conditions);
+            }
+            
+            // 添加HAVING条件
+            if (havingConditions != null && !havingConditions.isEmpty()) {
+                for (Map.Entry<String, Object> entry : havingConditions.entrySet()) {
+                    queryBuilder.having(entry.getKey(), entry.getValue());
+                }
+            }
+            
+            // 验证查询构建器
+            boolean isValidBuilder = safeQueryService.validateQueryBuilder(queryBuilder);
+            if (!isValidBuilder) {
+                throw new IllegalArgumentException("聚合查询构建器包含不安全的内容");
+            }
+            
+            // 构建并执行查询
+            String dynamicQuery = safeQueryService.buildComplexDynamicQuery(queryBuilder);
+            List<Map<String, Object>> results = postRepository.executeAggregateQuery(dynamicQuery, conditions);
+            
+            // 记录成功的性能监控
+            monitor.finish(results.size());
+            
+            // 记录操作日志
+            long executionTime = System.currentTimeMillis() - startTime;
+            String logMessage = LoggingUtils.formatOperationLog(
+                "AGGREGATE_QUERY", username, "QUERY", "SUCCESS", 
+                String.format("聚合统计查询: 结果数=%d", results.size()), 
+                executionTime);
+            log.debug(logMessage);
+            
+            return results;
+            
+        } catch (Exception e) {
+            // 记录失败的性能监控
+            monitor.finishWithError(e);
+            
+            // 记录错误日志
+            long executionTime = System.currentTimeMillis() - startTime;
+            String errorLog = LoggingUtils.formatErrorLog(
+                "AGGREGATE_QUERY_ERROR", e.getMessage(), username, 
+                null, "聚合统计查询失败", null);
+            log.error(errorLog);
+            throw e;
+        }
+    }
+    
+    /**
+     * 获取查询性能统计信息
+     * 
+     * @return 性能统计
+     */
+    public Map<String, Object> getQueryPerformanceStatistics() {
+        Map<String, Object> stats = new HashMap<>();
+        
+        // 获取全局统计
+        QueryPerformanceMonitorService.GlobalStatistics globalStats = 
+            queryPerformanceMonitorService.getGlobalStatistics();
+        stats.put("global", globalStats);
+        
+        // 获取各查询类型统计
+        Map<String, QueryPerformanceMonitorService.QueryStatistics> queryStats = 
+            queryPerformanceMonitorService.getAllQueryStatistics();
+        stats.put("queryTypes", queryStats);
+        
+        // 检查性能问题
+        QueryPerformanceMonitorService.PerformanceCheckResult checkResult = 
+            queryPerformanceMonitorService.checkPerformance();
+        stats.put("performanceCheck", checkResult);
+        
+        return stats;
+    }
+    
+    /**
+     * 重置查询性能统计
+     */
+    public void resetQueryPerformanceStatistics() {
+        queryPerformanceMonitorService.resetStatistics();
+        log.info("查询性能统计数据已重置");
     }
 
     @Async

@@ -6,14 +6,15 @@ import com.myweb.website_core.common.exception.DataIntegrityException;
 import com.myweb.website_core.common.enums.AuditOperation;
 import com.myweb.website_core.domain.business.entity.Post;
 import com.myweb.website_core.domain.business.entity.User;
-import com.myweb.website_core.infrastructure.persistence.repository.PostRepository;
-import com.myweb.website_core.infrastructure.persistence.repository.UserRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.post.PostRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoSettings;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -22,6 +23,7 @@ import java.util.concurrent.CompletableFuture;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.mockito.quality.Strictness.LENIENT;
 
 /**
  * PostService数据完整性集成测试
@@ -35,6 +37,7 @@ import static org.mockito.Mockito.*;
  * @author MyWeb Security Team
  * @version 1.0
  */
+@MockitoSettings(strictness = LENIENT)
 @DisplayName("PostService数据完整性集成测试")
 public class PostServiceIntegrityTest {
 
@@ -73,7 +76,9 @@ public class PostServiceIntegrityTest {
             postLikeService,
             null, // imageService
             dataIntegrityService,
-            auditLogService
+            auditLogService,
+            null  // safeQueryService
+                ,null
         );
         
         // 初始化测试数据

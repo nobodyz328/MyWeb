@@ -260,7 +260,7 @@ public enum AuditOperation {
      * 配置变更
      */
     CONFIG_CHANGE("CONFIG_CHANGE", "配置变更", "系统配置发生变更"),
-    
+
     /**
      * 审计日志查看
      */
@@ -376,7 +376,14 @@ public enum AuditOperation {
      * 搜索操作
      */
     SEARCH_OPERATION("SEARCH_OPERATION", "搜索操作", "用户执行搜索操作"),
-    
+    /**
+     *构建动态查询
+     */
+    COMPLEX_QUERY_BUILD("COMPLEX_QUERY_BUILD", "构建动态查询", "构建动态查询"),
+    /**
+     * 构建参数化查询
+     */
+    PARAMETERIZED_QUERY_BUILD("PARAMETERIZED_QUERY_BUILD", "构建参数化查询", "构建参数化查询"),
     /**
      * 高级搜索
      */

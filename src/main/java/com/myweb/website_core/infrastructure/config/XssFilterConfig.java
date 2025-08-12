@@ -88,7 +88,7 @@ public class XssFilterConfig {
      * 白名单URL模式 - 这些URL不进行XSS过滤
      */
     private List<String> whitelistUrlPatterns = List.of(
-            "/blog/*","/blog/post/*","/blog/posts/edit/*",
+            "/blog/*","/blog/post/*","/blog/posts/edit/*","/blog/posts/new",
             "/blog/api/**",
             "/blog/admin/**"
     );

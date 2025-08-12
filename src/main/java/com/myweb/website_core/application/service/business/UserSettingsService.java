@@ -5,7 +5,7 @@ import com.myweb.website_core.application.service.security.authentication.TOTPMa
 import com.myweb.website_core.common.constant.SecurityConstants;
 import com.myweb.website_core.common.enums.UserRole;
 import com.myweb.website_core.domain.business.entity.User;
-import com.myweb.website_core.infrastructure.persistence.repository.UserRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;

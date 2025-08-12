@@ -39,7 +39,7 @@ public class VirusAlertService {
     private final JavaMailSender mailSender;
     private final AuditLogServiceAdapter auditLogService;
     
-    @Value("${app.security.alert.admin-email:admin@myweb.com}")
+    @Value("${app.security.alert.admin-email:3281314509@qq.com}")
     private String adminEmail;
     
     @Value("${app.security.alert.enabled:true}")
