@@ -1,6 +1,7 @@
 package com.myweb.website_core.domain.security.dto;
 
 import com.myweb.website_core.common.enums.SecurityEventType;
+import com.myweb.website_core.common.util.SecurityEventUtils;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -8,6 +9,8 @@ import lombok.Builder;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+
+import static com.myweb.website_core.common.util.SecurityEventUtils.getIpAddress;
 
 /**
  * 安全事件请求DTO
@@ -38,96 +41,74 @@ public class SecurityEventRequest {
     /**
      * 相关用户ID
      */
-    private Long userId;
+    @Builder.Default
+    private Long userId=SecurityEventUtils.getUserId();
     
     /**
      * 相关用户名
      */
-    private String username;
+    @Builder.Default
+    private String username = SecurityEventUtils.getUsername();
     
     /**
      * 源IP地址
      */
-    private String sourceIp;
+    @Builder.Default
+    private String sourceIp=SecurityEventUtils.getIpAddress();
     
     /**
      * 用户代理
      */
-    private String userAgent;
-    
+    @Builder.Default
+    private String userAgent=SecurityEventUtils.getUserAgent();
     /**
      * 请求URI
      */
-    private String requestUri;
+    @Builder.Default
+    private String requestUri=SecurityEventUtils.getRequestUri();
     
     /**
      * 请求方法
      */
-    private String requestMethod;
+    @Builder.Default
+    private String requestMethod= SecurityEventUtils.getRequestMethod();
     
     /**
      * 会话ID
      */
-    private String sessionId;
-    
+    @Builder.Default
+    private String sessionId=SecurityEventUtils.getSessionId();
+
+    /**
+     * 事件发生时间
+     */
+    @Builder.Default
+    private LocalDateTime eventTime=LocalDateTime.now();
+
     /**
      * 事件详细数据
      */
     private Map<String, Object> eventData;
-    
-    /**
-     * 事件发生时间
-     */
-    private LocalDateTime eventTime;
-    
+
     /**
      * 风险评分（0-100）
      */
     private Integer riskScore;
-    
-    /**
-     * 创建简单的安全事件请求
-     */
-    public static SecurityEventRequest simple(SecurityEventType eventType, String description) {
-        return SecurityEventRequest.builder()
-                .eventType(eventType)
-                .title(eventType.getName())
-                .description(description)
-                .eventTime(LocalDateTime.now())
-                .build();
-    }
-    
+
     /**
      * 创建带用户信息的安全事件请求
      */
-    public static SecurityEventRequest withUser(SecurityEventType eventType, String description, 
-                                              Long userId, String username) {
-        return SecurityEventRequest.builder()
-                .eventType(eventType)
-                .title(eventType.getName())
-                .description(description)
-                .userId(userId)
-                .username(username)
-                .eventTime(LocalDateTime.now())
-                .build();
+    public SecurityEventRequest withInfo(){
+        this.username= SecurityEventUtils.getUsername();
+        this.sourceIp= getIpAddress();
+        this.userAgent=getUserAgent();
+        this.requestUri=getRequestUri();
+        this.requestMethod=getRequestMethod();
+        this.sessionId=getSessionId();
+        this.eventTime=LocalDateTime.now();
+        return this;
     }
-    
-    /**
-     * 创建带网络信息的安全事件请求
-     */
-    public static SecurityEventRequest withNetwork(SecurityEventType eventType, String description,
-                                                 String sourceIp, String userAgent, String requestUri) {
-        return SecurityEventRequest.builder()
-                .eventType(eventType)
-                .title(eventType.getName())
-                .description(description)
-                .sourceIp(sourceIp)
-                .userAgent(userAgent)
-                .requestUri(requestUri)
-                .eventTime(LocalDateTime.now())
-                .build();
-    }
-    
+
     /**
      * 创建完整的安全事件请求
      */

@@ -2,7 +2,6 @@ package com.myweb.website_core.application.service.security.audit;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.myweb.website_core.application.service.security.audit.SecurityAlertService;
 import com.myweb.website_core.common.constant.SecurityConstants;
 import com.myweb.website_core.common.enums.SecurityEventType;
 import com.myweb.website_core.domain.security.dto.SecurityEventQuery;
@@ -12,12 +11,11 @@ import com.myweb.website_core.domain.security.entity.SecurityEvent;
 import com.myweb.website_core.infrastructure.persistence.repository.SecurityEventRepository;
 import com.myweb.website_core.infrastructure.persistence.mapper.SecurityEventMapper;
 import com.myweb.website_core.infrastructure.persistence.mapper.SecurityEventMapperService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,12 +30,13 @@ import java.util.stream.Collectors;
 
 /**
  * 安全事件监控服务
- * 
+ * <p>
  * 负责安全事件的记录、监控、告警和统计分析
  * 符合GB/T 22239-2019二级等保要求的安全审计和入侵防范机制
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class SecurityEventService {
     
     private final SecurityEventRepository securityEventRepository;
@@ -46,103 +45,7 @@ public class SecurityEventService {
     private final SecurityAlertService securityAlertService;
     private final RedisTemplate<String, String> redisTemplate;
     private final ObjectMapper objectMapper;
-    
-    public SecurityEventService(SecurityEventRepository securityEventRepository,
-                               SecurityEventMapper securityEventMapper,
-                               SecurityEventMapperService securityEventMapperService,
-                               SecurityAlertService securityAlertService,
-                               RedisTemplate<String, String> redisTemplate,
-                               ObjectMapper objectMapper) {
-        this.securityEventRepository = securityEventRepository;
-        this.securityEventMapper = securityEventMapper;
-        this.securityEventMapperService = securityEventMapperService;
-        this.securityAlertService = securityAlertService;
-        this.redisTemplate = redisTemplate;
-        this.objectMapper = objectMapper;
-    }
-    
-    /**
-     * 记录安全事件
-     * 
-     * @param request 安全事件请求
-     * @return 创建的安全事件
-     */
-    @Async
-    @Transactional
-    public CompletableFuture<SecurityEvent> recordEvent(SecurityEventRequest request) {
-        try {
-            log.info("记录安全事件: type={}, user={}, ip={}", 
-                    request.getEventType(), request.getUsername(), request.getSourceIp());
-            
-            // 创建安全事件实体
-            SecurityEvent event = buildSecurityEvent(request);
-            
-            // 计算相关事件数量和风险评分
-            calculateEventMetrics(event);
-            
-            // 保存事件
-            SecurityEvent savedEvent = securityEventRepository.save(event);
-            
-            // 检查是否需要告警
-            checkAndSendAlert(savedEvent);
-            
-            // 更新统计缓存
-            updateEventStatistics(savedEvent);
-            
-            log.info("安全事件记录完成: eventId={}, type={}, severity={}", 
-                    savedEvent.getId(), savedEvent.getEventType(), savedEvent.getSeverity());
-            
-            return CompletableFuture.completedFuture(savedEvent);
-            
-        } catch (Exception e) {
-            log.error("记录安全事件失败: type={}, error={}", 
-                    request.getEventType(), e.getMessage(), e);
-            throw new RuntimeException("记录安全事件失败", e);
-        }
-    }
-    
-    /**
-     * 批量记录安全事件
-     * 
-     * @param requests 安全事件请求列表
-     * @return 创建的安全事件列表
-     */
-    @Async
-    @Transactional
-    public CompletableFuture<List<SecurityEvent>> recordEvents(List<SecurityEventRequest> requests) {
-        try {
-            log.info("批量记录安全事件: count={}", requests.size());
-            
-            List<SecurityEvent> events = requests.stream()
-                    .map(this::buildSecurityEvent)
-                    .peek(this::calculateEventMetrics)
-                    .toList();
-            
-            List<SecurityEvent> savedEvents = securityEventRepository.saveAll(events);
-            
-            // 检查高危事件并发送告警
-            List<SecurityEvent> alertEvents = savedEvents.stream()
-                    .filter(SecurityEvent::isHighRisk)
-                    .toList();
-            
-            if (!alertEvents.isEmpty()) {
-                securityAlertService.sendBatchAlert(alertEvents);
-                alertEvents.forEach(SecurityEvent::markAsAlerted);
-                securityEventRepository.saveAll(alertEvents);
-            }
-            
-            log.info("批量安全事件记录完成: count={}, alertCount={}", 
-                    savedEvents.size(), alertEvents.size());
-            
-            return CompletableFuture.completedFuture(savedEvents);
-            
-        } catch (Exception e) {
-            log.error("批量记录安全事件失败: count={}, error={}", 
-                    requests.size(), e.getMessage(), e);
-            throw new RuntimeException("批量记录安全事件失败", e);
-        }
-    }
-    
+
     /**
      * 查询安全事件
      * 
@@ -195,8 +98,7 @@ public class SecurityEventService {
         // 趋势分析（与上一周期对比）
         Duration period = Duration.between(startTime, endTime);
         LocalDateTime prevStartTime = startTime.minus(period);
-        LocalDateTime prevEndTime = startTime;
-        Long prevTotalEvents = securityEventMapperService.countByTimeRange(prevStartTime, prevEndTime);
+        Long prevTotalEvents = securityEventMapperService.countByTimeRange(prevStartTime, startTime);
         Double trendPercentage = prevTotalEvents > 0 ? 
                 ((totalEvents - prevTotalEvents) * 100.0) / prevTotalEvents : 0.0;
         

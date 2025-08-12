@@ -22,6 +22,11 @@ public class WebController {
     public String profile() {
         return "profile";
     }
+    
+    @GetMapping("/{id}/profile")
+    public String userProfile(@PathVariable Long id) {
+        return "user-profile";
+    }
     @GetMapping("/posts/new")
     public String postEdit() {
         return "post-edit";

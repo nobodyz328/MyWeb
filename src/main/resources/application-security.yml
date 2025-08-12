@@ -1,6 +1,180 @@
 # 安全策略配置
 app:
   security:
+    # 全局安全功能开关
+    enabled: true
+    
+    # 输入验证配置
+    input-validation:
+      enabled: true
+      max-string-length: 10000
+      max-title-length: 200
+      max-content-length: 50000
+      max-comment-length: 1000
+      max-username-length: 50
+      max-email-length: 100
+      max-filename-length: 255
+      allowed-file-extensions: ["jpg", "jpeg", "png", "gif", "pdf", "doc", "docx", "txt"]
+      blocked-patterns: ["<script", "javascript:", "vbscript:", "onload=", "onerror="]
+      sql-injection-patterns: ["union", "select", "insert", "update", "delete", "drop", "exec", "script"]
+      
+    # XSS防护配置
+    xss-protection:
+      enabled: true
+      strict-mode: false
+      allowed-tags: ["b", "i", "u", "strong", "em", "p", "br", "a", "img", "div", "span", "h1", "h2", "h3", "h4", "h5", "h6"]
+      allowed-attributes: ["href", "src", "alt", "title", "class", "id", "style"]
+      tag-specific-attributes:
+        a: ["href", "title", "target", "rel"]
+        img: ["src", "alt", "title", "width", "height", "class"]
+        p: ["class", "style", "id"]
+        div: ["class", "id", "style"]
+        span: ["class", "style", "id"]
+      remove-unknown-tags: true
+      encode-special-chars: true
+      max-tag-depth: 10
+      max-content-length: 50000
+      custom-xss-patterns: []
+      whitelist-url-patterns: ["/api/admin/**", "/api/system/**"]
+      performance:
+        cache-enabled: true
+        cache-size: 1000
+        cache-expiration-minutes: 30
+        async-processing: false
+        batch-size: 100
+        processing-timeout-ms: 5000
+      statistics:
+        enabled: true
+        retention-days: 30
+        report-interval-hours: 24
+        real-time-stats: true
+        aggregation-interval-minutes: 5
+      monitoring:
+        enabled: true
+        attack-threshold: 10
+        time-window-minutes: 60
+        real-time-alert: true
+        alert-cooldown-minutes: 30
+        performance-threshold-ms: 1000
+      
+    # 数据完整性配置
+    data-integrity:
+      enabled: true
+      hash-algorithm: "SHA-256"
+      auto-verify: true
+      schedule-check-cron: "0 0 4 * * ?"
+      verify-on-read: false
+      store-hash-separately: true
+      integrity-check-batch-size: 100
+      # 定时任务配置
+      scheduled-tasks:
+        daily-check-enabled: true
+        daily-check-cron: "0 0 4 * * ?"
+        weekly-deep-check-enabled: true
+        weekly-deep-check-cron: "0 0 3 ? * SUN"
+        monthly-report-enabled: true
+        monthly-report-cron: "0 0 2 1 * ?"
+      # 告警配置
+      alert:
+        enabled: true
+        threshold: 10
+        email-enabled: false
+        sms-enabled: false
+        webhook-enabled: false
+      # 修复建议配置
+      repair-suggestions:
+        enabled: true
+        auto-generate: true
+        include-common-suggestions: true
+      # 统计报告配置
+      statistics:
+        enabled: true
+        trend-analysis: true
+        retention-days: 90
+        export-enabled: true
+      
+    # 文件完整性配置
+    file-integrity:
+      enabled: true
+      critical-files: ["application.yml", "application-security.yml", "keystore.p12"]
+      backup-enabled: true
+      alert-enabled: true
+      check-interval-minutes: 60
+      backup-directory: "backup/config"
+      hash-algorithm: "SHA-256"
+      
+    # 安全查询配置
+    safe-query:
+      enabled: true
+      sql-injection-check: true
+      parameter-validation: true
+      max-query-length: 5000
+      allowed-sort-fields:
+        posts: ["id", "title", "created_at", "updated_at", "author_id"]
+        users: ["id", "username", "created_at", "email"]
+        comments: ["id", "created_at", "post_id", "author_id"]
+      max-results-per-page: 100
+      default-page-size: 20
+      
+    # 文件上传安全配置
+    file-upload-security:
+      enabled: true
+      max-file-size: 10485760  # 10MB
+      max-total-size: 52428800  # 50MB
+      allowed-mime-types: ["image/jpeg", "image/png", "image/gif", "application/pdf", "text/plain"]
+      virus-scan-enabled: true
+      magic-number-check: true
+      content-scan-enabled: true
+      quarantine-directory: "quarantine"
+      scan-timeout-seconds: 30
+      
+    # 数据脱敏配置
+    data-masking:
+      enabled: true
+      email-mask-level: partial  # none, partial, full
+      phone-mask-level: partial  # none, partial, full
+      username-mask-level: partial
+      id-card-mask-level: partial
+      mask-char: "*"
+      admin-full-access: true
+      self-full-access: true
+      sensitive-fields: ["email", "phone", "mobile", "idCard", "password", "token", "secret"]
+      mask-length:
+        email-prefix-length: 2
+        email-suffix-length: 2
+        phone-prefix-length: 3
+        phone-suffix-length: 4
+        username-prefix-length: 2
+        username-suffix-length: 2
+        id-card-prefix-length: 4
+        id-card-suffix-length: 4
+      role-permission:
+        full-email-access-roles: ["ADMIN", "SUPER_ADMIN"]
+        full-phone-access-roles: ["ADMIN", "SUPER_ADMIN"]
+        full-user-access-roles: ["SUPER_ADMIN"]
+        data-export-roles: ["ADMIN", "SUPER_ADMIN"]
+        
+    # 会话清理配置
+    session-cleanup:
+      enabled: true
+      cleanup-interval-minutes: 5
+      expired-session-cleanup-cron: "0 */5 * * * ?"
+      orphaned-cleanup-cron: "0 0 2 * * ?"
+      max-inactive-minutes: 30
+      cleanup-batch-size: 100
+      force-cleanup-on-logout: true
+      
+    # 数据删除配置
+    data-deletion:
+      enabled: true
+      soft-delete-enabled: true
+      permanent-delete-delay-days: 30
+      cascade-delete-enabled: true
+      deletion-confirmation-required: true
+      audit-deletion-operations: true
+      batch-deletion-size: 50
+      deletion-timeout-minutes: 10
+    
     # 密码策略
     password-policy:
       min-length: 8
@@ -50,6 +224,59 @@ app:
       cookie-http-only: false
       cookie-secure: true
       token-cache-expiration-hours: 2
+      
+    # 异常处理配置
+    exception-handling:
+      enabled: true
+      unified-response-format: true
+      security-exception-priority: true
+      
+    # 异常统计配置
+    exception-statistics:
+      enabled: true
+      alert-threshold: 10
+      time-window-minutes: 60
+      real-time-alert: true
+      cleanup-interval-hours: 1
+      daily-report-enabled: true
+      daily-report-cron: "0 0 2 * * ?"
+      trend-check-interval-minutes: 30
+      trend-check-cron: "0 */30 * * * ?"
+      hotspot-threshold: 5
+      growth-rate-alert-threshold: 100.0
+      
+    # 异常脱敏配置
+    exception-masking:
+      enabled: true
+      hide-technical-details: true
+      admin-full-access: true
+      mask-char: "*"
+      mask-stack-traces: true
+      mask-file-paths: true
+      mask-sql-statements: true
+      mask-sensitive-data: true
+      sensitive-patterns:
+        email: "\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}\\b"
+        phone: "\\b1[3-9]\\d{9}\\b"
+        ip: "\\b(?:[0-9]{1,3}\\.){3}[0-9]{1,3}\\b"
+        id-card: "\\b[1-9]\\d{5}(18|19|20)\\d{2}((0[1-9])|(1[0-2]))(([0-2][1-9])|10|20|30|31)\\d{3}[0-9Xx]\\b"
+        password: "(?i)(password|pwd|pass|secret|key)\\s*[=:]\\s*[^\\s]+"
+      
+    # 安全监控配置
+    monitoring:
+      enabled: true
+      metrics-enabled: true
+      alert-enabled: true
+      log-security-events: true
+      event-retention-days: 90
+      performance-monitoring: true
+      threshold-alerts:
+        failed-login-threshold: 10
+        xss-attack-threshold: 5
+        sql-injection-threshold: 3
+        file-upload-failure-threshold: 20
+        exception-frequency-threshold: 50
+        critical-exception-threshold: 1
 
 # 日志配置
 logging:

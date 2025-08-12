@@ -4,6 +4,7 @@ import com.myweb.website_core.domain.business.entity.Post;
 import com.myweb.website_core.domain.business.entity.PostCollect;
 import com.myweb.website_core.domain.business.entity.PostLike;
 import com.myweb.website_core.domain.business.entity.User;
+import com.myweb.website_core.domain.business.entity.UserFollow;
 import com.myweb.website_core.domain.security.dto.AuditLogRequest;
 import com.myweb.website_core.domain.security.dto.SecurityEventRequest;
 import com.myweb.website_core.domain.security.entity.AuditLog;
@@ -13,6 +14,7 @@ import com.myweb.website_core.infrastructure.persistence.repository.PostCollectR
 import com.myweb.website_core.infrastructure.persistence.repository.PostLikeRepository;
 import com.myweb.website_core.infrastructure.persistence.repository.PostRepository;
 import com.myweb.website_core.infrastructure.persistence.repository.UserRepository;
+import com.myweb.website_core.infrastructure.persistence.repository.UserFollowRepository;
 import com.myweb.website_core.infrastructure.persistence.repository.AuditLogRepository;
 import com.myweb.website_core.infrastructure.persistence.repository.SecurityEventRepository;
 import com.myweb.website_core.application.service.security.audit.SecurityEventService;
@@ -37,34 +39,9 @@ public class MessageConsumerService {
     private final UserRepository userRepository;
     private final PostLikeRepository postLikeRepository;
     private final PostCollectRepository postCollectRepository;
+    private final UserFollowRepository userFollowRepository;
     private final AuditLogRepository auditLogRepository;
     private final SecurityEventRepository securityEventRepository;
-    private final SecurityEventService securityEventService;
-
-    /**
-     * 处理帖子创建消息
-     */
-    @RabbitListener(queues = RabbitMQConfig.POST_CREATED_QUEUE)
-    public void handlePostCreated(Map<String, Object> message) {
-        try {
-            log.info("处理帖子创建消息: {}", message);
-            
-            // 更新缓存中的帖子列表
-            String cacheKey = "posts:all";
-            redisTemplate.delete(cacheKey);
-            
-            // 发送通知给关注者
-            Long authorId = Long.valueOf(message.get("authorId").toString());
-            String postTitle = message.get("title").toString();
-            
-            // 这里可以查询作者的关注者并发送通知
-            // 暂时记录日志
-            log.info("用户 {} 发布了新帖子: {}", authorId, postTitle);
-            
-        } catch (Exception e) {
-            log.error("处理帖子创建消息失败", e);
-        }
-    }
 
     /**
      * 处理帖子点赞消息
@@ -136,6 +113,42 @@ public class MessageConsumerService {
             log.error("处理帖子收藏消息失败", e);
         }
     }
+
+    /**
+     * 处理用户关注消息
+     */
+    @RabbitListener(queues = RabbitMQConfig.INTERACTION_FOLLOW_QUEUE)
+    public void handleUserFollow(Map<String, Object> message) {
+        try {
+            log.info("处理用户关注消息: {}", message);
+
+            long targetUserId = Long.parseLong(message.get("targetUserId").toString());
+            long userId = Long.parseLong(message.get("userId").toString());
+            boolean isFollowed = Boolean.parseBoolean(message.get("isFollowed").toString());
+
+            User targetUser = userRepository.findById(targetUserId)
+                    .orElseThrow(() -> new RuntimeException("目标用户不存在"));
+
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new RuntimeException("用户不存在"));
+
+            if (isFollowed) {
+                // 添加关注关系
+                UserFollow userFollow = new UserFollow(userId, targetUserId);
+                userFollowRepository.save(userFollow);
+                log.info("用户 {} 关注了用户 {}", userId, targetUserId);
+            } else {
+                // 取消关注关系
+                userFollowRepository.deleteByFollowerIdAndFollowingId(userId, targetUserId);
+                log.info("用户 {} 取消关注了用户 {}", userId, targetUserId);
+            }
+            user.setFollowCount(userFollowRepository.countByFollowerId(userId));
+            targetUser.setFollowerCount(userFollowRepository.countByFollowingId(targetUserId));
+        } catch (Exception e) {
+            log.error("处理用户关注消息失败", e);
+        }
+    }
+
     /**
      * 处理邮件通知消息
      */

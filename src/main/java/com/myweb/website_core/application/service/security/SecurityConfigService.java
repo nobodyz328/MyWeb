@@ -2,11 +2,14 @@ package com.myweb.website_core.application.service.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.myweb.website_core.application.service.security.audit.AuditLogServiceAdapter;
-import com.myweb.website_core.common.config.BackupProperties;
+import com.myweb.website_core.common.enums.SecurityEventType;
+import com.myweb.website_core.common.util.SecurityEventUtils;
+import com.myweb.website_core.domain.security.dto.AuditLogRequest;
+import com.myweb.website_core.infrastructure.config.properties.BackupProperties;
 import com.myweb.website_core.common.exception.security.ValidationException;
 import com.myweb.website_core.infrastructure.config.JwtConfig;
-import com.myweb.website_core.common.config.RateLimitProperties;
-import com.myweb.website_core.common.config.SecurityProperties;
+import com.myweb.website_core.infrastructure.config.properties.RateLimitProperties;
+import com.myweb.website_core.infrastructure.config.properties.SecurityProperties;
 import com.myweb.website_core.common.enums.AuditOperation;
 import com.myweb.website_core.domain.security.dto.SecurityConfigBackupDTO;
 import com.myweb.website_core.domain.security.dto.SecurityConfigChangeDTO;
@@ -524,13 +527,11 @@ public class SecurityConfigService {
                 auditData.put("newConfig", objectMapper.writeValueAsString(newConfig));
             }
             
-            auditLogService.logSecurityEvent(
-                operator,
-                AuditOperation.CONFIG_CHANGE,
-                "SECURITY_CONFIG",
-                String.format("配置变更 - 类型: %s, 结果: %s", configType, result),
-                null,
-                true
+            auditLogService.logOperation(
+                    AuditLogRequest.system(
+                            AuditOperation.CONFIG_CHANGE,
+                            "配置变更"
+                    )
             );
             
         } catch (Exception e) {

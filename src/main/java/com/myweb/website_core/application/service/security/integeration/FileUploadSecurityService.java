@@ -27,13 +27,13 @@ import java.util.regex.Pattern;
 
 /**
  * 文件上传安全服务
- * 
+ * <p>
  * 提供文件上传的安全验证功能：
  * - 文件类型、大小、魔数验证
  * - 恶意代码扫描
  * - 安全的文件存储路径和命名策略
  * - 审计日志记录
- * 
+ * <p>
  * 符合GB/T 22239-2019二级等保要求的恶意代码防范机制
  * 
  * @author MyWeb Security Team
@@ -71,13 +71,13 @@ public class FileUploadSecurityService {
      * 文件魔数映射表
      */
     private static final Map<String, List<String>> MAGIC_NUMBERS = Map.of(
-        "jpg", Arrays.asList("FFD8FF"),
-        "jpeg", Arrays.asList("FFD8FF"),
-        "png", Arrays.asList("89504E47"),
-        "gif", Arrays.asList("47494638", "47494639"),
-        "webp", Arrays.asList("52494646"),
-        "bmp", Arrays.asList("424D"),
-        "svg", Arrays.asList("3C3F786D6C", "3C737667")
+        "jpg", List.of("FFD8FF"),
+        "jpeg", List.of("FFD8FF"),
+        "png", List.of("89504E47"),
+        "gif", List.of("47494638", "47494639"),
+        "webp", List.of("52494646"),
+        "bmp", List.of("424D"),
+        "svg", List.of("3C3F786D6C", "3C737667")
     );
     
     /**
@@ -442,24 +442,15 @@ public class FileUploadSecurityService {
      */
     private void validateFileStructure(byte[] fileBytes, String filename) throws FileValidationException {
         String extension = getFileExtension(filename).toLowerCase();
-        
+
         switch (extension) {
-            case "jpg":
-            case "jpeg":
-                validateJpegStructure(fileBytes);
-                break;
-            case "png":
-                validatePngStructure(fileBytes);
-                break;
-            case "gif":
-                validateGifStructure(fileBytes);
-                break;
-            case "svg":
-                validateSvgStructure(fileBytes);
-                break;
-            default:
+            case "jpg", "jpeg" -> validateJpegStructure(fileBytes);
+            case "png" -> validatePngStructure(fileBytes);
+            case "gif" -> validateGifStructure(fileBytes);
+            case "svg" -> validateSvgStructure(fileBytes);
+            default ->
                 // 对于其他格式，进行基本的结构检查
-                validateBasicStructure(fileBytes);
+                    validateBasicStructure(fileBytes);
         }
     }
     
@@ -479,11 +470,9 @@ public class FileUploadSecurityService {
         }
         
         // 检查JPEG文件尾
-        if (fileBytes.length >= 2) {
-            int len = fileBytes.length;
-            if (!(fileBytes[len - 2] == (byte) 0xFF && fileBytes[len - 1] == (byte) 0xD9)) {
-                log.warn("JPEG文件可能缺少正确的文件尾标记");
-            }
+        int len = fileBytes.length;
+        if (!(fileBytes[len - 2] == (byte) 0xFF && fileBytes[len - 1] == (byte) 0xD9)) {
+            log.warn("JPEG文件可能缺少正确的文件尾标记");
         }
     }
     

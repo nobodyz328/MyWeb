@@ -1,7 +1,7 @@
 package com.myweb.website_core.application.service.security;
 
 import com.myweb.website_core.application.service.security.IPS.ratelimit.RateLimitingService;
-import com.myweb.website_core.common.config.RateLimitProperties;
+import com.myweb.website_core.infrastructure.config.properties.RateLimitProperties;
 import com.myweb.website_core.common.util.SecurityEventUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

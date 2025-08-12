@@ -2,7 +2,10 @@ package com.myweb.website_core;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.scheduling.annotation.EnableAsync;
+
+import jakarta.validation.Valid;
 
 /**
  * MyWeb 博客系统主应用类
@@ -25,10 +28,10 @@ import org.springframework.scheduling.annotation.EnableAsync;
  * - MyBatis
  * - Thymeleaf
  */
+@Valid
 @SpringBootApplication
 @EnableAsync
 public class App {
-
     public static void main(String[] args) {
         SpringApplication.run(App.class, args);
     }

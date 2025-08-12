@@ -2,13 +2,12 @@ package com.myweb.website_core.common.util;
 
 /**
  * Redis键统一管理工具类
- * 
+ * <p>
  * 统一管理系统中所有Redis键的命名规范，避免硬编码
  * 采用分层命名结构：业务模块:功能:具体标识
  * 
- * @author MyWeb Security Team
+ * @author MyWeb
  * @version 2.0
- * @since 2025-01-01
  */
 public class RedisKey {
     
@@ -117,6 +116,13 @@ public class RedisKey {
      */
     public static String collectKey(Long postId, Long userId) {
         return USER_COLLECT_PREFIX + userId + SEPARATOR + postId;
+    }
+    
+    /**
+     * 用户关注键
+     */
+    public static String followKey(Long targetUserId, Long userId) {
+        return USER_FOLLOW_PREFIX + userId + SEPARATOR + targetUserId;
     }
     
     /**

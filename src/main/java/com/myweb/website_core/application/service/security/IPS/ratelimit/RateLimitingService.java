@@ -1,9 +1,8 @@
 package com.myweb.website_core.application.service.security.IPS.ratelimit;
 
 import com.myweb.website_core.application.service.security.audit.AuditLogService;
-import com.myweb.website_core.common.config.RateLimitProperties;
+import com.myweb.website_core.infrastructure.config.properties.RateLimitProperties;
 import com.myweb.website_core.common.enums.AuditOperation;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -14,7 +13,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**

@@ -2,10 +2,10 @@ package com.myweb.website_core.application.service.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.myweb.website_core.application.service.security.audit.AuditLogServiceAdapter;
-import com.myweb.website_core.common.config.BackupProperties;
+import com.myweb.website_core.infrastructure.config.properties.BackupProperties;
 import com.myweb.website_core.infrastructure.config.JwtConfig;
-import com.myweb.website_core.common.config.RateLimitProperties;
-import com.myweb.website_core.common.config.SecurityProperties;
+import com.myweb.website_core.infrastructure.config.properties.RateLimitProperties;
+import com.myweb.website_core.infrastructure.config.properties.SecurityProperties;
 import com.myweb.website_core.domain.security.dto.SecurityConfigBackupDTO;
 import com.myweb.website_core.domain.security.dto.SecurityConfigDTO;
 import org.junit.jupiter.api.BeforeEach;
@@ -124,7 +124,7 @@ class SecurityConfigServiceTest {
         // Then
         assertTrue(result.get());
         verify(eventPublisher, times(1)).publishEvent(any());
-        verify(auditLogService, times(1)).logSecurityEvent(any(), any(), any(), any(), any(), any());
+        verify(auditLogService, times(1)).logSecurityEvent(any());
     }
     
     @Test

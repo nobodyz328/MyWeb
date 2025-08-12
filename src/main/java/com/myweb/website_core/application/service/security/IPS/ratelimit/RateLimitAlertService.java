@@ -1,7 +1,7 @@
 package com.myweb.website_core.application.service.security.IPS.ratelimit;
 
 import com.myweb.website_core.application.service.security.audit.AuditLogService;
-import com.myweb.website_core.common.config.RateLimitProperties;
+import com.myweb.website_core.infrastructure.config.properties.RateLimitProperties;
 import com.myweb.website_core.common.enums.AuditOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

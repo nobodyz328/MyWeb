@@ -4,7 +4,7 @@ import com.myweb.website_core.application.service.integration.EmailService;
 import com.myweb.website_core.application.service.security.audit.AuditLogServiceAdapter;
 import com.myweb.website_core.application.service.security.integeration.dataManage.BackupManagementService;
 import com.myweb.website_core.application.service.security.integeration.dataManage.BackupService;
-import com.myweb.website_core.common.config.BackupProperties;
+import com.myweb.website_core.infrastructure.config.properties.BackupProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

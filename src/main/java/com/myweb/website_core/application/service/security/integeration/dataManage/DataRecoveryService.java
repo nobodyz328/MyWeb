@@ -1,7 +1,8 @@
 package com.myweb.website_core.application.service.security.integeration.dataManage;
 
 import com.myweb.website_core.application.service.security.audit.AuditLogServiceAdapter;
-import com.myweb.website_core.common.config.BackupProperties;
+import com.myweb.website_core.domain.security.dto.AuditLogRequest;
+import com.myweb.website_core.infrastructure.config.properties.BackupProperties;
 import com.myweb.website_core.common.enums.AuditOperation;
 import com.myweb.website_core.common.exception.security.ValidationException;
 import lombok.Getter;
@@ -149,13 +150,12 @@ public class DataRecoveryService {
             LocalDateTime endTime = LocalDateTime.now();
             
             // 记录审计日志
-            auditLogService.logSecurityEvent(
-                userId,
-                AuditOperation.DATA_RESTORE,
-                "FULL_RECOVERY_COMPLETED",
-                String.format("完全恢复完成 - ID: %s, 备份文件: %s", recoveryId, backupFilePath),
-                null,
-                true
+            auditLogService.logOperation(
+                    AuditLogRequest.system(
+                            AuditOperation.DATA_RESTORE,
+                            "管理员执行数据恢复操作"
+
+                    )
             );
             
             Map<String, Object> details = new HashMap<>();
@@ -179,13 +179,11 @@ public class DataRecoveryService {
             log.error("完全恢复执行失败 - 恢复ID: {}", recoveryId, e);
             
             // 记录审计日志
-            auditLogService.logSecurityEvent(
-                userId,
-                AuditOperation.DATA_RESTORE,
-                "FULL_RECOVERY_FAILED",
-                errorMessage,
-                null,
-                false
+            auditLogService.logOperation(
+                    AuditLogRequest.system(
+                            AuditOperation.DATA_RESTORE,
+                            "FULL_RECOVERY_FAILED"
+                    ).withResult(false)
             );
             
             return new RecoveryResult(
@@ -231,13 +229,11 @@ public class DataRecoveryService {
             LocalDateTime endTime = LocalDateTime.now();
             
             // 记录审计日志
-            auditLogService.logSecurityEvent(
-                userId,
-                AuditOperation.DATA_RESTORE,
-                "POINT_IN_TIME_RECOVERY_COMPLETED",
-                String.format("时间点恢复完成 - ID: %s, 目标时间: %s", recoveryId, targetDateTime),
-                null,
-                true
+            auditLogService.logOperation(
+                AuditLogRequest.system(
+                    AuditOperation.DATA_RESTORE,
+                    "POINT_IN_TIME_RECOVERY_STARTED"
+                ).withResult(true)
             );
             
             Map<String, Object> details = new HashMap<>();
@@ -262,14 +258,14 @@ public class DataRecoveryService {
             log.error("时间点恢复执行失败 - 恢复ID: {}", recoveryId, e);
             
             // 记录审计日志
-            auditLogService.logSecurityEvent(
-                userId,
-                AuditOperation.DATA_RESTORE,
-                "POINT_IN_TIME_RECOVERY_FAILED",
-                errorMessage,
-                null,
-                false
-            );
+//            auditLogService.logSecurityEvent(
+//                userId,
+//                AuditOperation.DATA_RESTORE,
+//                "POINT_IN_TIME_RECOVERY_FAILED",
+//                errorMessage,
+//                null,
+//                false
+//            );
             
             return new RecoveryResult(
                 false, recoveryId, RecoveryType.POINT_IN_TIME, null,
@@ -318,14 +314,14 @@ public class DataRecoveryService {
             LocalDateTime endTime = LocalDateTime.now();
             
             // 记录审计日志
-            auditLogService.logSecurityEvent(
-                userId,
-                AuditOperation.DATA_RESTORE,
-                "SELECTIVE_RECOVERY_COMPLETED",
-                String.format("选择性恢复完成 - ID: %s, 表: %s", recoveryId, String.join(",", tablesToRestore)),
-                null,
-                true
-            );
+//            auditLogService.logSecurityEvent(
+//                userId,
+//                AuditOperation.DATA_RESTORE,
+//                "SELECTIVE_RECOVERY_COMPLETED",
+//                String.format("选择性恢复完成 - ID: %s, 表: %s", recoveryId, String.join(",", tablesToRestore)),
+//                null,
+//                true
+//            );
             
             Map<String, Object> details = new HashMap<>();
             details.put("tablesToRestore", tablesToRestore);
@@ -348,15 +344,15 @@ public class DataRecoveryService {
             
             log.error("选择性恢复执行失败 - 恢复ID: {}", recoveryId, e);
             
-            // 记录审计日志
-            auditLogService.logSecurityEvent(
-                userId,
-                AuditOperation.DATA_RESTORE,
-                "SELECTIVE_RECOVERY_FAILED",
-                errorMessage,
-                null,
-                false
-            );
+//            // 记录审计日志
+//            auditLogService.logSecurityEvent(
+//                userId,
+//                AuditOperation.DATA_RESTORE,
+//                "SELECTIVE_RECOVERY_FAILED",
+//                errorMessage,
+//                null,
+//                false
+//            );
             
             return new RecoveryResult(
                 false, recoveryId, RecoveryType.SELECTIVE, backupFilePath,

@@ -4,6 +4,7 @@ import com.myweb.website_core.application.service.security.integeration.dataMana
 import com.myweb.website_core.application.service.security.audit.AuditLogServiceAdapter;
 import com.myweb.website_core.common.enums.AuditOperation;
 import com.myweb.website_core.domain.security.dto.AuditLogRequest;
+import com.myweb.website_core.infrastructure.security.audit.Auditable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -17,13 +18,13 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * 备份管理控制器
- * 
+ * <p>
  * 提供备份管理的REST API接口，包括：
  * - 备份文件生命周期管理
  * - 存储空间监控
  * - 备份策略配置
  * - 远程存储同步
- * 
+ * <p>
  * 符合GB/T 22239-2019二级等保要求8.5、8.6
  * 
  * @author MyWeb Security Team
@@ -238,6 +239,10 @@ public class BackupManagementController {
      * 手动执行备份生命周期管理
      */
     @PostMapping("/lifecycle/manage")
+    @Auditable(operation = AuditOperation.BACKUP_OPERATION,
+            description = "执行备份生命周期管理任务",
+            resourceType = "BACKUP"
+    )
     public ResponseEntity<Map<String, Object>> manageBackupLifecycle() {
         try {
             log.info("手动执行备份生命周期管理");

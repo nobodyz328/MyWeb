@@ -1,5 +1,8 @@
 package com.myweb.website_core.infrastructure.config;
 
+import com.myweb.website_core.infrastructure.config.properties.BackupProperties;
+import com.myweb.website_core.infrastructure.config.properties.RateLimitProperties;
+import com.myweb.website_core.infrastructure.config.properties.SecurityProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
@@ -21,10 +24,10 @@ import org.springframework.scheduling.annotation.EnableAsync;
 @Configuration
 @EnableAsync
 @EnableConfigurationProperties({
-    com.myweb.website_core.common.config.SecurityProperties.class,
+    SecurityProperties.class,
     com.myweb.website_core.infrastructure.config.JwtConfig.class,
-    com.myweb.website_core.common.config.RateLimitProperties.class,
-    com.myweb.website_core.common.config.BackupProperties.class
+    RateLimitProperties.class,
+    BackupProperties.class
 })
 public class SecurityConfigCenter {
     

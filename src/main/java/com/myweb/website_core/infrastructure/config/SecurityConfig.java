@@ -6,6 +6,7 @@ import com.myweb.website_core.infrastructure.security.Authentication.JwtAuthenti
 import com.myweb.website_core.infrastructure.security.config.UnifiedAccessDeniedHandler;
 import com.myweb.website_core.infrastructure.security.filter.JwtAuthenticationFilter;
 import com.myweb.website_core.infrastructure.security.filter.RateLimitingFilter;
+import com.myweb.website_core.infrastructure.security.filter.XssProtectionFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -38,6 +39,8 @@ public class SecurityConfig {
     private final RateLimitingFilter rateLimitingFilter;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+    private final XssProtectionFilter xssProtectionFilter;
+
     //private final ContentCachingFilter contentCachingFilter;
 
 
@@ -54,12 +57,13 @@ public class SecurityConfig {
                                "/", "/view/**", "/users/register", "/users/login", "/users/register/code", 
                                "/users/refresh-token", "/users/check-username", "/users/check-email",
                                "/post/*", "/api/posts", "/api/posts/*", "/api/images/*", "/posts/top-liked", 
-                               "/search", "/announcements", "/posts/*/comments", "/error/**", "/profile",
-                               "/api/csrf/token","/users/check-admin").permitAll()
+                               "/search", "/announcements", "/posts/*/comments", "/error/**", "*/profile",
+                               "/api/csrf/token","/users/check-admin","/users/*/profile").permitAll()
                 
-                // API接口 - 需要认证但不需要特定权限的接口
+                // API接口
                 .requestMatchers("/api/posts/*/collect-status", "/api/posts/*/like-status", 
-                               "/api/posts/*/collect", "/api/posts/*/like").authenticated()
+                               "/api/posts/*/collect", "/api/posts/*/like","/users/*/follow",
+                        "users/*/follow-status","users/*/followed-users").authenticated()
                 
                 // 需要认证的基本功能
                 .requestMatchers("/posts/new", "/posts/create").hasAuthority("POST_CREATE")
@@ -98,10 +102,8 @@ public class SecurityConfig {
             .csrf(csrf -> csrf
                 .csrfTokenRepository(csrfTokenRepository())
                 .ignoringRequestMatchers(
-                    // 特定API接口不需要CSRF保护（使用JWT）
-                        "/api/**",
-//                    "/api/posts", "/api/posts/**", "/api/images/**",
-//                    "/api/admin/**", "/api/users/manage/**", "/api/comments/manage/**", "/api/audit/**",
+                    // API接口不需要CSRF保护（使用JWT）
+                        "/api/**","users/*/follow",
                     // 公开访问的资源不需要CSRF保护
                     "/login", "/register", "/static/**", "/css/**", "/js/**", "/images/**","/users/*/settings/totp/enable",
                     "/", "/view/**", "/users/register", "/users/login", "/users/register/code",
@@ -111,8 +113,9 @@ public class SecurityConfig {
                     "/api/csrf/token"
                 )
             )
-            // 添加过滤器
+            // 添加过滤器 - 按执行顺序配置
                 //.addFilterBefore(contentCachingFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(xssProtectionFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(rateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
@@ -195,7 +198,6 @@ public class SecurityConfig {
         repository.setCookiePath("/blog");
         repository.setSecure(true); // HTTPS环境下设置为true
         repository.setCookieMaxAge(7200); // 2小时
-        //repository.setSameSite("Strict");
         return repository;
     }
 }

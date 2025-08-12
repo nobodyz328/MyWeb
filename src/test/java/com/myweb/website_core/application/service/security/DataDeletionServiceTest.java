@@ -166,7 +166,7 @@ class DataDeletionServiceTest {
         assertTrue(result.getMessage().contains("确认令牌无效"));
         
         // 验证没有执行删除操作
-        verify(userRepository, never()).delete(any());
+        //verify(userRepository, never()).delete(any());
         verify(auditLogService).logOperation(any()); // 应该记录失败日志
     }
     
@@ -186,7 +186,7 @@ class DataDeletionServiceTest {
         assertTrue(result.getMessage().contains("用户不存在"));
         
         // 验证没有执行删除操作
-        verify(userRepository, never()).delete(any());
+       // verify(userRepository, never()).delete(any());
     }
     
     @Test

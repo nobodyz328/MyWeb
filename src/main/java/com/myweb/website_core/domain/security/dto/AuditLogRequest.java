@@ -1,6 +1,7 @@
 package com.myweb.website_core.domain.security.dto;
 
 import com.myweb.website_core.common.enums.AuditOperation;
+import com.myweb.website_core.common.util.SecurityEventUtils;
 import lombok.Data;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
@@ -34,12 +35,14 @@ public class AuditLogRequest {
     /**
      * 用户ID
      */
-    private Long userId;
+    @Builder.Default
+    private Long userId=SecurityEventUtils.getUserId();
     
     /**
      * 用户名
      */
-    private String username;
+    @Builder.Default
+    private String username=SecurityEventUtils.getUsername();
     
     // ==================== 操作相关信息 ====================
     
@@ -68,12 +71,14 @@ public class AuditLogRequest {
     /**
      * 客户端IP地址
      */
-    private String ipAddress;
+    @Builder.Default
+    private String ipAddress=SecurityEventUtils.getIpAddress();
     
     /**
      * 用户代理字符串
      */
-    private String userAgent;
+    @Builder.Default
+    private String userAgent=SecurityEventUtils.getUserAgent();
 
     
     // ==================== 会话相关信息 ====================
@@ -81,7 +86,8 @@ public class AuditLogRequest {
     /**
      * 会话ID
      */
-    private String sessionId;
+    @Builder.Default
+    private String sessionId= SecurityEventUtils.getSessionId();
     
     /**
      * 请求ID
@@ -134,7 +140,8 @@ public class AuditLogRequest {
     /**
      * 操作时间戳
      */
-    private LocalDateTime timestamp;
+    @Builder.Default
+    private LocalDateTime timestamp=LocalDateTime.now();
     
     // ==================== 构建器方法 ====================
     
@@ -142,17 +149,13 @@ public class AuditLogRequest {
      * 创建成功操作的审计日志请求
      * 
      * @param operation 操作类型
-     * @param userId 用户ID
-     * @param username 用户名
+
      * @return 审计日志请求
      */
-    public static AuditLogRequest success(AuditOperation operation, Long userId, String username) {
+    public static AuditLogRequest success(AuditOperation operation) {
         return AuditLogRequest.builder()
                 .operation(operation)
-                .userId(userId)
-                .username(username)
                 .result("SUCCESS")
-                .timestamp(LocalDateTime.now())
                 .build();
     }
     
@@ -160,19 +163,14 @@ public class AuditLogRequest {
      * 创建失败操作的审计日志请求
      * 
      * @param operation 操作类型
-     * @param userId 用户ID
-     * @param username 用户名
      * @param errorMessage 错误信息
      * @return 审计日志请求
      */
-    public static AuditLogRequest failure(AuditOperation operation, Long userId, String username, String errorMessage) {
+    public static AuditLogRequest failure(AuditOperation operation, String errorMessage) {
         return AuditLogRequest.builder()
                 .operation(operation)
-                .userId(userId)
-                .username(username)
                 .result("FAILURE")
                 .errorMessage(errorMessage)
-                .timestamp(LocalDateTime.now())
                 .build();
     }
     
@@ -180,19 +178,14 @@ public class AuditLogRequest {
      * 创建错误操作的审计日志请求
      * 
      * @param operation 操作类型
-     * @param userId 用户ID
-     * @param username 用户名
      * @param errorMessage 错误信息
      * @return 审计日志请求
      */
-    public static AuditLogRequest error(AuditOperation operation, Long userId, String username, String errorMessage) {
+    public static AuditLogRequest error(AuditOperation operation, String errorMessage) {
         return AuditLogRequest.builder()
                 .operation(operation)
-                .userId(userId)
-                .username(username)
                 .result("ERROR")
                 .errorMessage(errorMessage)
-                .timestamp(LocalDateTime.now())
                 .build();
     }
     
@@ -209,7 +202,6 @@ public class AuditLogRequest {
                 .resourceType("SYSTEM")
                 .description(description)
                 .result("SUCCESS")
-                .timestamp(LocalDateTime.now())
                 .build();
     }
     
@@ -217,23 +209,13 @@ public class AuditLogRequest {
      * 创建登录操作的审计日志请求
      * 
      * @param success 是否成功
-     * @param userId 用户ID
-     * @param username 用户名
-     * @param ipAddress IP地址
-     * @param userAgent 用户代理
      * @param errorMessage 错误信息（失败时）
      * @return 审计日志请求
      */
-    public static AuditLogRequest login(boolean success, Long userId, String username, 
-                                       String ipAddress, String userAgent, String errorMessage) {
+    public static AuditLogRequest login(boolean success, String errorMessage) {
         AuditLogRequestBuilder builder = AuditLogRequest.builder()
                 .operation(success ? AuditOperation.USER_LOGIN_SUCCESS : AuditOperation.USER_LOGIN_FAILURE)
-                .userId(userId)
-                .username(username)
-                .ipAddress(ipAddress)
-                .userAgent(userAgent)
-                .result(success ? "SUCCESS" : "FAILURE")
-                .timestamp(LocalDateTime.now());
+                .result(success ? "SUCCESS" : "FAILURE");
         
         if (!success && errorMessage != null) {
             builder.errorMessage(errorMessage);
@@ -246,22 +228,17 @@ public class AuditLogRequest {
      * 创建资源操作的审计日志请求
      * 
      * @param operation 操作类型
-     * @param userId 用户ID
-     * @param username 用户名
      * @param resourceType 资源类型
      * @param resourceId 资源ID
      * @return 审计日志请求
      */
-    public static AuditLogRequest resource(AuditOperation operation, Long userId, String username,
+    public static AuditLogRequest resource(AuditOperation operation,
                                           String resourceType, Long resourceId) {
         return AuditLogRequest.builder()
                 .operation(operation)
-                .userId(userId)
-                .username(username)
                 .resourceType(resourceType)
                 .resourceId(resourceId)
                 .result("SUCCESS")
-                .timestamp(LocalDateTime.now())
                 .build();
     }
     
@@ -269,55 +246,21 @@ public class AuditLogRequest {
      * 创建安全事件的审计日志请求
      * 
      * @param operation 操作类型
-     * @param userId 用户ID
-     * @param username 用户名
-     * @param ipAddress IP地址
      * @param description 事件描述
      * @param riskLevel 风险级别
      * @return 审计日志请求
      */
-    public static AuditLogRequest securityEvent(AuditOperation operation, Long userId, String username,
-                                               String ipAddress, String description, Integer riskLevel) {
+    public static AuditLogRequest securityEvent(AuditOperation operation, String description, Integer riskLevel) {
         return AuditLogRequest.builder()
                 .operation(operation)
-                .userId(userId)
-                .username(username)
-                .ipAddress(ipAddress)
                 .description(description)
                 .riskLevel(riskLevel)
                 .result("FAILURE")
                 .tags("security,event")
-                .timestamp(LocalDateTime.now())
                 .build();
     }
     
     // ==================== 链式设置方法 ====================
-    
-    /**
-     * 设置网络信息
-     * 
-     * @param ipAddress IP地址
-     * @param userAgent 用户代理
-     * @return 当前对象
-     */
-    public AuditLogRequest withNetworkInfo(String ipAddress, String userAgent) {
-        this.ipAddress = ipAddress;
-        this.userAgent = userAgent;
-        return this;
-    }
-    
-    /**
-     * 设置会话信息
-     * 
-     * @param sessionId 会话ID
-     * @param requestId 请求ID
-     * @return 当前对象
-     */
-    public AuditLogRequest withSessionInfo(String sessionId, String requestId) {
-        this.sessionId = sessionId;
-        this.requestId = requestId;
-        return this;
-    }
     
     /**
      * 设置资源信息
@@ -331,10 +274,9 @@ public class AuditLogRequest {
         this.resourceId = resourceId;
         return this;
     }
-    
     /**
      * 设置性能信息
-     * 
+     *
      * @param executionTime 执行时间
      * @return 当前对象
      */
@@ -368,7 +310,15 @@ public class AuditLogRequest {
         this.tags = tags;
         return this;
     }
-    
+    /**
+     * 设置结果
+     *
+     * @param result 结果
+     */
+    public AuditLogRequest withResult(Boolean result) {
+        this.result = result?"SUCCESS":"FAILURE";
+        return this;
+    }
 
     /**
      * 添加标签
@@ -376,7 +326,7 @@ public class AuditLogRequest {
      * @param tag 标签
      * @return 当前对象
      */
-    public AuditLogRequest addTag(String tag) {
+    public AuditLogRequest withTag(String tag) {
         if (tag == null || tag.trim().isEmpty()) {
             return this;
         }

@@ -855,4 +855,150 @@ footer {
     animation: none;
     border-top-color: transparent;
   }
+}/* Use
+r cards for followed users */
+.user-card {
+  background: rgba(43, 71, 94, 0.4);
+  border: 1px solid rgba(102, 192, 244, 0.2);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+  transition: all 0.3s ease;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.user-card:hover {
+  background: rgba(43, 71, 94, 0.6);
+  border-color: rgba(102, 192, 244, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.user-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  margin-right: 16px;
+  border: 2px solid rgba(102, 192, 244, 0.3);
+  object-fit: cover;
+}
+
+.user-details {
+  flex: 1;
+}
+
+.user-name a {
+  color: #66c0f4;
+  text-decoration: none;
+  font-size: 1.1rem;
+  font-weight: 600;
+  transition: color 0.3s ease;
+}
+
+.user-name a:hover {
+  color: #ffffff;
+  text-shadow: 0 0 8px rgba(102, 192, 244, 0.6);
+}
+
+.user-bio {
+  color: #8f98a0;
+  font-size: 0.9rem;
+  margin: 4px 0;
+  line-height: 1.4;
+}
+
+.user-stats {
+  display: flex;
+  gap: 16px;
+  font-size: 0.85rem;
+  color: #8f98a0;
+  margin-top: 8px;
+}
+
+.user-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Follow button styles */
+.follow-container {
+  margin-top: 8px;
+}
+
+#followBtn {
+  background: linear-gradient(135deg, #66c0f4 0%, #4a9eff 100%);
+  border: none;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#followBtn:hover {
+  background: linear-gradient(135deg, #4a9eff 0%, #66c0f4 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 192, 244, 0.4);
+}
+
+#followBtn.active {
+  background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+}
+
+#followBtn.active:hover {
+  background: linear-gradient(135deg, #45a049 0%, #4caf50 100%);
+}
+
+/* Interaction button styles for follow */
+.interaction-btn {
+  background: rgba(43, 71, 94, 0.6);
+  border: 1px solid rgba(102, 192, 244, 0.3);
+  color: #c7d5e0;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.interaction-btn:hover {
+  background: rgba(102, 192, 244, 0.2);
+  border-color: rgba(102, 192, 244, 0.5);
+  transform: translateY(-1px);
+}
+
+.interaction-btn.active {
+  background: rgba(102, 192, 244, 0.3);
+  border-color: rgba(102, 192, 244, 0.6);
+  color: #66c0f4;
+}
+
+/* Post author info clickable styles */
+.post-author-avatar:hover,
+.post-author-name:hover {
+  opacity: 0.8;
+  transition: opacity 0.3s ease;
+}
+
+.post-author-name {
+  transition: color 0.3s ease;
+}
+
+.post-author-name:hover {
+  color: #66c0f4;
 }

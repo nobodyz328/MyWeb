@@ -1,5 +1,8 @@
 package com.myweb.website_core.application.service.business;
 
+import com.myweb.website_core.application.service.security.integeration.dataManage.DataIntegrityService;
+import com.myweb.website_core.common.exception.DataIntegrityException;
+import com.myweb.website_core.common.util.DTOConverter;
 import com.myweb.website_core.domain.business.dto.CommentDTO;
 import com.myweb.website_core.domain.business.entity.Comment;
 import com.myweb.website_core.domain.business.entity.Post;
@@ -7,27 +10,33 @@ import com.myweb.website_core.infrastructure.persistence.repository.CommentRepos
 import com.myweb.website_core.infrastructure.persistence.repository.PostRepository;
 import com.myweb.website_core.domain.business.entity.User;
 import com.myweb.website_core.infrastructure.persistence.repository.UserRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @Service
 public class CommentService {
     
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
     private final UserRepository userRepository;
+    private final DataIntegrityService dataIntegrityService;
     
     @Autowired
     public CommentService(CommentRepository commentRepository, 
                          PostRepository postRepository,
-                         UserRepository userRepository) {
+                         UserRepository userRepository,
+                         DataIntegrityService dataIntegrityService) {
         this.commentRepository = commentRepository;
         this.postRepository = postRepository;
         this.userRepository = userRepository;
+        this.dataIntegrityService = dataIntegrityService;
     }
     
     /**
@@ -81,7 +90,7 @@ public class CommentService {
         List<Comment> topLevelComments = commentRepository.findTopLevelCommentsByPostId(postId);
         
         return topLevelComments.stream()
-                .map(this::convertToDTO)
+                .map(DTOConverter::convertToDTO)
                 .toList();
     }
 
@@ -94,7 +103,53 @@ public class CommentService {
     }
     
     /**
+     * 修改评论内容
+     * 集成数据完整性验证，符合需求3.2, 3.4
+     */
+    @Transactional
+    public Comment editComment(Long commentId, Long userId, String newContent) {
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new RuntimeException("评论不存在"));
+        
+        // 只允许作者修改自己的评论
+        if (!comment.getAuthor().getId().equals(userId)) {
+            throw new RuntimeException("无权限修改此评论");
+        }
+        
+        // 验证原内容完整性
+        if (comment.getContentHash() != null) {
+            log.info("验证评论完整性: commentId={}", commentId);
+            
+            DataIntegrityService.IntegrityCheckResult integrityResult = 
+                dataIntegrityService.checkCommentIntegrity(commentId, comment.getContent(), comment.getContentHash());
+            
+            if (!integrityResult.isValid()) {
+                String errorMsg = String.format("评论内容完整性验证失败，可能已被篡改: commentId=%d, error=%s", 
+                    commentId, integrityResult.getErrorMessage());
+                log.error(errorMsg);
+                throw new DataIntegrityException(errorMsg);
+            }
+            
+            log.info("评论完整性验证通过: commentId={}", commentId);
+        }
+        
+        // 更新内容
+        String oldContent = comment.getContent();
+        comment.setContent(newContent);
+        comment.setUpdatedAt(LocalDateTime.now());
+        
+        // 重新计算哈希值（通过@PreUpdate自动触发）
+        Comment savedComment = commentRepository.save(comment);
+        
+        log.info("评论修改成功: commentId={}, 原内容长度={}, 新内容长度={}", 
+            commentId, oldContent.length(), newContent.length());
+        
+        return savedComment;
+    }
+    
+    /**
      * 删除评论
+     * 集成数据完整性验证，符合需求3.2, 3.4, 3.6
      */
     @Transactional
     public void deleteComment(Long commentId, Long userId) {
@@ -106,11 +161,129 @@ public class CommentService {
             throw new RuntimeException("无权限删除此评论");
         }
         
+        // 验证数据完整性
+        if (comment.getContentHash() != null) {
+            log.info("删除前验证评论完整性: commentId={}", commentId);
+            
+            DataIntegrityService.IntegrityCheckResult integrityResult = 
+                dataIntegrityService.checkCommentIntegrity(commentId, comment.getContent(), comment.getContentHash());
+            
+            if (!integrityResult.isValid()) {
+                String errorMsg = String.format("评论删除失败，内容完整性验证失败: commentId=%d, error=%s", 
+                    commentId, integrityResult.getErrorMessage());
+                log.error(errorMsg);
+                throw new DataIntegrityException(errorMsg);
+            }
+            
+            log.info("删除前评论完整性验证通过: commentId={}", commentId);
+        }
+        
         Long postId = comment.getPost().getId();
+        
+        // 记录删除操作的审计信息
+        log.info("删除评论: commentId={}, postId={}, userId={}, contentLength={}", 
+            commentId, postId, userId, comment.getContent().length());
+        
         commentRepository.delete(comment);
         
         // 更新帖子的评论数
         updatePostCommentCount(postId);
+        
+        log.info("评论删除成功: commentId={}", commentId);
+    }
+    
+    /**
+     * 验证单个评论的完整性
+     * 符合需求3.6
+     */
+    public DataIntegrityService.IntegrityCheckResult verifyCommentIntegrity(Long commentId) {
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new RuntimeException("评论不存在"));
+        
+        log.info("开始验证评论完整性: commentId={}", commentId);
+        
+        DataIntegrityService.IntegrityCheckResult result = 
+            dataIntegrityService.checkCommentIntegrity(commentId, comment.getContent(), comment.getContentHash());
+        
+        if (!result.isValid()) {
+            log.warn("评论完整性验证失败: commentId={}, error={}", commentId, result.getErrorMessage());
+        } else {
+            log.info("评论完整性验证通过: commentId={}", commentId);
+        }
+        
+        return result;
+    }
+    
+    /**
+     * 批量验证评论完整性
+     * 符合需求3.6
+     */
+    public List<DataIntegrityService.IntegrityCheckResult> verifyCommentsIntegrity(List<Long> commentIds) {
+        log.info("开始批量验证评论完整性: 评论数量={}", commentIds.size());
+        
+        List<DataIntegrityService.IntegrityCheckResult> results = commentIds.stream()
+            .map(this::verifyCommentIntegrity)
+            .toList();
+        
+        long failedCount = results.stream()
+            .mapToLong(result -> result.isValid() ? 0 : 1)
+            .sum();
+        
+        log.info("批量评论完整性验证完成: 总数={}, 失败数={}", results.size(), failedCount);
+        
+        return results;
+    }
+    
+    /**
+     * 验证帖子下所有评论的完整性
+     * 符合需求3.6
+     */
+    public List<DataIntegrityService.IntegrityCheckResult> verifyPostCommentsIntegrity(Long postId) {
+        log.info("开始验证帖子下所有评论的完整性: postId={}", postId);
+        
+        List<Comment> comments = commentRepository.findByPostId(postId);
+        List<Long> commentIds = comments.stream()
+            .map(Comment::getId)
+            .toList();
+        
+        return verifyCommentsIntegrity(commentIds);
+    }
+    
+    /**
+     * 获取评论完整性统计信息
+     * 符合需求3.6
+     */
+    public CommentIntegrityStats getCommentIntegrityStats() {
+        log.info("获取评论完整性统计信息");
+        
+        List<Comment> allComments = commentRepository.findAll();
+        
+        int totalComments = allComments.size();
+        int commentsWithHash = 0;
+        int validComments = 0;
+        int invalidComments = 0;
+        
+        for (Comment comment : allComments) {
+            if (comment.getContentHash() != null) {
+                commentsWithHash++;
+                
+                DataIntegrityService.IntegrityCheckResult result = 
+                    dataIntegrityService.checkCommentIntegrity(comment.getId(), comment.getContent(), comment.getContentHash());
+                
+                if (result.isValid()) {
+                    validComments++;
+                } else {
+                    invalidComments++;
+                }
+            }
+        }
+        
+        CommentIntegrityStats stats = new CommentIntegrityStats(
+            totalComments, commentsWithHash, validComments, invalidComments);
+        
+        log.info("评论完整性统计: {}", stats);
+        
+        return stats;
     }
     
     /**
@@ -126,30 +299,39 @@ public class CommentService {
         }
     }
     
+    // ==================== 内部类 ====================
+    
     /**
-     * 转换为DTO
+     * 评论完整性统计信息
      */
-    private CommentDTO convertToDTO(Comment comment) {
-        CommentDTO dto = new CommentDTO();
-        dto.setId(comment.getId());
-        dto.setContent(comment.getContent());
-        dto.setCreatedAt(comment.getCreatedAt());
+    public static class CommentIntegrityStats {
+        private final int totalComments;
+        private final int commentsWithHash;
+        private final int validComments;
+        private final int invalidComments;
         
-        // 设置作者信息
-        CommentDTO.AuthorInfo authorInfo = new CommentDTO.AuthorInfo();
-        authorInfo.setId(comment.getAuthor().getId());
-        authorInfo.setUsername(comment.getAuthor().getUsername());
-        authorInfo.setAvatarUrl(comment.getAuthor().getAvatarUrl());
-        dto.setAuthor(authorInfo);
-        
-        // 设置回复
-        if (comment.getReplies() != null && !comment.getReplies().isEmpty()) {
-            List<CommentDTO> replies = comment.getReplies().stream()
-                    .map(this::convertToDTO)
-                    .toList();
-            dto.setReplies(replies);
+        public CommentIntegrityStats(int totalComments, int commentsWithHash, 
+                                   int validComments, int invalidComments) {
+            this.totalComments = totalComments;
+            this.commentsWithHash = commentsWithHash;
+            this.validComments = validComments;
+            this.invalidComments = invalidComments;
         }
         
-        return dto;
+        public int getTotalComments() { return totalComments; }
+        public int getCommentsWithHash() { return commentsWithHash; }
+        public int getValidComments() { return validComments; }
+        public int getInvalidComments() { return invalidComments; }
+        
+        public double getIntegrityRate() {
+            return commentsWithHash > 0 ? (double) validComments / commentsWithHash : 0.0;
+        }
+        
+        @Override
+        public String toString() {
+            return String.format("CommentIntegrityStats{总评论数=%d, 有哈希评论数=%d, 完整评论数=%d, 损坏评论数=%d, 完整性率=%.2f%%}",
+                totalComments, commentsWithHash, validComments, invalidComments, getIntegrityRate() * 100);
+        }
     }
+
 }

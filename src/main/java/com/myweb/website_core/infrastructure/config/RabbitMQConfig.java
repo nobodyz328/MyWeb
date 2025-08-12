@@ -25,6 +25,7 @@ public class RabbitMQConfig {
     public static final String INTERACTION_LIKE_QUEUE = "interaction.like.queue";
     public static final String INTERACTION_BOOKMARK_QUEUE = "interaction.bookmark.queue";
     public static final String INTERACTION_COMMENT_QUEUE = "interaction.comment.queue";
+    public static final String INTERACTION_FOLLOW_QUEUE = "interaction.follow.queue";
     public static final String INTERACTION_STATS_UPDATE_QUEUE = "interaction.stats.update.queue";
     
     // 安全审计相关队列常量
@@ -58,6 +59,7 @@ public class RabbitMQConfig {
     public static final String INTERACTION_LIKE_ROUTING_KEY = "interaction.like";
     public static final String INTERACTION_BOOKMARK_ROUTING_KEY = "interaction.bookmark";
     public static final String INTERACTION_COMMENT_ROUTING_KEY = "interaction.comment";
+    public static final String INTERACTION_FOLLOW_ROUTING_KEY = "interaction.follow";
     public static final String INTERACTION_STATS_UPDATE_ROUTING_KEY = "interaction.stats.update";
     
     // 安全审计相关路由键常量
@@ -115,6 +117,15 @@ public class RabbitMQConfig {
         return QueueBuilder.durable(INTERACTION_COMMENT_QUEUE)
                 .withArgument("x-dead-letter-exchange", INTERACTION_DLX)
                 .withArgument("x-dead-letter-routing-key", "comment.failed")
+                .withArgument("x-message-ttl", 300000) // 5分钟TTL
+                .build();
+    }
+
+    @Bean
+    public Queue interactionFollowQueue() {
+        return QueueBuilder.durable(INTERACTION_FOLLOW_QUEUE)
+                .withArgument("x-dead-letter-exchange", INTERACTION_DLX)
+                .withArgument("x-dead-letter-routing-key", "follow.failed")
                 .withArgument("x-message-ttl", 300000) // 5分钟TTL
                 .build();
     }
@@ -280,6 +291,13 @@ public class RabbitMQConfig {
         return BindingBuilder.bind(interactionCommentQueue())
                 .to(interactionExchange())
                 .with(INTERACTION_COMMENT_ROUTING_KEY);
+    }
+
+    @Bean
+    public Binding interactionFollowBinding() {
+        return BindingBuilder.bind(interactionFollowQueue())
+                .to(interactionExchange())
+                .with(INTERACTION_FOLLOW_ROUTING_KEY);
     }
 
     @Bean

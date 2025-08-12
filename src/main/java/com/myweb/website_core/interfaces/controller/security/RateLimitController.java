@@ -3,7 +3,7 @@ package com.myweb.website_core.interfaces.controller.security;
 import com.myweb.website_core.application.service.security.IPS.ratelimit.RateLimitAlertService;
 import com.myweb.website_core.application.service.security.IPS.ratelimit.RateLimitConfigService;
 import com.myweb.website_core.application.service.security.IPS.ratelimit.RateLimitingService;
-import com.myweb.website_core.common.config.RateLimitProperties;
+import com.myweb.website_core.infrastructure.config.properties.RateLimitProperties;
 import com.myweb.website_core.common.enums.AuditOperation;
 import com.myweb.website_core.infrastructure.security.audit.Auditable;
 import jakarta.servlet.http.HttpServletRequest;

@@ -581,4 +581,52 @@ footer {
     align-items: flex-start;
     gap: 8px;
   }
+}/
+* Follow button styles */
+.follow-container {
+  margin-top: 8px;
+}
+
+.follow-container .interaction-btn {
+  background: linear-gradient(135deg, #66c0f4 0%, #4a9eff 100%);
+  border: none;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.follow-container .interaction-btn:hover {
+  background: linear-gradient(135deg, #4a9eff 0%, #66c0f4 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 192, 244, 0.4);
+}
+
+.follow-container .interaction-btn.active {
+  background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+}
+
+.follow-container .interaction-btn.active:hover {
+  background: linear-gradient(135deg, #45a049 0%, #4caf50 100%);
+}
+
+/* Clickable author info */
+.post-author-avatar,
+.post-author-name {
+  cursor: pointer;
+  transition: opacity 0.3s ease;
+}
+
+.post-author-avatar:hover,
+.post-author-name:hover {
+  opacity: 0.8;
+}
+
+.post-author-name:hover {
+  color: #66c0f4;
 }

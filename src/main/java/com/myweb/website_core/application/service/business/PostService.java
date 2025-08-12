@@ -2,6 +2,13 @@ package com.myweb.website_core.application.service.business;
 
 import com.myweb.website_core.application.service.file.ImageService;
 import com.myweb.website_core.application.service.integration.MessageProducerService;
+import com.myweb.website_core.application.service.security.integeration.dataManage.DataIntegrityService;
+import com.myweb.website_core.application.service.security.audit.AuditLogService;
+import com.myweb.website_core.common.util.SecurityUtils;
+import com.myweb.website_core.common.util.ValidationUtils;
+import com.myweb.website_core.common.util.LoggingUtils;
+import com.myweb.website_core.common.exception.DataIntegrityException;
+import com.myweb.website_core.common.enums.AuditOperation;
 import com.myweb.website_core.domain.business.dto.PostDTO;
 import com.myweb.website_core.domain.business.entity.Post;
 import com.myweb.website_core.domain.business.dto.CollectResponse;
@@ -10,6 +17,7 @@ import com.myweb.website_core.domain.business.entity.PostCollect;
 import com.myweb.website_core.infrastructure.persistence.repository.PostCollectRepository;
 import com.myweb.website_core.infrastructure.persistence.repository.PostRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +35,7 @@ import com.myweb.website_core.infrastructure.persistence.mapper.PostMapper;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.redis.core.RedisTemplate;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PostService {
@@ -38,45 +47,156 @@ public class PostService {
     private final PostCollectRepository postCollectRepository;
     private final PostLikeService postLikeService;
     private final ImageService imageService;
+    private final DataIntegrityService dataIntegrityService;
+    private final AuditLogService auditLogService;
 
 
     //@Async
     //@CacheEvict(value = "posts", allEntries = true)
     public Post createPost(Post post) {
-        // 只允许已登录用户发帖，author.id必须存在
-        if (post.getAuthor() == null || post.getAuthor().getId() == null) {
-            throw new RuntimeException("未指定作者");
+        long startTime = System.currentTimeMillis();
+        String username = "unknown";
+        
+        try {
+            // 只允许已登录用户发帖，author.id必须存在
+            if (post.getAuthor() == null || post.getAuthor().getId() == null) {
+                throw new RuntimeException("未指定作者");
+            }
+            
+            User author = userRepository.findById(post.getAuthor().getId())
+                    .orElseThrow(() -> new RuntimeException("用户不存在"));
+            username = author.getUsername();
+            
+            // 使用安全工具类验证输入
+            SecurityUtils.validatePostTitle(post.getTitle());
+            SecurityUtils.validatePostContent(post.getContent());
+            
+            // 使用DataIntegrityService计算内容哈希值用于完整性检查
+            String contentHash = dataIntegrityService.calculateHash(post.getContent());
+            post.setContentHash(contentHash);
+            post.setHashCalculatedAt(java.time.LocalDateTime.now());
+            
+            post.setAuthor(author);
+            post.setCreatedAt(java.time.LocalDateTime.now());
+
+            // postMapper.insertPost(post);
+            Post savedPost = postRepository.save(post);
+
+            // 清除Redis缓存
+            // redisTemplate.delete("posts:all");
+
+            // 发送消息到RabbitMQ
+            // messageProducerService.sendPostCreatedMessage(post);
+            
+            // 记录操作日志
+            long executionTime = System.currentTimeMillis() - startTime;
+            String logMessage = LoggingUtils.formatOperationLog(
+                "CREATE_POST", username, "POST:" + savedPost.getId(), "SUCCESS", 
+                "标题: " + post.getTitle(), executionTime);
+            log.info(logMessage);
+
+            return savedPost;
+            
+        } catch (Exception e) {
+            // 记录错误日志
+            long executionTime = System.currentTimeMillis() - startTime;
+            String errorLog = LoggingUtils.formatErrorLog(
+                "POST_CREATION_ERROR", e.getMessage(), username, 
+                null, "创建帖子", null);
+            log.error(errorLog);
+            throw e;
         }
-        User author = userRepository.findById(post.getAuthor().getId())
-                .orElseThrow(() -> new RuntimeException("用户不存在"));
-        post.setAuthor(author);
-        post.setCreatedAt(java.time.LocalDateTime.now());
-
-        // postMapper.insertPost(post);
-        postRepository.save(post);
-
-        // 清除Redis缓存
-//        redisTemplate.delete("posts:all");
-
-        // 发送消息到RabbitMQ
-//        messageProducerService.sendPostCreatedMessage(post);
-
-
-        return post;
     }
 
     // @Async
     public Post editPost(Long id, Post updatedPost) {
-        Post post = postRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("帖子不存在"));
-        // 只允许作者本人编辑
-        if (updatedPost.getAuthor() == null || !post.getAuthor().getId().equals(updatedPost.getAuthor().getId())) {
-            throw new RuntimeException("无权限编辑");
+        long startTime = System.currentTimeMillis();
+        String username = "unknown";
+        
+        try {
+            Post post = postRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("帖子不存在"));
+            
+            username = post.getAuthor().getUsername();
+            
+            // 只允许作者本人编辑
+            if (updatedPost.getAuthor() == null || !post.getAuthor().getId().equals(updatedPost.getAuthor().getId())) {
+                throw new RuntimeException("无权限编辑");
+            }
+            
+            // 使用DataIntegrityService验证原内容完整性
+            if (post.getContentHash() != null) {
+                DataIntegrityService.IntegrityCheckResult integrityResult = 
+                    dataIntegrityService.checkPostIntegrity(id, post.getContent(), post.getContentHash());
+                
+                if (!integrityResult.isValid()) {
+                    String errorMessage = "帖子内容完整性验证失败: " + integrityResult.getErrorMessage();
+                    log.warn("帖子编辑时完整性验证失败: postId={}, error={}", id, integrityResult.getErrorMessage());
+                    
+                    // 记录完整性验证失败的审计日志
+                    auditLogService.logSecurityEvent(
+                        AuditOperation.INTEGRITY_CHECK,
+                        username,
+                        String.format("帖子编辑时完整性验证失败: postId=%d, 原因=%s", id, integrityResult.getErrorMessage())
+                    );
+                    
+                    throw new DataIntegrityException(errorMessage);
+                }
+                
+                // 记录完整性验证成功的审计日志
+                auditLogService.logSecurityEvent(
+                    AuditOperation.INTEGRITY_CHECK,
+                    username,
+                    String.format("帖子编辑前完整性验证通过: postId=%d", id)
+                );
+            }
+            
+            // 使用安全工具类验证新输入
+            SecurityUtils.validatePostTitle(updatedPost.getTitle());
+            SecurityUtils.validatePostContent(updatedPost.getContent());
+            
+            // 更新内容并使用DataIntegrityService计算新哈希
+            post.setTitle(updatedPost.getTitle());
+            post.setContent(updatedPost.getContent());
+            post.setContentHash(dataIntegrityService.calculateHash(updatedPost.getContent()));
+            post.setHashCalculatedAt(java.time.LocalDateTime.now());
+            
+            // post.setImageIds(updatedPost.getImageIds());
+            Post savedPost = postRepository.save(post);
+            
+            // 记录操作日志
+            long executionTime = System.currentTimeMillis() - startTime;
+            String logMessage = LoggingUtils.formatOperationLog(
+                "EDIT_POST", username, "POST:" + id, "SUCCESS", 
+                "更新标题: " + updatedPost.getTitle(), executionTime);
+            log.info(logMessage);
+            
+            // 记录帖子编辑成功的审计日志
+            auditLogService.logSecurityEvent(
+                AuditOperation.POST_UPDATE,
+                username,
+                String.format("帖子编辑成功: postId=%d, 标题=%s", id, updatedPost.getTitle())
+            );
+            
+            return savedPost;
+            
+        } catch (DataIntegrityException e) {
+            // 数据完整性异常特殊处理
+            long executionTime = System.currentTimeMillis() - startTime;
+            String errorLog = LoggingUtils.formatErrorLog(
+                "POST_INTEGRITY_ERROR", e.getMessage(), username, 
+                null, "编辑帖子ID:" + id + " 完整性验证失败", null);
+            log.error(errorLog);
+            throw e;
+        } catch (Exception e) {
+            // 记录错误日志
+            long executionTime = System.currentTimeMillis() - startTime;
+            String errorLog = LoggingUtils.formatErrorLog(
+                "POST_EDIT_ERROR", e.getMessage(), username, 
+                null, "编辑帖子ID:" + id, null);
+            log.error(errorLog);
+            throw e;
         }
-        post.setTitle(updatedPost.getTitle());
-        post.setContent(updatedPost.getContent());
-        // post.setImageIds(updatedPost.getImageIds());
-        return postRepository.save(post);
     }
 
     // @Async
@@ -256,17 +376,179 @@ public class PostService {
         }
     }
 
+    /**
+     * 验证单个帖子的完整性
+     * 
+     * @param postId 帖子ID
+     * @return 完整性检查结果
+     */
+    public DataIntegrityService.IntegrityCheckResult verifyPostIntegrity(Long postId) {
+        try {
+            Post post = postRepository.findById(postId)
+                    .orElseThrow(() -> new RuntimeException("帖子不存在"));
+            
+            if (post.getContentHash() == null) {
+                return DataIntegrityService.IntegrityCheckResult.builder()
+                    .entityType("POST")
+                    .entityId(postId)
+                    .isValid(false)
+                    .errorMessage("帖子未设置完整性哈希值")
+                    .checkTime(java.time.LocalDateTime.now())
+                    .build();
+            }
+            
+            return dataIntegrityService.checkPostIntegrity(postId, post.getContent(), post.getContentHash());
+            
+        } catch (Exception e) {
+            log.error("验证帖子完整性失败: postId={}", postId, e);
+            return DataIntegrityService.IntegrityCheckResult.builder()
+                .entityType("POST")
+                .entityId(postId)
+                .isValid(false)
+                .errorMessage("验证帖子完整性异常: " + e.getMessage())
+                .checkTime(java.time.LocalDateTime.now())
+                .build();
+        }
+    }
+    
+    /**
+     * 批量验证帖子完整性
+     * 
+     * @param postIds 帖子ID列表
+     * @return 完整性检查结果列表
+     */
+    public List<DataIntegrityService.IntegrityCheckResult> verifyPostsIntegrity(List<Long> postIds) {
+        return postIds.stream()
+                .map(this::verifyPostIntegrity)
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * 验证用户所有帖子的完整性
+     * 
+     * @param userId 用户ID
+     * @return 完整性检查结果列表
+     */
+    public List<DataIntegrityService.IntegrityCheckResult> verifyUserPostsIntegrity(Long userId) {
+        List<Post> userPosts = postRepository.findByAuthorId(userId);
+        return userPosts.stream()
+                .map(post -> verifyPostIntegrity(post.getId()))
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * 获取帖子完整性统计信息
+     * 
+     * @return 帖子完整性统计
+     */
+    public PostIntegrityStats getPostIntegrityStats() {
+        try {
+            List<Post> allPosts = postRepository.findAll();
+            
+            long totalPosts = allPosts.size();
+            long postsWithHash = allPosts.stream()
+                    .mapToLong(post -> post.getContentHash() != null ? 1 : 0)
+                    .sum();
+            
+            // 验证有哈希值的帖子
+            List<DataIntegrityService.IntegrityCheckResult> results = allPosts.stream()
+                    .filter(post -> post.getContentHash() != null)
+                    .map(post -> dataIntegrityService.checkPostIntegrity(
+                        post.getId(), post.getContent(), post.getContentHash()))
+                    .collect(Collectors.toList());
+            
+            long validPosts = results.stream()
+                    .mapToLong(result -> result.isValid() ? 1 : 0)
+                    .sum();
+            
+            long invalidPosts = results.stream()
+                    .mapToLong(result -> result.isValid() ? 0 : 1)
+                    .sum();
+            
+            double integrityRate = postsWithHash > 0 ? (double) validPosts / postsWithHash : 0.0;
+            
+            return PostIntegrityStats.builder()
+                    .totalPosts(totalPosts)
+                    .postsWithHash(postsWithHash)
+                    .validPosts(validPosts)
+                    .invalidPosts(invalidPosts)
+                    .integrityRate(integrityRate)
+                    .build();
+                    
+        } catch (Exception e) {
+            log.error("获取帖子完整性统计失败", e);
+            return PostIntegrityStats.builder()
+                    .totalPosts(0)
+                    .postsWithHash(0)
+                    .validPosts(0)
+                    .invalidPosts(0)
+                    .integrityRate(0.0)
+                    .build();
+        }
+    }
+    
+    /**
+     * 帖子完整性统计信息
+     */
+    @lombok.Data
+    @lombok.Builder
+    public static class PostIntegrityStats {
+        private long totalPosts;
+        private long postsWithHash;
+        private long validPosts;
+        private long invalidPosts;
+        private double integrityRate;
+        
+        @Override
+        public String toString() {
+            return String.format("PostIntegrityStats{总帖子数=%d, 有哈希帖子数=%d, 有效帖子数=%d, 无效帖子数=%d, 完整性率=%.2f%%}",
+                    totalPosts, postsWithHash, validPosts, invalidPosts, integrityRate * 100);
+        }
+    }
+
     @Async
     @CacheEvict(value = "posts", allEntries = true)
     public CompletableFuture<Void> deletePost(Long id, Long userId) {
         return CompletableFuture.runAsync(() -> {
+            long startTime = System.currentTimeMillis();
+            String username = "unknown";
+            
             try {
                 Post post = postRepository.findById(id)
                         .orElseThrow(() -> new RuntimeException("帖子不存在"));
 
+                username = post.getAuthor().getUsername();
+
                 // 只允许作者本人删除
                 if (!post.getAuthor().getId().equals(userId)) {
                     throw new RuntimeException("无权限删除");
+                }
+
+                // 删除前验证数据完整性
+                if (post.getContentHash() != null) {
+                    DataIntegrityService.IntegrityCheckResult integrityResult = 
+                        dataIntegrityService.checkPostIntegrity(id, post.getContent(), post.getContentHash());
+                    
+                    if (!integrityResult.isValid()) {
+                        String errorMessage = "帖子删除前完整性验证失败: " + integrityResult.getErrorMessage();
+                        log.warn("帖子删除时完整性验证失败: postId={}, error={}", id, integrityResult.getErrorMessage());
+                        
+                        // 记录完整性验证失败的审计日志
+                        auditLogService.logSecurityEvent(
+                            AuditOperation.INTEGRITY_CHECK,
+                            username,
+                            String.format("帖子删除前完整性验证失败: postId=%d, 原因=%s", id, integrityResult.getErrorMessage())
+                        );
+                        
+                        throw new DataIntegrityException(errorMessage);
+                    }
+                    
+                    // 记录完整性验证成功的审计日志
+                    auditLogService.logSecurityEvent(
+                        AuditOperation.INTEGRITY_CHECK,
+                        username,
+                        String.format("帖子删除前完整性验证通过: postId=%d", id)
+                    );
                 }
 
                 // 删除相关的点赞记录
@@ -275,19 +557,47 @@ public class PostService {
                 // 删除帖子
                 postRepository.deleteById(id);
 
-                // 发送审计日志
+                // 记录删除操作的审计日志
+                long executionTime = System.currentTimeMillis() - startTime;
+                auditLogService.logSecurityEvent(
+                    AuditOperation.POST_DELETE,
+                    username,
+                    String.format("帖子删除成功: postId=%d, 标题=%s, 执行时间=%dms", id, post.getTitle(), executionTime)
+                );
+
+                // 发送审计日志（保持原有逻辑）
                 userRepository.findById(userId).ifPresent(user -> messageProducerService.sendAuditLogMessage(
                         userId.toString(),
                         user.getUsername(),
                         "DELETE_POST",
                         "删除帖子: " + post.getTitle()));
+                        
+                // 记录操作日志
+                String logMessage = LoggingUtils.formatOperationLog(
+                    "DELETE_POST", username, "POST:" + id, "SUCCESS", 
+                    "删除帖子: " + post.getTitle(), executionTime);
+                log.info(logMessage);
+                
+            } catch (DataIntegrityException e) {
+                // 数据完整性异常特殊处理
+                long executionTime = System.currentTimeMillis() - startTime;
+                String errorLog = LoggingUtils.formatErrorLog(
+                    "POST_DELETE_INTEGRITY_ERROR", e.getMessage(), username, 
+                    null, "删除帖子ID:" + id + " 完整性验证失败", null);
+                log.error(errorLog);
+                throw new RuntimeException("删除帖子时数据完整性验证失败", e);
             } catch (Exception ex) {
-                System.err.println("Error in deletePost: " + ex.getMessage());
+                // 记录错误日志
+                long executionTime = System.currentTimeMillis() - startTime;
+                String errorLog = LoggingUtils.formatErrorLog(
+                    "POST_DELETE_ERROR", ex.getMessage(), username, 
+                    null, "删除帖子ID:" + id, null);
+                log.error(errorLog);
                 throw new RuntimeException("删除帖子过程中发生异常", ex);
             }
         }).exceptionally(ex -> {
             // 记录异常并返回null作为Void类型
-            System.err.println("Error in deletePost: " + ex.getMessage());
+            log.error("删除帖子异步操作失败: postId={}, userId={}, error={}", id, userId, ex.getMessage(), ex);
             return null;
         });
     }

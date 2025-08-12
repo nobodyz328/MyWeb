@@ -13,7 +13,8 @@ import java.util.List;
 @Setter
 @Entity
 @Table(name = "comments")
-public class Comment {
+@EntityListeners(com.myweb.website_core.domain.business.listener.DataIntegrityListener.class)
+public class    Comment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

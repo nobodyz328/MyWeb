@@ -1,5 +1,6 @@
 package com.myweb.website_core.infrastructure.config;
 
+import com.myweb.website_core.infrastructure.config.properties.BackupProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
@@ -26,7 +27,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableAsync
 @EnableScheduling
 @EnableConfigurationProperties({
-    com.myweb.website_core.common.config.BackupProperties.class
+    BackupProperties.class
 })
 public class SecurityServicesConfig {
     

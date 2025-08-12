@@ -356,6 +356,6 @@ public class AccessControlService {
      * 获取客户端IP地址
      */
     private String getClientIpAddress() {
-        return SecurityEventUtils.getClientIpAddress();
+        return SecurityEventUtils.getIpAddress();
     }
 }

@@ -3,6 +3,7 @@ package com.myweb.website_core.common.validation;
 import com.myweb.website_core.application.service.security.IPS.virusprotect.InputValidationService;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -32,7 +33,7 @@ class ValidationAnnotationIntegrationTest {
     
     @Autowired
     private Validator validator;
-    
+
     @Autowired
     private InputValidationService inputValidationService;
     

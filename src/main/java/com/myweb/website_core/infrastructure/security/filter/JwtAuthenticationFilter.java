@@ -139,11 +139,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         String path = request.getRequestURI();
         
-        // 移除context path前缀进行匹配
-//        String contextPath = request.getContextPath();
-//        if (contextPath != null && !contextPath.isEmpty() && path.startsWith(contextPath)) {
-//            path = path.substring(contextPath.length());
-//        }
+         //移除context path前缀进行匹配
+        String contextPath = request.getContextPath();
+        if (contextPath != null && !contextPath.isEmpty() && path.startsWith(contextPath)) {
+            path = path.substring(contextPath.length());
+        }
         
         // 跳过登录、注册等公开接口
         return path.startsWith("/users/login") ||
@@ -161,6 +161,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 path.startsWith("/js/") ||
                 path.startsWith("/images/") ||
                 path.startsWith("/api/csrf/")||
-                path.startsWith("/error/");
+                path.startsWith("/error/")||
+                path.startsWith("/users/check-admin");
     }
 }

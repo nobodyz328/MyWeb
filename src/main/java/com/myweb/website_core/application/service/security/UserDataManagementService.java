@@ -215,8 +215,8 @@ public class UserDataManagementService {
                 csvBuilder.append("头像URL,").append(user.getAvatarUrl() != null ? user.getAvatarUrl() : "").append("\n");
                 csvBuilder.append("个人简介,").append(user.getBio() != null ? user.getBio() : "").append("\n");
                 csvBuilder.append("获赞数,").append(user.getLikedCount()).append("\n");
-                csvBuilder.append("关注数,").append(user.getFollowing() != null ? user.getFollowing().size() : 0).append("\n");
-                csvBuilder.append("粉丝数,").append(user.getFollowers() != null ? user.getFollowers().size() : 0).append("\n");
+                csvBuilder.append("关注数,").append(user.getFollowCount()).append("\n");
+                csvBuilder.append("粉丝数,").append(user.getFollowerCount()).append("\n");
                 
                 // 安全信息（仅管理员或本人可见）
                 if (isAdmin || isOwner) {
@@ -449,8 +449,8 @@ public class UserDataManagementService {
         dto.setAvatarUrl(user.getAvatarUrl());
         dto.setBio(user.getBio());
         dto.setLikedCount(user.getLikedCount());
-        dto.setFollowersCount(user.getFollowers() != null ? user.getFollowers().size() : 0);
-        dto.setFollowingCount(user.getFollowing() != null ? user.getFollowing().size() : 0);
+        dto.setFollowersCount(user.getFollowerCount());
+        dto.setFollowingCount(user.getFollowCount());
         
         // 敏感信息处理
         if (showSensitiveData) {

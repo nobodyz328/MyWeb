@@ -47,20 +47,11 @@ public class User {
     @Column(columnDefinition = "TEXT")
     private String bio;
     
-    @ManyToMany
-    @JoinTable(
-        name = "user_followers",
-        joinColumns = @JoinColumn(name = "user_id"),
-        inverseJoinColumns = @JoinColumn(name = "follower_id")
-    )
-    @JsonBackReference("user-followers")
-    private List<User> followers;
-    
-    @ManyToMany(mappedBy = "followers")
-    @JsonBackReference("user-following")
-    private List<User> following;
+
     
     private Integer likedCount = 0;
+    private Integer followCount = 0;
+    private Integer followerCount = 0;
     
     // ==================== 安全增强字段 ====================
     

@@ -1,11 +1,14 @@
 package com.myweb.website_core.common.enums;
 
+import lombok.Getter;
+
 /**
  * 用户角色枚举
- * 
+ * <p>
  * 定义系统中的用户角色类型，用于基于角色的访问控制(RBAC)
  * 符合GB/T 22239-2019二级等保要求的访问控制机制
  */
+@Getter
 public enum UserRole {
     
     /**
@@ -41,16 +44,28 @@ public enum UserRole {
     
     /**
      * 角色代码
+     * -- GETTER --
+     *  获取角色代码
+     *
+
      */
     private final String code;
     
     /**
      * 角色名称
+     * -- GETTER --
+     *  获取角色名称
+     *
+
      */
     private final String name;
     
     /**
      * 角色描述
+     * -- GETTER --
+     *  获取角色描述
+     *
+
      */
     private final String description;
     
@@ -66,34 +81,7 @@ public enum UserRole {
         this.name = name;
         this.description = description;
     }
-    
-    /**
-     * 获取角色代码
-     * 
-     * @return 角色代码
-     */
-    public String getCode() {
-        return code;
-    }
-    
-    /**
-     * 获取角色名称
-     * 
-     * @return 角色名称
-     */
-    public String getName() {
-        return name;
-    }
-    
-    /**
-     * 获取角色描述
-     * 
-     * @return 角色描述
-     */
-    public String getDescription() {
-        return description;
-    }
-    
+
     /**
      * 根据代码获取角色枚举
      * 
@@ -164,16 +152,12 @@ public enum UserRole {
      * @return 权限级别
      */
     public int getPermissionLevel() {
-        switch (this) {
-            case USER:
-                return 1;
-            case MODERATOR:
-                return 2;
-            case ADMIN:
-                return 3;
-            default:
-                return 0;
-        }
+        return switch (this) {
+            case USER -> 1;
+            case MODERATOR -> 2;
+            case ADMIN -> 3;
+            //default -> 0;
+        };
     }
     
     /**

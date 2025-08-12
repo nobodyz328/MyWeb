@@ -7,6 +7,7 @@ import lombok.Getter;
 public class UserProfileDTO {
     private Long id;
     private String username;
+    private String email;
     private String avatarUrl;
     private String bio;
     private int followersCount;
@@ -17,6 +18,8 @@ public class UserProfileDTO {
     public void setId(Long id) { this.id = id; }
 
     public void setUsername(String username) { this.username = username; }
+
+    public void setEmail(String email) { this.email = email; }
 
     public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
 

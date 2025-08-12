@@ -105,12 +105,12 @@ public class JwtService {
             claims.put("email", user.getEmail());
             
             String token = Jwts.builder()
-                    .setClaims(claims)
-                    .setSubject(user.getUsername())
-                    .setIssuer(issuer)
-                    .setIssuedAt(now)
-                    .setExpiration(expiryDate)
-                    .signWith(getSigningKey(), SignatureAlgorithm.HS512)
+                    .claims(claims)
+                    .subject(user.getUsername())
+                    .issuer(issuer)
+                    .issuedAt(now)
+                    .expiration(expiryDate)
+                    .signWith(getSigningKey(), Jwts.SIG.HS512)
                     .compact();
             
             log.debug("为用户 {} 生成 {} 令牌成功，过期时间: {}", user.getUsername(), tokenType, expiryDate);
@@ -131,9 +131,9 @@ public class JwtService {
     public boolean validateToken(String token) {
         try {
             Jwts.parser()
-                    .setSigningKey(getSigningKey())
+                    .verifyWith(getSigningKey())
                     .build()
-                    .parseClaimsJws(token);
+                    .parseSignedClaims(token);
             return true;
         } catch (JwtException | IllegalArgumentException e) {
             log.debug("JWT令牌验证失败: {}", e.getMessage());

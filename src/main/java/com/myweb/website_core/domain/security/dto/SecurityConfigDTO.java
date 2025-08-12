@@ -1,9 +1,9 @@
 package com.myweb.website_core.domain.security.dto;
 
-import com.myweb.website_core.common.config.BackupProperties;
+import com.myweb.website_core.infrastructure.config.properties.BackupProperties;
 import com.myweb.website_core.infrastructure.config.JwtConfig;
-import com.myweb.website_core.common.config.RateLimitProperties;
-import com.myweb.website_core.common.config.SecurityProperties;
+import com.myweb.website_core.infrastructure.config.properties.RateLimitProperties;
+import com.myweb.website_core.infrastructure.config.properties.SecurityProperties;
 import lombok.Data;
 
 import java.time.LocalDateTime;

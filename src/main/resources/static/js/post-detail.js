@@ -93,6 +93,36 @@ function renderPostDetail(post) {
     document.getElementById('deleteBtn').onclick = () => deletePost(post.id);
   }
   
+  // 添加关注按钮（如果不是作者且已登录）
+  if (userId && !isAuthor && post.author) {
+    const followBtn = document.createElement('button');
+    followBtn.id = 'followBtn';
+    followBtn.className = 'interaction-btn';
+    followBtn.dataset.userId = post.author.id;
+    followBtn.innerHTML = '👤 <span class="text">关注</span>';
+    followBtn.addEventListener('click', handleFollow);
+    
+    // 将关注按钮添加到作者信息旁边
+    const authorDetails = document.querySelector('.post-author-details');
+    if (authorDetails) {
+      const followContainer = document.createElement('div');
+      followContainer.className = 'follow-container';
+      followContainer.appendChild(followBtn);
+      authorDetails.appendChild(followContainer);
+    }
+  }
+  
+  // 添加点击作者头像跳转到用户主页的功能
+  const authorAvatar = document.getElementById('postAuthorAvatar');
+  const authorName = document.getElementById('postAuthorName');
+  if (post.author && post.author.id) {
+    const profileUrl = `/blog/${post.author.id}/profile`;
+    authorAvatar.style.cursor = 'pointer';
+    authorName.style.cursor = 'pointer';
+    authorAvatar.onclick = () => window.location.href = profileUrl;
+    authorName.onclick = () => window.location.href = profileUrl;
+  }
+  
   // 设置评论表单显示状态
   if (userId) {
     document.getElementById('commentForm').style.display = 'block';
@@ -126,6 +156,12 @@ function initializeInteractions() {
   // 加载用户交互状态
   if (userId) {
     loadUserInteractionStatus();
+  }
+  
+  // 关注功能
+  const followBtn = document.getElementById('followBtn');
+  if (followBtn && userId) {
+    followBtn.addEventListener('click', handleFollow);
   }
 }
 
@@ -199,6 +235,44 @@ async function handleBookmark(e) {
     }
   } catch (error) {
     updateBookmarkButton(button, wasBookmarked);
+    showError('网络错误，请重试');
+  }
+}
+
+// 处理关注
+async function handleFollow(e) {
+  e.preventDefault();
+  if (!userId) {
+    showError('请先登录');
+    return;
+  }
+
+  const button = e.currentTarget;
+  const targetUserId = button.dataset.userId;
+  const wasFollowed = button.classList.contains('active');
+  
+  // 立即更新UI
+  updateFollowButton(button, !wasFollowed);
+
+  try {
+    const response = await AuthUtils.authenticatedFetch(`/blog/users/${targetUserId}/follow?userId=${userId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      updateFollowButton(button, data.data.followed);
+      showSuccess(data.data.followed ? '关注成功' : '取消关注成功');
+    } else {
+      updateFollowButton(button, wasFollowed);
+      showError(data.message || '关注操作失败');
+    }
+  } catch (error) {
+    updateFollowButton(button, wasFollowed);
     showError('网络错误，请重试');
   }
 }
@@ -426,6 +500,21 @@ async function loadUserInteractionStatus() {
       }
     }
     
+    // 获取关注状态
+    const postAuthorId = document.getElementById('followBtn')?.dataset.userId;
+    if (postAuthorId) {
+      const followResponse = await fetch(`/blog/users/${postAuthorId}/follow-status?userId=${userId}`); // Public endpoint
+      if (followResponse.ok) {
+        const followData = await followResponse.json();
+        if (followData.success) {
+          const followBtn = document.getElementById('followBtn');
+          if (followBtn) {
+            updateFollowButton(followBtn, followData.data);
+          }
+        }
+      }
+    }
+    
   } catch (error) {
     console.warn('加载用户交互状态失败:', error);
   }
@@ -450,6 +539,17 @@ function updateBookmarkButton(button, isBookmarked, count = null) {
   } else {
     button.classList.remove('active');
     button.innerHTML = '☆ <span class="text">收藏</span>';
+  }
+}
+
+// 更新关注按钮
+function updateFollowButton(button, isFollowed) {
+  if (isFollowed) {
+    button.classList.add('active');
+    button.innerHTML = '✅ <span class="text">已关注</span>';
+  } else {
+    button.classList.remove('active');
+    button.innerHTML = '👤 <span class="text">关注</span>';
   }
 }
 

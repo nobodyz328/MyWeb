@@ -2,7 +2,7 @@ package com.myweb.website_core.application.service.security.integeration.dataMan
 
 import com.myweb.website_core.application.service.integration.EmailService;
 import com.myweb.website_core.application.service.security.audit.AuditLogServiceAdapter;
-import com.myweb.website_core.common.config.BackupProperties;
+import com.myweb.website_core.infrastructure.config.properties.BackupProperties;
 import com.myweb.website_core.common.enums.AuditOperation;
 import com.myweb.website_core.domain.security.dto.AuditLogRequest;
 import lombok.RequiredArgsConstructor;
@@ -161,14 +161,14 @@ public class BackupService {
             log.error("定时自动备份异常", e);
             
             // 记录审计日志
-            auditLogService.logOperation(
-                    AuditLogRequest.error(
-                        AuditOperation.BACKUP_OPERATION,
-                        null,
-                            "SCHEDULED_BACKUP_FAILED",
-                            "定时自动备份失败: " + e.getMessage()
-                        )
-            );
+//            auditLogService.logOperation(
+//                    AuditLogRequest.error(
+//                        AuditOperation.BACKUP_OPERATION,
+//                        null,
+//                            "SCHEDULED_BACKUP_FAILED",
+//                            "定时自动备份失败: " + e.getMessage()
+//                        )
+//            );
         }
     }
     
@@ -256,14 +256,14 @@ public class BackupService {
             log.error("备份执行失败 - 备份ID: {}", backupId, e);
             
             // 记录审计日志
-            auditLogService.logOperation(
-                AuditLogRequest.error(
-                        AuditOperation.BACKUP_OPERATION,
-                        null,
-                        null,
-                        "BACKUP_FAILED"
-                ).withResource("BACKUP_FILE",null )
-            );
+//            auditLogService.logOperation(
+//                AuditLogRequest.error(
+//                        AuditOperation.BACKUP_OPERATION,
+//                        null,
+//                        null,
+//                        "BACKUP_FAILED"
+//                ).withResource("BACKUP_FILE",null )
+//            );
             
             return new BackupResult(
                 false, backupId, backupType, startTime, endTime,

@@ -3,6 +3,9 @@ package com.myweb.website_core.interfaces.controller;
 import com.myweb.website_core.application.service.business.PostService;
 import com.myweb.website_core.application.service.security.authorization.AccessControlService;
 import com.myweb.website_core.common.enums.AuditOperation;
+import com.myweb.website_core.common.exception.security.ValidationException;
+import com.myweb.website_core.common.util.DTOConverter;
+import com.myweb.website_core.common.validation.ValidateInput;
 import com.myweb.website_core.domain.business.dto.*;
 //import com.myweb.website_core.domain.dto.*;
 import com.myweb.website_core.domain.business.entity.Comment;
@@ -15,7 +18,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -34,7 +36,13 @@ public class PostController {
 
     @PostMapping(value = "")
     @Auditable(operation = AuditOperation.POST_CREATE, resourceType = "POST", description = "创建帖子")
-    public ResponseEntity<PostDTO> createPost(@RequestBody CreatePostRequest request) {
+    @ValidateInput(
+        fieldNames = {"title", "content"}, 
+        validationTypes = {"title", "content"},
+        maxLength = 50000,
+        errorMessage = "帖子创建验证失败：{fieldName}"
+    )
+    public ResponseEntity<Object> createPost(@RequestBody CreatePostRequest request) {
         try {
             Post post = new Post();
             post.setTitle(request.getTitle());
@@ -51,9 +59,14 @@ public class PostController {
             }
             PostDTO postDTO = postService.convertToDTO(createdPost);
             return ResponseEntity.ok(postDTO);
+        } catch (ValidationException e) {
+            log.warn("帖子创建输入验证失败：{}", e.getMessage());
+            return ResponseEntity.badRequest()
+                .body(ApiResponse.error("输入验证失败：" + e.getMessage()));
         } catch (Exception e) {
             log.error("创建帖子时发生错误：" + e.getMessage()); // 添加异常打印用于调试
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("创建帖子失败"));
         }
     }
 
@@ -61,24 +74,37 @@ public class PostController {
 
     @PutMapping("/{id}")
     @Auditable(operation = AuditOperation.POST_UPDATE, resourceType = "POST",  description = "更新帖子")
-    public ResponseEntity<PostDTO> editPost(@PathVariable Long id, @RequestBody Post post) {
+    @ValidateInput(
+        fieldNames = {"title", "content"}, 
+        validationTypes = {"title", "content"},
+        maxLength = 50000,
+        errorMessage = "帖子更新验证失败：{fieldName}"
+    )
+    public ResponseEntity<Object> editPost(@PathVariable Long id, @RequestBody Post post) {
         try {
             Optional<Post> existingPost = postService.getPostById(id);
             if (existingPost.isEmpty()) {
-                return ResponseEntity.notFound().build();
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error("帖子不存在"));
             }
             
             // 检查编辑权限
             if (!accessControlService.canEditPost(userRepository.findById(post.getAuthor().getId()).get(), existingPost.get())) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("无权限编辑此帖子"));
             }
 
             Post updatedPost = postService.editPost(id, post);
             PostDTO postDTO = postService.convertToDTO(updatedPost);
             return ResponseEntity.ok(postDTO);
+        } catch (ValidationException e) {
+            log.warn("帖子更新输入验证失败：{}", e.getMessage());
+            return ResponseEntity.badRequest()
+                .body(ApiResponse.error("输入验证失败：" + e.getMessage()));
         } catch (Exception e) {
             log.error("更新帖子时发生错误：" + e.getMessage()); // 添加异常打印用于调试
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("更新帖子失败"));
         }
     }
 
@@ -172,8 +198,8 @@ public class PostController {
     @GetMapping("/{id}/collect-status")
     public ResponseEntity<ApiResponse<Boolean>> getCollectStatus(
             @PathVariable Long id,
-            @RequestParam(required = false) Long userId,
-            Authentication  authentication) {
+            @RequestParam(required = false) Long userId
+            ) {
         try {
             boolean isCollected = postService.isPostCollectedByUser(id, userId);
             return ResponseEntity.ok(ApiResponse.success(isCollected));
@@ -233,6 +259,12 @@ public class PostController {
     
     // 评论相关API
     @PostMapping("/{id}/comments")
+    @ValidateInput(
+        fieldNames = {"content"}, 
+        validationTypes = {"comment"},
+        maxLength = 2000,
+        errorMessage = "评论验证失败：{fieldName}"
+    )
     public ResponseEntity<ApiResponse<CommentDTO>> createComment(
             @PathVariable Long id, 
             @RequestBody CommentRequest request) {
@@ -243,8 +275,11 @@ public class PostController {
             }
             
             Comment comment = commentService.createComment(id, request.getUserId(), request.getContent());
-            CommentDTO commentDTO = convertCommentToDTO(comment);
+            CommentDTO commentDTO = DTOConverter.convertToDTO(comment);
             return ResponseEntity.ok(ApiResponse.success(commentDTO));
+        } catch (ValidationException e) {
+            log.warn("评论创建输入验证失败：{}", e.getMessage());
+            return ResponseEntity.ok(ApiResponse.error("输入验证失败：" + e.getMessage()));
         } catch (RuntimeException e) {
             return ResponseEntity.ok(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
@@ -264,6 +299,12 @@ public class PostController {
     }
     
     @PostMapping("/{postId}/comments/{commentId}/replies")
+    @ValidateInput(
+        fieldNames = {"content"}, 
+        validationTypes = {"comment"},
+        maxLength = 2000,
+        errorMessage = "回复验证失败：{fieldName}"
+    )
     public ResponseEntity<ApiResponse<CommentDTO>> createReply(
             @PathVariable Long postId,
             @PathVariable Long commentId,
@@ -274,8 +315,11 @@ public class PostController {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error("无权限评论"));
             }
             Comment reply = commentService.createReply(postId, commentId, request.getUserId(), request.getContent());
-            CommentDTO replyDTO = convertCommentToDTO(reply);
+            CommentDTO replyDTO = DTOConverter.convertToDTO(reply);
             return ResponseEntity.ok(ApiResponse.success(replyDTO));
+        } catch (ValidationException e) {
+            log.warn("回复创建输入验证失败：{}", e.getMessage());
+            return ResponseEntity.ok(ApiResponse.error("输入验证失败：" + e.getMessage()));
         } catch (RuntimeException e) {
             return ResponseEntity.ok(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
@@ -302,24 +346,7 @@ public class PostController {
             return ResponseEntity.ok(ApiResponse.error("删除评论失败"));
         }
     }
-    
-    // 辅助方法
-    private CommentDTO convertCommentToDTO(Comment comment) {
-        CommentDTO dto = new CommentDTO();
-        dto.setId(comment.getId());
-        dto.setContent(comment.getContent());
-        dto.setCreatedAt(comment.getCreatedAt());
-        
-        CommentDTO.AuthorInfo authorInfo = new CommentDTO.AuthorInfo();
-        authorInfo.setId(comment.getAuthor().getId());
-        authorInfo.setUsername(comment.getAuthor().getUsername());
-        authorInfo.setAvatarUrl(comment.getAuthor().getAvatarUrl());
-        dto.setAuthor(authorInfo);
-        
-        return dto;
-    }
 
-    
     // 创建帖子请求DTO
     @Getter
     public static class CreatePostRequest {

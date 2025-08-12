@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>用户主页 - MySteam社区</title>
+  <link rel="stylesheet" href="/blog/static/css/profile.css">
+</head>
+<body>
+  <nav class="steam-navbar">
+    <a href="/blog/view" class="back-btn">🔙 返回</a>
+    <a href="/blog/view" class="logo">MySteam社区</a>
+    <div></div>
+  </nav>
+
+  <div class="container">
+    <div class="profile-banner">
+      <img id="profileAvatar" src="/blog/static/images/noface.gif" alt="用户头像" class="profile-avatar">
+      <div class="profile-info">
+        <h1 id="profileUsername" class="profile-username">用户名</h1>
+        <div id="profileBio" class="profile-bio">这个人很懒，什么都没有留下...</div>
+        <div class="profile-stats">
+          <div class="profile-stat">
+            <span>关注</span>
+            <span id="profileFollowing" class="profile-stat-number">0</span>
+          </div>
+          <div class="profile-stat">
+            <span>粉丝</span>
+            <span id="profileFollowers" class="profile-stat-number">0</span>
+          </div>
+          <div class="profile-stat">
+            <span>获赞</span>
+            <span id="profileLiked" class="profile-stat-number">0</span>
+          </div>
+        </div>
+      </div>
+      <div class="profile-actions" id="profileActions">
+        <button class="steam-btn" id="followBtn" style="display: none;">
+          👤 <span class="text">关注</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="profile-tabs">
+      <button class="profile-tab active" data-tab="postsTabContent">📝 TA的帖子</button>
+      <button class="profile-tab" data-tab="followsTabContent">👥 TA关注的人</button>
+    </div>
+
+    <div class="profile-content">
+      <!-- 用户帖子标签页 -->
+      <div id="postsTabContent" class="tab-content active">
+        <div id="userPostsList">
+          <div class="loading-spinner"></div> 正在加载...
+        </div>
+      </div>
+
+      <!-- 关注标签页 -->
+      <div id="followsTabContent" class="tab-content">
+        <div id="followedUsersList">
+          <div class="loading-spinner"></div> 正在加载...
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    © 2025 MySteam社区
+  </footer>
+
+  <script src="/blog/static/js/auth-utils.js"></script>
+  <script src="/blog/static/js/csrf-utils.js"></script>
+  <script src="/blog/static/js/user-profile.js"></script>
+</body>
+</html>

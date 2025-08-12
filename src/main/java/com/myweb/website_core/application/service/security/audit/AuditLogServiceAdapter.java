@@ -31,7 +31,7 @@ public class AuditLogServiceAdapter {
     
     /**
      * 记录审计日志
-     * 基于RabbitMQ消息队列，只发送普通审计日志
+     * 基于RabbitMQ消息队列，送普通审计日志
      */
     public CompletableFuture<Void> logOperation(AuditLogRequest request) {
         return CompletableFuture.runAsync(() -> {
@@ -52,37 +52,20 @@ public class AuditLogServiceAdapter {
     
     /**
      * 记录安全事件
-     * 
-     * @param userId 用户ID
-     * @param operation 操作类型
-     * @param eventType 事件类型
-     * @param description 描述
-     * @param ipAddress IP地址
-     * @param success 是否成功
+     * @param request SecurityEventRequest
      */
-    public void logSecurityEvent(String userId, AuditOperation operation, String eventType, 
-                                String description, String ipAddress, boolean success) {
+    public void logSecurityEvent(SecurityEventRequest  request) {
         try {
-            SecurityEventRequest request = SecurityEventRequest.builder()
-                    .eventType(SecurityEventType.valueOf(eventType)) // 简化处理
-                    .title(operation != null ? operation.getName() : "安全事件")
-                    .description(description)
-                    .userId(userId != null ? Long.valueOf(userId) : null)
-                    .username(userId) // 简化处理，实际应该查询用户名
-                    .sourceIp(ipAddress)
-                    .riskScore(success ? 20 : 60)
-                    .eventTime(java.time.LocalDateTime.now())
-                    .build();
-            
             // 发送安全事件消息
             messageProducerService.sendSecurityEventMessage(request);
             
-            log.debug("安全事件记录成功: userId={}, operation={}, eventType={}", 
-                     userId, operation, eventType);
+            log.debug("安全事件记录成功: user={}, operation={}, eventType={}",
+                     request.getUsername(),request.getTitle(), request.getEventType());
             
         } catch (Exception e) {
-            log.error("记录安全事件失败: userId={}, operation={}, eventType={}, error={}", 
-                     userId, operation, eventType, e.getMessage(), e);
+            log.debug("安全事件记录失败: user={}, operation={}, eventType={}",
+                    request.getUsername(),request.getTitle(), request.getEventType());
+            ;
         }
     }
     

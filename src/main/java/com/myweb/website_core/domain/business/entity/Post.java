@@ -14,6 +14,7 @@ import java.util.List;
 @Getter
 @Entity
 @Table(name = "posts")
+@EntityListeners(com.myweb.website_core.domain.business.listener.DataIntegrityListener.class)
 public class Post {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -140,19 +140,18 @@ public class MessageProducerService {
     /**
      * 发送用户关注消息
      */
-    public void sendUserFollowMessage(Long followerId, String followerName, Long targetId, String targetName) {
+    public void sendUserFollowMessage(Long targetUserId, Long userId, boolean isFollowed) {
         try {
             Map<String, Object> message = new HashMap<>();
-            message.put("followerId", followerId);
-            message.put("followerName", followerName);
-            message.put("targetId", targetId);
-            message.put("targetName", targetName);
-            message.put("followedAt", LocalDateTime.now().toString()); // 转换为字符串避免序列化问题
+            message.put("targetUserId", targetUserId);
+            message.put("userId", userId);
+            message.put("isFollowed", isFollowed);
+            message.put("timestamp", LocalDateTime.now().toString());
             message.put("type", "USER_FOLLOW");
 
             rabbitTemplate.convertAndSend(
-                RabbitMQConfig.NOTIFICATION_EXCHANGE,
-                "user.follow",
+                RabbitMQConfig.INTERACTION_EXCHANGE,
+                RabbitMQConfig.INTERACTION_FOLLOW_ROUTING_KEY,
                 message
             );
         } catch (Exception e) {

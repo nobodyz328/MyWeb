@@ -2,14 +2,14 @@ package com.myweb.website_core.common.constant;
 
 /**
  * 安全相关常量
- * 
+ * <p>
  * 定义系统安全功能中使用的各种常量，包括：
  * - JWT相关常量
  * - 会话管理常量
  * - 密码策略常量
  * - 认证相关常量
  * - 安全配置常量
- * 
+ * <p>
  * 符合GB/T 22239-2019二级等保要求
  */
 public class SecurityConstants {

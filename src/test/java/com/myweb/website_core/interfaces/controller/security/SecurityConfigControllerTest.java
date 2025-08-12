@@ -2,7 +2,7 @@ package com.myweb.website_core.interfaces.controller.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.myweb.website_core.application.service.security.SecurityConfigService;
-import com.myweb.website_core.common.config.SecurityProperties;
+import com.myweb.website_core.infrastructure.config.properties.SecurityProperties;
 import com.myweb.website_core.domain.security.dto.SecurityConfigBackupDTO;
 import com.myweb.website_core.domain.security.dto.SecurityConfigDTO;
 import org.junit.jupiter.api.Test;

@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 
 /**
  * 安全事件MyBatis映射器服务
- * 
+ * <p>
  * 提供MyBatis查询的包装服务，处理分页和数据转换
  */
 @Service

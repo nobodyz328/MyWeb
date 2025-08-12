@@ -2,10 +2,13 @@ package com.myweb.website_core.application.service.security.integeration.dataMan
 
 import com.myweb.website_core.application.service.integration.EmailService;
 import com.myweb.website_core.application.service.security.audit.AuditLogServiceAdapter;
-import com.myweb.website_core.common.config.BackupProperties;
+import com.myweb.website_core.infrastructure.config.properties.BackupProperties;
 import com.myweb.website_core.common.enums.AuditOperation;
 import com.myweb.website_core.domain.security.dto.AuditLogRequest;
+import com.myweb.website_core.infrastructure.security.audit.Auditable;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -51,146 +54,8 @@ public class BackupManagementService {
     private static final String HASH_EXTENSION = ".hash";
     private static final String METADATA_EXTENSION = ".meta";
     
-    /**
-     * 备份文件元数据
-     */
-    public static class BackupMetadata {
-        private String backupId;
-        private BackupService.BackupType backupType;
-        private LocalDateTime createdTime;
-        private LocalDateTime expiryTime;
-        private long fileSizeBytes;
-        private String checksum;
-        private boolean isEncrypted;
-        private boolean isCompressed;
-        private String originalPath;
-        private Map<String, String> customProperties;
-        
-        // Constructors
-        public BackupMetadata() {
-            this.customProperties = new HashMap<>();
-        }
-        
-        public BackupMetadata(String backupId, BackupService.BackupType backupType, 
-                            LocalDateTime createdTime, long fileSizeBytes) {
-            this();
-            this.backupId = backupId;
-            this.backupType = backupType;
-            this.createdTime = createdTime;
-            this.fileSizeBytes = fileSizeBytes;
-            this.expiryTime = createdTime.plusDays(30); // 默认30天过期
-        }
-        
-        // Getters and Setters
-        public String getBackupId() { return backupId; }
-        public void setBackupId(String backupId) { this.backupId = backupId; }
-        
-        public BackupService.BackupType getBackupType() { return backupType; }
-        public void setBackupType(BackupService.BackupType backupType) { this.backupType = backupType; }
-        
-        public LocalDateTime getCreatedTime() { return createdTime; }
-        public void setCreatedTime(LocalDateTime createdTime) { this.createdTime = createdTime; }
-        
-        public LocalDateTime getExpiryTime() { return expiryTime; }
-        public void setExpiryTime(LocalDateTime expiryTime) { this.expiryTime = expiryTime; }
-        
-        public long getFileSizeBytes() { return fileSizeBytes; }
-        public void setFileSizeBytes(long fileSizeBytes) { this.fileSizeBytes = fileSizeBytes; }
-        
-        public String getChecksum() { return checksum; }
-        public void setChecksum(String checksum) { this.checksum = checksum; }
-        
-        public boolean isEncrypted() { return isEncrypted; }
-        public void setEncrypted(boolean encrypted) { isEncrypted = encrypted; }
-        
-        public boolean isCompressed() { return isCompressed; }
-        public void setCompressed(boolean compressed) { isCompressed = compressed; }
-        
-        public String getOriginalPath() { return originalPath; }
-        public void setOriginalPath(String originalPath) { this.originalPath = originalPath; }
-        
-        public Map<String, String> getCustomProperties() { return customProperties; }
-        public void setCustomProperties(Map<String, String> customProperties) { this.customProperties = customProperties; }
-        
-        public boolean isExpired() {
-            return expiryTime != null && LocalDateTime.now().isAfter(expiryTime);
-        }
-        
-        public long getDaysUntilExpiry() {
-            if (expiryTime == null) return Long.MAX_VALUE;
-            return java.time.Duration.between(LocalDateTime.now(), expiryTime).toDays();
-        }
-    }
-    
-    /**
-     * 存储空间统计信息
-     */
-    public static class StorageStatistics {
-        private long totalSpaceBytes;
-        private long usedSpaceBytes;
-        private long availableSpaceBytes;
-        private double usagePercentage;
-        private int totalBackupFiles;
-        private long oldestBackupDays;
-        private long newestBackupDays;
-        private Map<BackupService.BackupType, Integer> backupTypeCount;
-        
-        public StorageStatistics() {
-            this.backupTypeCount = new HashMap<>();
-        }
-        
-        // Getters and Setters
-        public long getTotalSpaceBytes() { return totalSpaceBytes; }
-        public void setTotalSpaceBytes(long totalSpaceBytes) { this.totalSpaceBytes = totalSpaceBytes; }
-        
-        public long getUsedSpaceBytes() { return usedSpaceBytes; }
-        public void setUsedSpaceBytes(long usedSpaceBytes) { this.usedSpaceBytes = usedSpaceBytes; }
-        
-        public long getAvailableSpaceBytes() { return availableSpaceBytes; }
-        public void setAvailableSpaceBytes(long availableSpaceBytes) { this.availableSpaceBytes = availableSpaceBytes; }
-        
-        public double getUsagePercentage() { return usagePercentage; }
-        public void setUsagePercentage(double usagePercentage) { this.usagePercentage = usagePercentage; }
-        
-        public int getTotalBackupFiles() { return totalBackupFiles; }
-        public void setTotalBackupFiles(int totalBackupFiles) { this.totalBackupFiles = totalBackupFiles; }
-        
-        public long getOldestBackupDays() { return oldestBackupDays; }
-        public void setOldestBackupDays(long oldestBackupDays) { this.oldestBackupDays = oldestBackupDays; }
-        
-        public long getNewestBackupDays() { return newestBackupDays; }
-        public void setNewestBackupDays(long newestBackupDays) { this.newestBackupDays = newestBackupDays; }
-        
-        public Map<BackupService.BackupType, Integer> getBackupTypeCount() { return backupTypeCount; }
-        public void setBackupTypeCount(Map<BackupService.BackupType, Integer> backupTypeCount) { this.backupTypeCount = backupTypeCount; }
-        
-        public boolean isStorageAlertRequired() {
-            return usagePercentage >= 80.0; // 80%阈值
-        }
-        
-        public String getFormattedTotalSpace() {
-            return formatBytes(totalSpaceBytes);
-        }
-        
-        public String getFormattedUsedSpace() {
-            return formatBytes(usedSpaceBytes);
-        }
-        
-        public String getFormattedAvailableSpace() {
-            return formatBytes(availableSpaceBytes);
-        }
-        
-        private String formatBytes(long bytes) {
-            if (bytes < 1024) return bytes + " B";
-            if (bytes < 1024 * 1024) return String.format("%.2f KB", bytes / 1024.0);
-            if (bytes < 1024 * 1024 * 1024) return String.format("%.2f MB", bytes / (1024.0 * 1024));
-            return String.format("%.2f GB", bytes / (1024.0 * 1024 * 1024));
-        }
-    }
-    
-    /**
-     * 定时执行备份生命周期管理 - 每小时执行一次
-     */
+
+
     @Scheduled(cron = "0 0 * * * ?")
     @Async
     public void scheduledLifecycleManagement() {
@@ -229,16 +94,6 @@ public class BackupManagementService {
             
         } catch (Exception e) {
             log.error("备份生命周期管理失败", e);
-            
-            // 记录审计日志
-            auditLogService.logOperation(
-                AuditLogRequest.error(
-                    AuditOperation.BACKUP_OPERATION,
-                    null,
-                    "LIFECYCLE_MANAGEMENT_FAILED",
-                    "备份生命周期管理失败: " + e.getMessage()
-                )
-            );
         }
     }
     
@@ -957,6 +812,90 @@ public class BackupManagementService {
             
         } catch (Exception e) {
             log.error("发送存储空间告警异常", e);
+        }
+    }
+    /**
+     * 备份文件元数据
+     */
+    @Getter@Setter
+    public static class BackupMetadata {
+        private String backupId;
+        private BackupService.BackupType backupType;
+        private LocalDateTime createdTime;
+        private LocalDateTime expiryTime;
+        private long fileSizeBytes;
+        private String checksum;
+        private boolean isEncrypted;
+        private boolean isCompressed;
+        private String originalPath;
+        private Map<String, String> customProperties;
+
+        // Constructors
+        public BackupMetadata() {
+            this.customProperties = new HashMap<>();
+        }
+
+        public BackupMetadata(String backupId, BackupService.BackupType backupType,
+                              LocalDateTime createdTime, long fileSizeBytes) {
+            this();
+            this.backupId = backupId;
+            this.backupType = backupType;
+            this.createdTime = createdTime;
+            this.fileSizeBytes = fileSizeBytes;
+            this.expiryTime = createdTime.plusDays(30); // 默认30天过期
+        }
+        public void setCustomProperties(Map<String, String> customProperties) { this.customProperties = customProperties; }
+
+        public boolean isExpired() {
+            return expiryTime != null && LocalDateTime.now().isAfter(expiryTime);
+        }
+
+        public long getDaysUntilExpiry() {
+            if (expiryTime == null) return Long.MAX_VALUE;
+            return java.time.Duration.between(LocalDateTime.now(), expiryTime).toDays();
+        }
+    }
+
+    /**
+     * 存储空间统计信息
+     */
+    @Getter@Setter
+    public static class StorageStatistics {
+        // Getters and Setters
+        private long totalSpaceBytes;
+        private long usedSpaceBytes;
+        private long availableSpaceBytes;
+        private double usagePercentage;
+        private int totalBackupFiles;
+        private long oldestBackupDays;
+        private long newestBackupDays;
+        private Map<BackupService.BackupType, Integer> backupTypeCount;
+
+        public StorageStatistics() {
+            this.backupTypeCount = new HashMap<>();
+        }
+
+        public boolean isStorageAlertRequired() {
+            return usagePercentage >= 80.0; // 80%阈值
+        }
+
+        public String getFormattedTotalSpace() {
+            return formatBytes(totalSpaceBytes);
+        }
+
+        public String getFormattedUsedSpace() {
+            return formatBytes(usedSpaceBytes);
+        }
+
+        public String getFormattedAvailableSpace() {
+            return formatBytes(availableSpaceBytes);
+        }
+
+        private String formatBytes(long bytes) {
+            if (bytes < 1024) return bytes + " B";
+            if (bytes < 1024 * 1024) return String.format("%.2f KB", bytes / 1024.0);
+            if (bytes < 1024 * 1024 * 1024) return String.format("%.2f MB", bytes / (1024.0 * 1024));
+            return String.format("%.2f GB", bytes / (1024.0 * 1024 * 1024));
         }
     }
 }

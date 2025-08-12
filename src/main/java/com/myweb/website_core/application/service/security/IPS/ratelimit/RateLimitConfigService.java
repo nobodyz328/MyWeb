@@ -1,6 +1,6 @@
 package com.myweb.website_core.application.service.security.IPS.ratelimit;
 
-import com.myweb.website_core.common.config.RateLimitProperties;
+import com.myweb.website_core.infrastructure.config.properties.RateLimitProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

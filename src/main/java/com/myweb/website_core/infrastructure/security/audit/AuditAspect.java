@@ -4,9 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.myweb.website_core.application.service.security.audit.AuditLogServiceAdapter;
 import com.myweb.website_core.common.constant.SystemConstants;
-import com.myweb.website_core.common.util.SecurityEventUtils;
 import com.myweb.website_core.domain.security.dto.AuditLogRequest;
-import com.myweb.website_core.infrastructure.security.CustomUserDetailsService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,13 +12,10 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
+
 import static com.myweb.website_core.common.util.SecurityEventUtils.*;
-import jakarta.servlet.http.HttpServletRequest;
+
 import java.lang.reflect.Method;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -327,8 +322,8 @@ public class AuditAspect {
      * @return 用户信息
      */
     private UserInfo getCurrentUserInfo() {
-        String username = getCurrentUsername();
-        Long userId = getCurrentUserId();
+        String username = getUsername();
+        Long userId = getUserId();
         return new UserInfo(userId, username);
     }
     /**
@@ -337,7 +332,7 @@ public class AuditAspect {
      * @return 网络信息
      */
     private NetworkInfo getNetworkInfo() {
-        String ipAddress = getClientIpAddress();
+        String ipAddress = getIpAddress();
         String userAgent = getUserAgent();
         String sessionId = getSessionId();
         return new NetworkInfo(ipAddress, userAgent, sessionId);

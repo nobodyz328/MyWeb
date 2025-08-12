@@ -225,7 +225,24 @@ public enum SecurityEventType {
     /**
      * 账户异常活动
      */
-    ACCOUNT_ABNORMAL_ACTIVITY("ACCOUNT_ABNORMAL_ACTIVITY", "账户异常活动", "用户账户出现异常活动模式", 3);
+    ACCOUNT_ABNORMAL_ACTIVITY("ACCOUNT_ABNORMAL_ACTIVITY", "账户异常活动", "用户账户出现异常活动模式", 3),
+    
+    // ========== XSS监控相关安全事件 ==========
+    
+    /**
+     * XSS攻击阈值超限
+     */
+    XSS_ATTACK_THRESHOLD_EXCEEDED("XSS_ATTACK_THRESHOLD_EXCEEDED", "XSS攻击阈值超限", "XSS攻击次数超过设定阈值", 4),
+    
+    /**
+     * 可疑IP活动
+     */
+    SUSPICIOUS_IP_ACTIVITY("SUSPICIOUS_IP_ACTIVITY", "可疑IP活动", "检测到来自可疑IP的异常活动", 4),
+    
+    /**
+     * 性能降级
+     */
+    PERFORMANCE_DEGRADATION("PERFORMANCE_DEGRADATION", "性能降级", "系统性能出现降级", 3);
     
     /**
      * 事件代码

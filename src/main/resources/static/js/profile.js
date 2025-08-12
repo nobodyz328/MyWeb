@@ -252,16 +252,57 @@ async function loadLikedPosts() {
   }
 }
 
-// 加载关注的用户（占位功能）
-function loadFollowedUsers() {
+// 加载关注的用户
+async function loadFollowedUsers() {
   const container = document.getElementById('followedUsersList');
-  container.innerHTML = `
-    <div class="empty-state">
-      <div class="empty-state-icon">👥</div>
-      <div class="empty-state-text">关注功能</div>
-      <div class="empty-state-hint">此功能正在开发中，敬请期待！</div>
-    </div>
-  `;
+  container.innerHTML = '<div class="loading-spinner"></div> 正在加载...';
+  
+  try {
+    const response = await fetch(`/blog/users/${userId}/followed-users`);
+    const users = await response.json();
+    
+    if (!users || users.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">👥</div>
+          <div class="empty-state-text">还没有关注任何人</div>
+          <div class="empty-state-hint">去发现一些有趣的用户关注一下吧！</div>
+        </div>
+      `;
+      return;
+    }
+    
+    container.innerHTML = users.map(user => `
+      <div class="user-card">
+        <div class="user-info">
+          <img src="${user.avatarUrl || '/blog/static/images/noface.gif'}" alt="用户头像" class="user-avatar">
+          <div class="user-details">
+            <div class="user-name">
+              <a href="/blog/users/${user.id}/profile">${escapeHtml(user.username)}</a>
+            </div>
+            <div class="user-bio">${escapeHtml(user.bio || '这个人很懒，什么都没有留下...')}</div>
+            <div class="user-stats">
+              <span>粉丝 ${user.followersCount || 0}</span>
+              <span>关注 ${user.followingCount || 0}</span>
+            </div>
+          </div>
+        </div>
+        <div class="user-actions">
+          <button class="post-action-btn danger" onclick="unfollowUser(${user.id})">💔 取消关注</button>
+        </div>
+      </div>
+    `).join('');
+    
+  } catch (error) {
+    console.error('Failed to load followed users:', error);
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">❌</div>
+        <div class="empty-state-text">加载失败</div>
+        <div class="empty-state-hint">请刷新页面重试</div>
+      </div>
+    `;
+  }
 }
 
 // 初始化设置功能
@@ -351,6 +392,30 @@ async function uncollectPost(postId) {
     }
   } catch (error) {
     console.error('Failed to uncollect post:', error);
+    showNotification('网络错误，请重试', 'error');
+  }
+}
+
+// 取消关注用户
+async function unfollowUser(targetUserId) {
+  if (!confirm('确定要取消关注这个用户吗？')) {
+    return;
+  }
+  
+  try {
+    const response = await AuthUtils.authenticatedFetch(`/blog/users/${targetUserId}/follow?userId=${userId}`, {
+      method: 'POST'
+    });
+    
+    const data = await response.json();
+    if (data.success && !data.data.followed) {
+      showNotification('取消关注成功', 'success');
+      await loadFollowedUsers(); // 重新加载关注列表
+    } else {
+      showNotification('操作失败，请重试', 'error');
+    }
+  } catch (error) {
+    console.error('Failed to unfollow user:', error);
     showNotification('网络错误，请重试', 'error');
   }
 }
