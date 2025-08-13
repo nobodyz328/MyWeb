@@ -4,6 +4,7 @@ import com.myweb.website_core.application.service.security.integeration.FileUplo
 import com.myweb.website_core.application.service.security.integeration.dataManage.DataIntegrityService;
 import com.myweb.website_core.application.service.security.IPS.virusprotect.VirusScanService;
 import com.myweb.website_core.application.service.security.IPS.virusprotect.VirusScanResult;
+import com.myweb.website_core.application.service.security.FileSecurityMonitoringService;
 import com.myweb.website_core.common.util.SecurityUtils;
 import com.myweb.website_core.common.util.LoggingUtils;
 import com.myweb.website_core.common.util.PermissionUtils;
@@ -52,17 +53,20 @@ public class FileUploadService {
     private final FileUploadSecurityService fileUploadSecurityService;
     private final DataIntegrityService dataIntegrityService;
     private final VirusScanService virusScanService;
+    private final FileSecurityMonitoringService fileSecurityMonitoringService;
     
     @Autowired
     public FileUploadService(FileUploadConfig fileUploadConfig, ImageService imageService,
                            FileUploadSecurityService fileUploadSecurityService,
                            DataIntegrityService dataIntegrityService,
-                           VirusScanService virusScanService) {
+                           VirusScanService virusScanService,
+                           FileSecurityMonitoringService fileSecurityMonitoringService) {
         this.fileUploadConfig = fileUploadConfig;
         this.imageService = imageService;
         this.fileUploadSecurityService = fileUploadSecurityService;
         this.dataIntegrityService = dataIntegrityService;
         this.virusScanService = virusScanService;
+        this.fileSecurityMonitoringService = fileSecurityMonitoringService;
     }
 
     /**
@@ -168,6 +172,39 @@ public class FileUploadService {
                 fileHash,
                 postId
             );
+            
+            // ==================== 第6步：文件安全监控 ====================
+            
+            // 获取客户端IP地址
+            String sourceIp = getClientIpAddress(request);
+            
+            // 异步执行文件安全监控
+            logger.debug("启动文件安全监控: imageId={}, filename={}", image.getId(), originalFilename);
+            CompletableFuture<FileSecurityMonitoringService.FileSecurityCheckResult> monitoringFuture = 
+                fileSecurityMonitoringService.monitorFileUpload(
+                    image.getId(),
+                    originalFilename,
+                    file.getSize(),
+                    file.getContentType(),
+                    filePath.toString(),
+                    username,
+                    sourceIp
+                );
+            
+            // 异步处理监控结果（不阻塞上传流程）
+            monitoringFuture.whenComplete((monitoringResult, throwable) -> {
+                if (throwable != null) {
+                    logger.warn("文件安全监控异常: imageId={}, error={}", image.getId(), throwable.getMessage());
+                } else if (monitoringResult != null) {
+                    logger.debug("文件安全监控完成: imageId={}, securityLevel={}, riskScore={}", 
+                               image.getId(), monitoringResult.getSecurityLevel(), monitoringResult.getRiskScore());
+                    
+                    if (monitoringResult.isThreatDetected()) {
+                        logger.warn("文件安全监控检测到威胁: imageId={}, threats={}", 
+                                   image.getId(), monitoringResult.getThreats());
+                    }
+                }
+            });
             
             // 返回基于ID的访问URL
             String fileUrl = "/blog/api/images/" + image.getId();
@@ -547,5 +584,41 @@ public class FileUploadService {
             logger.debug("获取当前HTTP请求失败: {}", e.getMessage());
         }
         return null;
+    }
+    
+    /**
+     * 获取客户端IP地址
+     * 
+     * @param request HTTP请求对象
+     * @return 客户端IP地址
+     */
+    private String getClientIpAddress(HttpServletRequest request) {
+        if (request == null) {
+            return "unknown";
+        }
+        
+        String ip = request.getHeader("X-Forwarded-For");
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("Proxy-Client-IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("WL-Proxy-Client-IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("HTTP_CLIENT_IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("HTTP_X_FORWARDED_FOR");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getRemoteAddr();
+        }
+        
+        // 如果是多个IP，取第一个
+        if (ip != null && ip.contains(",")) {
+            ip = ip.split(",")[0].trim();
+        }
+        
+        return ip != null ? ip : "unknown";
     }
 }

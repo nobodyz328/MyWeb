@@ -464,6 +464,11 @@ public enum AuditOperation {
     FILE_QUARANTINE("FILE_QUARANTINE", "文件隔离", "系统隔离可疑文件"),
     
     /**
+     * 文件安全检查
+     */
+    FILE_SECURITY_CHECK("FILE_SECURITY_CHECK", "文件安全检查", "系统执行文件安全检查"),
+    
+    /**
      * 安全告警
      */
     SECURITY_ALERT("SECURITY_ALERT", "安全告警", "系统发送安全告警通知"),
