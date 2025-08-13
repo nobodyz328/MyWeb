@@ -43,20 +43,6 @@ spring:
     multipart:
       max-file-size: 5MB
       max-request-size: 20MB
-      enabled: true
-
-
-  mail:
-    host: smtp.qq.com           # 邮箱SMTP服务器
-    port: 465                   # 通常SSL用465，非SSL用25
-    username: 3281314509@qq.com
-    password: qztzywsepofodabj      # 授权码
-    properties:
-      mail:
-        smtp:
-          auth: true
-          ssl:
-            enable: true
 
   # ========================
   # JPA 配置
