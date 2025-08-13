@@ -2,7 +2,6 @@ package com.myweb.website_core.application.service.security.audit;
 
 import com.myweb.website_core.application.service.integration.MessageProducerService;
 import com.myweb.website_core.common.enums.AuditOperation;
-import com.myweb.website_core.common.enums.SecurityEventType;
 import com.myweb.website_core.domain.security.dto.AuditLogRequest;
 import com.myweb.website_core.domain.security.dto.SecurityEventRequest;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +12,7 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * 审计日志服务适配器
- * 
+ * <p>
  * 完全基于RabbitMQ消息队列的审计日志处理
  * 根据AuditOperation判断发送到不同的消息队列
  * 自动识别安全事件并发送到安全事件队列
@@ -25,7 +24,7 @@ import java.util.concurrent.CompletableFuture;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class AuditLogServiceAdapter {
+public class AuditMessageService {
     
     private final MessageProducerService messageProducerService;
     
@@ -68,25 +67,6 @@ public class AuditLogServiceAdapter {
             ;
         }
     }
-    
-    /**
-     * 记录审计日志（同步）
-     */
-    public void logOperationSync(AuditLogRequest request) {
-        try {
-            // 直接发送审计日志消息，不处理安全事件
-            sendAuditLogMessage(request);
-            
-            log.debug("审计日志同步记录成功: operation={}, user={}", 
-                     request.getOperation(), request.getUsername());
-            
-        } catch (Exception e) {
-            log.error("同步记录审计日志失败: operation={}, user={}, error={}", 
-                     request.getOperation(), request.getUsername(), e.getMessage(), e);
-            // 不抛出异常，避免影响业务流程
-        }
-    }
-
     /**
      * 发送审计日志消息
      */

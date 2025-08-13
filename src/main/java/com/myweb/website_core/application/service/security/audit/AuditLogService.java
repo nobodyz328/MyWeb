@@ -57,6 +57,7 @@ public class AuditLogService {
     private final AuditLogRepository auditLogRepository;
     private final AuditLogMapperService auditLogMapperService;
     private final ObjectMapper objectMapper;
+    private final AuditMessageService auditMessageService;
     
     // 审计日志保留天数配置
     @Value("${app.audit.retention-days:90}")
@@ -78,22 +79,11 @@ public class AuditLogService {
      */
     @Async
     public CompletableFuture<Void> logOperation(AuditLogRequest request) {
-        try {
             if (request == null || !request.isValid()) {
                 log.warn("审计日志请求无效: {}", request);
                 return CompletableFuture.completedFuture(null);
             }
-            
-            AuditLog auditLog = convertToEntity(request);
-            auditLogRepository.save(auditLog);
-            
-            log.debug("审计日志记录成功: operation={}, username={}, result={}", 
-                    request.getOperation(), request.getUsername(), request.getResult());
-            
-        } catch (Exception e) {
-            log.error("记录审计日志失败: request={}", request, e);
-        }
-        
+            auditMessageService.logOperation(request);
         return CompletableFuture.completedFuture(null);
     }
     

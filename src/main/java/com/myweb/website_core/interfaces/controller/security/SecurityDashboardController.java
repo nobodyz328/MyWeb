@@ -1,7 +1,7 @@
 package com.myweb.website_core.interfaces.controller.security;
 
 import com.myweb.website_core.application.service.business.UserService;
-import com.myweb.website_core.application.service.security.audit.AuditLogServiceAdapter;
+import com.myweb.website_core.application.service.security.audit.AuditMessageService;
 import com.myweb.website_core.application.service.security.audit.SecurityEventService;
 import com.myweb.website_core.application.service.security.authorization.AuthorizationService;
 import com.myweb.website_core.common.constant.SystemConstants;
@@ -44,7 +44,7 @@ import java.util.*;
 @PreAuthorize("hasRole('ADMIN')")
 public class SecurityDashboardController {
     
-    private final AuditLogServiceAdapter auditLogService;
+    private final AuditMessageService auditLogService;
     private final SecurityEventService securityEventService;
     private final AuthorizationService authorizationService;
     private final UserService userService;
@@ -337,7 +337,7 @@ public class SecurityDashboardController {
         
         try {
             // 记录导出操作
-            auditLogService.logOperationSync(AuditLogRequest.builder()
+            auditLogService.logOperation(AuditLogRequest.builder()
                     .operation(AuditOperation.SECURITY_REPORT_EXPORT)
                     .username(getCurrentUsername(request))
                     .ipAddress(getClientIpAddress(request))

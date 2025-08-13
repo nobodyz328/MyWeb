@@ -45,6 +45,18 @@ public class Image {
     
     @Column(nullable = false)
     private LocalDateTime uploadTime;
+    
+    /**
+     * 文件哈希值（用于完整性验证）
+     */
+    @Column(name = "file_hash")
+    private String fileHash;
+    
+    /**
+     * 哈希计算时间
+     */
+    @Column(name = "hash_calculated_at")
+    private LocalDateTime hashCalculatedAt;
 
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
@@ -62,6 +74,18 @@ public class Image {
         this.filePath = filePath;
         this.contentType = contentType;
         this.fileSize = fileSize;
+        this.uploadTime = LocalDateTime.now();
+    }
+    
+    public Image(String originalFilename, String storedFilename, String filePath, 
+                 String contentType, Long fileSize, String fileHash) {
+        this.originalFilename = originalFilename;
+        this.storedFilename = storedFilename;
+        this.filePath = filePath;
+        this.contentType = contentType;
+        this.fileSize = fileSize;
+        this.fileHash = fileHash;
+        this.hashCalculatedAt = LocalDateTime.now();
         this.uploadTime = LocalDateTime.now();
     }
 }

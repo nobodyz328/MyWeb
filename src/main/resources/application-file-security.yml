@@ -1,0 +1,161 @@
+# 文件上传安全配置
+# 任务21：增强FileUploadService安全检查
+
+app:
+  security:
+    file-upload:
+      # 基础安全配置
+      enabled: true
+      magic-number-validation: true
+      malicious-code-check: true
+      file-hash-enabled: true
+      hash-algorithm: "SHA-256"
+      verify-integrity-on-download: true
+      
+      # 文件限制配置
+      max-file-size: 5242880  # 5MB
+      allowed-extensions:
+        - "jpg"
+        - "jpeg"
+        - "png"
+        - "gif"
+        - "webp"
+      allowed-mime-types:
+        - "image/jpeg"
+        - "image/png"
+        - "image/gif"
+        - "image/webp"
+      
+      # 病毒扫描配置
+      virus-scan-enabled: true
+      virus-scan-engine: "mock"  # mock, clamav
+      virus-scan-timeout-seconds: 30
+      
+      # ClamAV配置（当使用clamav引擎时）
+      clamav:
+        host: "localhost"
+        port: 3310
+        connection-timeout: 5000
+        scan-timeout: 30000
+      
+      # 审计日志配置
+      audit:
+        enabled: true
+        log-virus-scan: true
+        log-integrity-check: true
+        log-level: "INFO"
+      
+      # 告警配置
+      alert:
+        enabled: true
+        virus-detection-alert: true
+        integrity-violation-alert: true
+        malicious-file-alert: true
+        notification-methods:
+          - "log"
+          - "email"
+
+# 病毒扫描服务配置
+virus-scan:
+  engine: "${app.security.file-upload.virus-scan-engine}"
+  timeout: "${app.security.file-upload.virus-scan-timeout-seconds}"
+  max-file-size: "${app.security.file-upload.max-file-size}"
+  
+  # ClamAV特定配置
+  clamav:
+    host: "${app.security.file-upload.clamav.host}"
+    port: ${app.security.file-upload.clamav.port}
+    timeout: ${app.security.file-upload.clamav.scan-timeout}
+
+# 数据完整性服务配置
+data-integrity:
+  hash-algorithm: "${app.security.file-upload.hash-algorithm}"
+  auto-verify: true
+  schedule-check: "0 0 4 * * ?"  # 每天凌晨4点执行完整性检查
+
+# 文件完整性管理配置（任务22）
+app:
+  file-integrity:
+    # 定期检查配置
+    periodic-check:
+      enabled: true
+      schedule: "0 0 2 * * ?"  # 每天凌晨2点执行
+      batch-size: 50
+      max-execution-time-minutes: 60
+    
+    # 损坏文件处理配置
+    corrupted-file:
+      quarantine-enabled: true
+      quarantine-path: "${java.io.tmpdir}/myweb/quarantine"
+      auto-recalculate-hash: true
+      alert-enabled: true
+      recovery-attempts: 3
+    
+    # 报告配置
+    report:
+      enabled: true
+      retention-days: 30
+      export-format: "json"
+      include-details: true
+      auto-cleanup-old-reports: true
+    
+    # 监控配置
+    monitoring:
+      enabled: true
+      alert-threshold-corruption-rate: 0.05  # 5%
+      alert-threshold-missing-files: 5
+      health-check-interval-minutes: 30
+    
+    # 性能配置
+    performance:
+      async-processing: true
+      thread-pool-size: 3
+      batch-processing-delay-ms: 100
+      max-concurrent-checks: 10
+
+# 文件上传配置增强
+file:
+  upload:
+    # 继承现有配置
+    max-file-size: "${app.security.file-upload.max-file-size}"
+    allowed-types: "${app.security.file-upload.allowed-mime-types}"
+    
+    # 安全增强配置
+    security:
+      enabled: "${app.security.file-upload.enabled}"
+      strict-validation: true
+      quarantine-malicious-files: true
+      
+    # 存储配置
+    storage:
+      hash-files: "${app.security.file-upload.file-hash-enabled}"
+      verify-on-access: "${app.security.file-upload.verify-integrity-on-download}"
+      backup-enabled: false
+
+# 日志配置增强
+logging:
+  level:
+    com.myweb.website_core.application.service.file.FileUploadService: INFO
+    com.myweb.website_core.application.service.security.integeration.FileUploadSecurityService: INFO
+    com.myweb.website_core.application.service.security.IPS.virusprotect: INFO
+    com.myweb.website_core.application.service.security.integeration.dataManage.DataIntegrityService: INFO
+  
+  pattern:
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level [%X{traceId}] %logger{36} - %msg%n"
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level [%X{traceId}] %logger{36} - %msg%n"
+
+# 监控配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info,metrics,file-security"
+  
+  endpoint:
+    health:
+      show-details: always
+      
+  metrics:
+    tags:
+      application: "myweb-blog"
+      security-feature: "file-upload-enhanced"

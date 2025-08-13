@@ -1,7 +1,7 @@
 package com.myweb.website_core.application.service.security.confirm;
 
 import com.myweb.website_core.application.service.integration.EmailService;
-import com.myweb.website_core.application.service.security.audit.AuditLogServiceAdapter;
+import com.myweb.website_core.application.service.security.audit.AuditMessageService;
 import com.myweb.website_core.common.enums.AuditOperation;
 import com.myweb.website_core.common.exception.security.ValidationException;
 import com.myweb.website_core.domain.business.entity.User;
@@ -40,7 +40,7 @@ public class ConfirmationService {
     private final RedisTemplate<String, Object> redisTemplate;
     private final EmailService emailService;
     private final UserRepository userRepository;
-    private final AuditLogServiceAdapter auditLogService;
+    private final AuditMessageService auditLogService;
     
     private static final String CONFIRMATION_TOKEN_PREFIX = "security:confirmation:";
     private static final int TOKEN_LENGTH = 32;

@@ -1,9 +1,7 @@
 package com.myweb.website_core.application.service.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.myweb.website_core.application.service.security.audit.AuditLogServiceAdapter;
-import com.myweb.website_core.common.enums.SecurityEventType;
-import com.myweb.website_core.common.util.SecurityEventUtils;
+import com.myweb.website_core.application.service.security.audit.AuditMessageService;
 import com.myweb.website_core.domain.security.dto.AuditLogRequest;
 import com.myweb.website_core.infrastructure.config.properties.BackupProperties;
 import com.myweb.website_core.common.exception.security.ValidationException;
@@ -60,7 +58,7 @@ public class SecurityConfigService {
     private final JwtConfig jwtConfig;
     private final RateLimitProperties rateLimitProperties;
     private final BackupProperties backupProperties;
-    private final AuditLogServiceAdapter auditLogService;
+    private final AuditMessageService auditLogService;
     private final RedisTemplate<String, Object> redisTemplate;
     private final ApplicationEventPublisher eventPublisher;
     private final ObjectMapper objectMapper;

@@ -1,6 +1,6 @@
 package com.myweb.website_core.application.service.security.IPS.virusprotect;
 
-import com.myweb.website_core.application.service.security.audit.AuditLogServiceAdapter;
+import com.myweb.website_core.application.service.security.audit.AuditMessageService;
 import com.myweb.website_core.common.enums.AuditOperation;
 import com.myweb.website_core.domain.security.dto.AuditLogRequest;
 import fi.solita.clamav.ClamAVClient;
@@ -39,7 +39,7 @@ import java.util.concurrent.CompletableFuture;
 @ConditionalOnProperty(name = "app.security.virus-scan.engine", havingValue = "clamav", matchIfMissing = false)
 public class ClamAVVirusScanService implements VirusScanService {
     
-    private final AuditLogServiceAdapter auditLogService;
+    private final AuditMessageService auditLogService;
     
     @Value("${app.security.virus-scan.clamav.host:localhost}")
     private String clamavHost;

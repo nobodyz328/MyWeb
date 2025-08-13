@@ -2,7 +2,7 @@ package com.myweb.website_core.infrastructure.security.audit;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.myweb.website_core.application.service.security.audit.AuditLogServiceAdapter;
+import com.myweb.website_core.application.service.security.audit.AuditMessageService;
 import com.myweb.website_core.common.constant.SystemConstants;
 import com.myweb.website_core.domain.security.dto.AuditLogRequest;
 import lombok.Getter;
@@ -40,7 +40,7 @@ import java.util.*;
 @RequiredArgsConstructor
 public class AuditAspect {
     
-    private final AuditLogServiceAdapter auditLogServiceAdapter;
+    private final AuditMessageService auditMessageService;
     private final ObjectMapper objectMapper;
     
     // 敏感信息关键字，用于参数脱敏
@@ -147,7 +147,7 @@ public class AuditAspect {
             
             // 记录审计日志
             AuditLogRequest auditRequest = logBuilder.build();
-            auditLogServiceAdapter.logOperation(auditRequest);
+            auditMessageService.logOperation(auditRequest);
             
             log.debug("审计日志记录成功: operation={}, method={}",
                     auditable.operation(), methodName);
@@ -188,9 +188,9 @@ public class AuditAspect {
             // 记录审计日志
             AuditLogRequest auditRequest = logBuilder.build();
             if (auditable.async()) {
-                auditLogServiceAdapter.logOperation(auditRequest);
+                auditMessageService.logOperation(auditRequest);
             } else {
-                auditLogServiceAdapter.logOperation(auditRequest).join();
+                auditMessageService.logOperation(auditRequest).join();
             }
             
             log.debug("失败审计日志记录成功: operation={}, method={}, error={}",

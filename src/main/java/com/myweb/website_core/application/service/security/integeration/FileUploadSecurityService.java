@@ -3,7 +3,7 @@ package com.myweb.website_core.application.service.security.integeration;
 import com.myweb.website_core.application.service.security.IPS.virusprotect.VirusAlertService;
 import com.myweb.website_core.application.service.security.IPS.virusprotect.VirusQuarantineService;
 import com.myweb.website_core.application.service.security.IPS.virusprotect.VirusScanResult;
-import com.myweb.website_core.application.service.security.audit.AuditLogServiceAdapter;
+import com.myweb.website_core.application.service.security.audit.AuditMessageService;
 import com.myweb.website_core.application.service.security.IPS.virusprotect.VirusScanService;
 import com.myweb.website_core.common.enums.AuditOperation;
 import com.myweb.website_core.common.exception.FileValidationException;
@@ -45,7 +45,7 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class FileUploadSecurityService {
     
-    private final AuditLogServiceAdapter auditLogService;
+    private final AuditMessageService auditLogService;
     private final VirusScanService virusScanService;
     private final VirusQuarantineService quarantineService;
     private final VirusAlertService alertService;

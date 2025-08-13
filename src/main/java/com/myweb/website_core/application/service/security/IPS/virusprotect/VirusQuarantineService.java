@@ -1,6 +1,6 @@
 package com.myweb.website_core.application.service.security.IPS.virusprotect;
 
-import com.myweb.website_core.application.service.security.audit.AuditLogServiceAdapter;
+import com.myweb.website_core.application.service.security.audit.AuditMessageService;
 import com.myweb.website_core.application.service.security.quarantine.QuarantineMetadata;
 import com.myweb.website_core.application.service.security.quarantine.QuarantineResult;
 import com.myweb.website_core.application.service.security.quarantine.QuarantineStatistics;
@@ -45,7 +45,7 @@ import java.util.concurrent.CompletableFuture;
 @RequiredArgsConstructor
 public class VirusQuarantineService {
     
-    private final AuditLogServiceAdapter auditLogService;
+    private final AuditMessageService auditLogService;
     
     @Value("${app.security.quarantine.path:${java.io.tmpdir}/quarantine}")
     private String quarantinePath;

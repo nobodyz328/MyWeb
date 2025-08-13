@@ -1,6 +1,6 @@
 package com.myweb.website_core.application.service.security.integeration.dataManage;
 
-import com.myweb.website_core.application.service.security.audit.AuditLogServiceAdapter;
+import com.myweb.website_core.application.service.security.audit.AuditMessageService;
 import com.myweb.website_core.domain.security.dto.AuditLogRequest;
 import com.myweb.website_core.infrastructure.config.properties.BackupProperties;
 import com.myweb.website_core.common.enums.AuditOperation;
@@ -43,7 +43,7 @@ public class DataRecoveryService {
     
     private final BackupProperties backupProperties;
     private final BackupService backupService;
-    private final AuditLogServiceAdapter auditLogService;
+    private final AuditMessageService auditLogService;
     
     private static final String ENCRYPTED_EXTENSION = ".enc";
     private static final String HASH_EXTENSION = ".hash";

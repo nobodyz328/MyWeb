@@ -1,11 +1,10 @@
 package com.myweb.website_core.application.service.security.integeration.dataManage;
 
 import com.myweb.website_core.application.service.integration.EmailService;
-import com.myweb.website_core.application.service.security.audit.AuditLogServiceAdapter;
+import com.myweb.website_core.application.service.security.audit.AuditMessageService;
 import com.myweb.website_core.infrastructure.config.properties.BackupProperties;
 import com.myweb.website_core.common.enums.AuditOperation;
 import com.myweb.website_core.domain.security.dto.AuditLogRequest;
-import com.myweb.website_core.infrastructure.security.audit.Auditable;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -45,7 +44,7 @@ import java.util.stream.Collectors;
 public class BackupManagementService {
     
     private final BackupProperties backupProperties;
-    private final AuditLogServiceAdapter auditLogService;
+    private final AuditMessageService auditLogService;
     private final EmailService emailService;
     private final BackupService backupService;
     

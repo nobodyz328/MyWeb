@@ -1,6 +1,6 @@
 package com.myweb.website_core.application.service.security.integeration.dataManage;
 
-import com.myweb.website_core.application.service.security.audit.AuditLogServiceAdapter;
+import com.myweb.website_core.application.service.security.audit.AuditMessageService;
 import com.myweb.website_core.application.service.security.confirm.ConfirmationService;
 import com.myweb.website_core.common.enums.AuditOperation;
 import com.myweb.website_core.common.exception.security.ValidationException;
@@ -50,7 +50,7 @@ public class DataDeletionService {
     private final PostLikeRepository postLikeRepository;
     private final PostCollectRepository postCollectRepository;
     private final ImageRepository imageRepository;
-    private final AuditLogServiceAdapter auditLogService;
+    private final AuditMessageService auditLogService;
     private final ConfirmationService confirmationService;
     private final RedisTemplate<String, Object> redisTemplate;
     

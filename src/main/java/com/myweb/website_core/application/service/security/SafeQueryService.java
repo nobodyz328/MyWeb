@@ -1,6 +1,6 @@
 package com.myweb.website_core.application.service.security;
 
-import com.myweb.website_core.application.service.security.audit.AuditLogServiceAdapter;
+import com.myweb.website_core.application.service.security.audit.AuditMessageService;
 import com.myweb.website_core.common.enums.AuditOperation;
 import com.myweb.website_core.common.util.SafeSqlBuilder;
 import com.myweb.website_core.application.service.security.IPS.virusprotect.SqlInjectionProtectionService;
@@ -36,7 +36,7 @@ public class SafeQueryService {
     private final SafeSqlBuilder safeSqlBuilder;
     private final SqlInjectionProtectionService sqlInjectionProtectionService;
     private final AuditLogMapperService auditLogMapperService;
-    private final AuditLogServiceAdapter auditLogServiceAdapter;
+    private final AuditMessageService auditMessageService;
     
     /**
      * 安全的审计日志分页查询（使用JPA）
@@ -248,7 +248,7 @@ public class SafeQueryService {
             log.error("构建复杂动态查询失败: {}", e.getMessage());
             
             // 记录错误审计日志
-            auditLogServiceAdapter.logOperation(
+            auditMessageService.logOperation(
                     AuditLogRequest.system(
                             AuditOperation.COMPLEX_QUERY_BUILD,
                             "构建动态查询失败: " + e.getMessage()
@@ -288,7 +288,7 @@ public class SafeQueryService {
             log.error("构建参数化查询失败: {}", e.getMessage());
             
             // 记录错误审计日志
-            auditLogServiceAdapter.logOperation(
+            auditMessageService.logOperation(
                     AuditLogRequest.system(
                         AuditOperation.PARAMETERIZED_QUERY_BUILD,
                         "构建参数化查询失败: " + e.getMessage()

@@ -1,6 +1,6 @@
 package com.myweb.website_core.application.service.security;
 
-import com.myweb.website_core.application.service.security.audit.AuditLogServiceAdapter;
+import com.myweb.website_core.application.service.security.audit.AuditMessageService;
 import com.myweb.website_core.application.service.security.integeration.FileUploadSecurityService;
 import com.myweb.website_core.common.exception.FileValidationException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,7 +28,7 @@ import static org.mockito.Mockito.lenient;
 class FileUploadSecurityServiceTest {
     
     @Mock
-    private AuditLogServiceAdapter auditLogService;
+    private AuditMessageService auditLogService;
     
     @Mock
     private HttpServletRequest request;

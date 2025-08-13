@@ -1,6 +1,6 @@
 package com.myweb.website_core.application.service.security;
 
-import com.myweb.website_core.application.service.security.audit.AuditLogServiceAdapter;
+import com.myweb.website_core.application.service.security.audit.AuditMessageService;
 import com.myweb.website_core.application.service.security.IPS.virusprotect.MockVirusScanService;
 import com.myweb.website_core.application.service.security.IPS.virusprotect.VirusScanResult;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,7 +35,7 @@ import static org.mockito.Mockito.doNothing;
 class VirusScanServiceTest {
     
     @Mock
-    private AuditLogServiceAdapter auditLogService;
+    private AuditMessageService auditLogService;
     
     private MockVirusScanService mockVirusScanService;
     

@@ -1,7 +1,7 @@
 package com.myweb.website_core.application.service.security.integeration.dataManage;
 
 import com.myweb.website_core.application.service.integration.EmailService;
-import com.myweb.website_core.application.service.security.audit.AuditLogServiceAdapter;
+import com.myweb.website_core.application.service.security.audit.AuditMessageService;
 import com.myweb.website_core.infrastructure.config.properties.BackupProperties;
 import com.myweb.website_core.common.enums.AuditOperation;
 import com.myweb.website_core.domain.security.dto.AuditLogRequest;
@@ -49,7 +49,7 @@ import java.util.zip.GZIPOutputStream;
 public class BackupService {
     
     private final BackupProperties backupProperties;
-    private final AuditLogServiceAdapter auditLogService;
+    private final AuditMessageService auditLogService;
     private final EmailService emailService;
     
     private static final String BACKUP_FILE_EXTENSION = ".backup";

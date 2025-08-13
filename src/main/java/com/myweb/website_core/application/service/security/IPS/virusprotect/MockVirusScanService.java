@@ -1,6 +1,6 @@
 package com.myweb.website_core.application.service.security.IPS.virusprotect;
 
-import com.myweb.website_core.application.service.security.audit.AuditLogServiceAdapter;
+import com.myweb.website_core.application.service.security.audit.AuditMessageService;
 import com.myweb.website_core.common.enums.AuditOperation;
 import com.myweb.website_core.domain.security.dto.AuditLogRequest;
 import lombok.RequiredArgsConstructor;
@@ -38,7 +38,7 @@ import java.util.concurrent.ThreadLocalRandom;
 @ConditionalOnProperty(name = "app.security.virus-scan.engine", havingValue = "mock", matchIfMissing = true)
 public class MockVirusScanService implements VirusScanService {
     
-    private final AuditLogServiceAdapter auditLogService;
+    private final AuditMessageService auditLogService;
     
     private static final String ENGINE_NAME = "Mock Virus Scanner";
     private static final String ENGINE_VERSION = "1.0.0";

@@ -1,7 +1,6 @@
 package com.myweb.website_core.application.service.security.authentication;
 
-import com.myweb.website_core.application.service.security.audit.AuditLogService;
-import com.myweb.website_core.application.service.security.audit.AuditLogServiceAdapter;
+import com.myweb.website_core.application.service.security.audit.AuditMessageService;
 import com.myweb.website_core.common.enums.AuditOperation;
 import com.myweb.website_core.common.util.RedisKey;
 import com.myweb.website_core.domain.security.dto.AuditLogRequest;
@@ -40,7 +39,7 @@ import java.util.concurrent.TimeUnit;
 public class SessionCleanupService {
     
     private final RedisTemplate<String, Object> redisTemplate;
-    private final AuditLogServiceAdapter auditLogService;
+    private final AuditMessageService auditLogService;
     private final SessionManagementService sessionManagementService;
     
     /**

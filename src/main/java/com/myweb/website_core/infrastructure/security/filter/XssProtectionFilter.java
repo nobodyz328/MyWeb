@@ -1,8 +1,6 @@
 package com.myweb.website_core.infrastructure.security.filter;
 
-import com.myweb.website_core.application.service.security.audit.AuditLogServiceAdapter;
-import com.myweb.website_core.application.service.security.XssMonitoringService;
-import com.myweb.website_core.application.service.security.XssStatisticsService;
+import com.myweb.website_core.application.service.security.audit.AuditMessageService;
 import com.myweb.website_core.common.enums.SecurityEventType;
 import com.myweb.website_core.domain.security.dto.SecurityEventRequest;
 import com.myweb.website_core.infrastructure.config.XssFilterConfig;
@@ -11,8 +9,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.Ordered;
-import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -43,7 +39,7 @@ import static com.myweb.website_core.common.util.SecurityEventUtils.*;
 @RequiredArgsConstructor
 public class XssProtectionFilter implements Filter {
 
-    private final AuditLogServiceAdapter securityAuditService;
+    private final AuditMessageService securityAuditService;
     private final XssFilterConfig xssFilterConfig;
     private final XssFilterService xssFilterService;
 

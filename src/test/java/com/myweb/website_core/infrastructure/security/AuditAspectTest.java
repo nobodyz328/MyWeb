@@ -1,7 +1,7 @@
 package com.myweb.website_core.infrastructure.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.myweb.website_core.application.service.security.audit.AuditLogServiceAdapter;
+import com.myweb.website_core.application.service.security.audit.AuditMessageService;
 import com.myweb.website_core.common.enums.AuditOperation;
 import com.myweb.website_core.domain.security.dto.AuditLogRequest;
 import com.myweb.website_core.infrastructure.security.audit.AuditAspect;
@@ -46,7 +46,7 @@ import static org.mockito.Mockito.*;
 class AuditAspectTest {
     
     @Mock
-    private AuditLogServiceAdapter auditLogService;
+    private AuditMessageService auditLogService;
     
     @Mock
     private ObjectMapper objectMapper;

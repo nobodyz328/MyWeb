@@ -1,7 +1,7 @@
 package com.myweb.website_core.application.service.security;
 
 import com.myweb.website_core.application.service.integration.EmailService;
-import com.myweb.website_core.application.service.security.audit.AuditLogServiceAdapter;
+import com.myweb.website_core.application.service.security.audit.AuditMessageService;
 import com.myweb.website_core.application.service.security.integeration.dataManage.BackupService;
 import com.myweb.website_core.infrastructure.config.properties.BackupProperties;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,7 +37,7 @@ class BackupServiceTest {
     private BackupProperties backupProperties;
     
     @Mock
-    private AuditLogServiceAdapter auditLogService;
+    private AuditMessageService auditLogService;
     
     @Mock
     private EmailService emailService;
@@ -219,7 +219,7 @@ class BackupServiceTest {
     private static class TestableBackupService extends BackupService {
         
         public TestableBackupService(BackupProperties backupProperties, 
-                                   AuditLogServiceAdapter auditLogService, 
+                                   AuditMessageService auditLogService,
                                    EmailService emailService) {
             super(backupProperties, auditLogService, emailService);
         }

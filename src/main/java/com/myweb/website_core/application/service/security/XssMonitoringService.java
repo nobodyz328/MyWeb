@@ -1,6 +1,6 @@
 package com.myweb.website_core.application.service.security;
 
-import com.myweb.website_core.application.service.security.audit.AuditLogServiceAdapter;
+import com.myweb.website_core.application.service.security.audit.AuditMessageService;
 import com.myweb.website_core.common.enums.SecurityEventType;
 import com.myweb.website_core.domain.security.dto.SecurityEventRequest;
 import com.myweb.website_core.infrastructure.config.XssFilterConfig;
@@ -40,7 +40,7 @@ public class XssMonitoringService {
     
     private final XssFilterConfig xssFilterConfig;
     private final XssStatisticsService xssStatisticsService;
-    private final AuditLogServiceAdapter auditLogService;
+    private final AuditMessageService auditLogService;
     
     // 监控指标
     private final AtomicLong blockedAttackCount = new AtomicLong(0);

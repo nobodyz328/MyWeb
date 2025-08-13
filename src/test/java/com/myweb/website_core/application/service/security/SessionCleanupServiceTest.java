@@ -1,6 +1,6 @@
 package com.myweb.website_core.application.service.security;
 
-import com.myweb.website_core.application.service.security.audit.AuditLogServiceAdapter;
+import com.myweb.website_core.application.service.security.audit.AuditMessageService;
 import com.myweb.website_core.application.service.security.authentication.SessionCleanupService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,7 +37,7 @@ class SessionCleanupServiceTest {
     private ValueOperations<String, Object> valueOperations;
     
     @Mock
-    private AuditLogServiceAdapter auditLogService;
+    private AuditMessageService auditLogService;
     
     @InjectMocks
     private SessionCleanupService sessionCleanupService;

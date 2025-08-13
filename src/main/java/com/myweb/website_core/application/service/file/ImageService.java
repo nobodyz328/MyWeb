@@ -57,6 +57,29 @@ public class ImageService {
         
         return imageRepository.save(image);
     }
+    
+    /**
+     * 保存图片信息到数据库（包含文件哈希）
+     */
+    public Image saveImageWithHash(String originalFilename, String storedFilename, String filePath,
+                                   String contentType, Long fileSize, String fileHash, Long postId) {
+        Image image = new Image(originalFilename, storedFilename, filePath, contentType, fileSize, fileHash);
+        
+        // 如果提供了postId，验证帖子是否存在并设置关联
+        if (postId != null) {
+            Optional<Post> postOpt = postRepository.findById(postId);
+            if (postOpt.isPresent()) {
+                image.setPost(postOpt.get());
+                log.info("图片关联到帖子: postId={}", postId);
+            } else {
+                log.warn("指定的帖子不存在: postId={}", postId);
+                // 可以选择抛出异常或者继续保存图片但不关联帖子
+                // 这里选择继续保存但记录警告
+            }
+        }
+        
+        return imageRepository.save(image);
+    }
 
     
     /**
@@ -144,6 +167,13 @@ public class ImageService {
      */
     public List<Image> getUnassociatedImages() {
         return imageRepository.findByPostIsNull();
+    }
+    
+    /**
+     * 获取所有图片（用于完整性检查）
+     */
+    public List<Image> getAllImages() {
+        return imageRepository.findAll();
     }
     
     /**

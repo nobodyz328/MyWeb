@@ -1,7 +1,7 @@
 package com.myweb.website_core.application.service.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.myweb.website_core.application.service.security.audit.AuditLogServiceAdapter;
+import com.myweb.website_core.application.service.security.audit.AuditMessageService;
 import com.myweb.website_core.infrastructure.config.properties.BackupProperties;
 import com.myweb.website_core.infrastructure.config.JwtConfig;
 import com.myweb.website_core.infrastructure.config.properties.RateLimitProperties;
@@ -51,7 +51,7 @@ class SecurityConfigServiceTest {
     private BackupProperties backupProperties;
     
     @Mock
-    private AuditLogServiceAdapter auditLogService;
+    private AuditMessageService auditLogService;
     
     @Mock
     private RedisTemplate<String, Object> redisTemplate;

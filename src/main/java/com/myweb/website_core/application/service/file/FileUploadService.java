@@ -1,6 +1,9 @@
 package com.myweb.website_core.application.service.file;
 
 import com.myweb.website_core.application.service.security.integeration.FileUploadSecurityService;
+import com.myweb.website_core.application.service.security.integeration.dataManage.DataIntegrityService;
+import com.myweb.website_core.application.service.security.IPS.virusprotect.VirusScanService;
+import com.myweb.website_core.application.service.security.IPS.virusprotect.VirusScanResult;
 import com.myweb.website_core.common.util.SecurityUtils;
 import com.myweb.website_core.common.util.LoggingUtils;
 import com.myweb.website_core.common.util.PermissionUtils;
@@ -25,6 +28,10 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 文件上传服务类
@@ -43,17 +50,30 @@ public class FileUploadService {
     private final FileUploadConfig fileUploadConfig;
     private final ImageService imageService;
     private final FileUploadSecurityService fileUploadSecurityService;
+    private final DataIntegrityService dataIntegrityService;
+    private final VirusScanService virusScanService;
     
     @Autowired
     public FileUploadService(FileUploadConfig fileUploadConfig, ImageService imageService,
-                           FileUploadSecurityService fileUploadSecurityService) {
+                           FileUploadSecurityService fileUploadSecurityService,
+                           DataIntegrityService dataIntegrityService,
+                           VirusScanService virusScanService) {
         this.fileUploadConfig = fileUploadConfig;
         this.imageService = imageService;
         this.fileUploadSecurityService = fileUploadSecurityService;
+        this.dataIntegrityService = dataIntegrityService;
+        this.virusScanService = virusScanService;
     }
 
     /**
-     * 上传单个图片文件（安全版本）
+     * 上传单个图片文件（增强安全版本）
+     * 
+     * 集成了以下安全功能：
+     * - FileUploadSecurityService：文件类型、大小、魔数验证
+     * - 恶意代码检查：扫描文件内容中的恶意模式
+     * - 病毒扫描：使用VirusScanService进行病毒检测
+     * - 文件哈希计算：使用DataIntegrityService计算并存储文件哈希
+     * - 完整的审计日志记录
      * 
      * @param file 上传的文件
      * @param postId 关联的帖子ID（可选）
@@ -64,58 +84,128 @@ public class FileUploadService {
         long startTime = System.currentTimeMillis();
         String username = PermissionUtils.getCurrentUsername();
         Long userId = PermissionUtils.getCurrentUserId();
+        String originalFilename = file != null ? file.getOriginalFilename() : "unknown";
+        
+        logger.info("开始增强安全文件上传: user={}, filename={}, size={}, postId={}", 
+                   username, originalFilename, file != null ? file.getSize() : 0, postId);
         
         try {
+            // ==================== 第1步：基础安全验证 ====================
+            
             // 获取HTTP请求对象用于安全验证
             HttpServletRequest request = getCurrentRequest();
             
-            // 使用安全服务进行全面的文件安全验证
+            // 使用FileUploadSecurityService进行全面的文件安全验证
+            // 包括：文件类型验证、大小验证、魔数验证、恶意代码扫描
+            logger.debug("执行文件安全验证: {}", originalFilename);
             fileUploadSecurityService.validateUploadedFile(file, userId, username, request);
+            logger.debug("文件安全验证通过: {}", originalFilename);
+            
+            // ==================== 第2步：病毒扫描 ====================
+            
+            // 执行病毒扫描
+            logger.debug("开始病毒扫描: {}", originalFilename);
+            CompletableFuture<VirusScanResult> scanFuture = virusScanService.scanFile(file, userId, username);
+            
+            // 等待扫描结果（设置超时时间30秒）
+            VirusScanResult scanResult;
+            try {
+                scanResult = scanFuture.get(30, java.util.concurrent.TimeUnit.SECONDS);
+            } catch (java.util.concurrent.TimeoutException e) {
+                logger.warn("病毒扫描超时: user={}, filename={}", username, originalFilename);
+                throw new FileUploadException("文件安全扫描超时，请稍后重试");
+            }
+            
+            // 检查扫描结果
+            if (scanResult.shouldBlockUpload()) {
+                if (scanResult.isVirusFound()) {
+                    logger.warn("检测到病毒文件: user={}, filename={}, virus={}", 
+                               username, originalFilename, scanResult.getVirusName());
+                    throw new FileUploadException(
+                        String.format("检测到恶意文件: %s (威胁级别: %s)", 
+                                     scanResult.getVirusName(), scanResult.getThreatLevel()));
+                } else {
+                    logger.warn("病毒扫描失败: user={}, filename={}, error={}", 
+                               username, originalFilename, scanResult.getErrorMessage());
+                    throw new FileUploadException("文件安全扫描失败: " + scanResult.getErrorMessage());
+                }
+            }
+            
+            logger.debug("病毒扫描通过: user={}, filename={}, duration={}ms", 
+                        username, originalFilename, scanResult.getScanDurationMs());
+            
+            // ==================== 第3步：文件存储 ====================
             
             // 创建上传目录
             String uploadPath = createUploadDirectory();
             
             // 生成安全的唯一文件名
-            String fileName = fileUploadSecurityService.generateSecureFileName(file.getOriginalFilename(), userId);
+            String fileName = fileUploadSecurityService.generateSecureFileName(originalFilename, userId);
             
-            // 保存文件
+            // 保存文件到磁盘
             Path filePath = Paths.get(uploadPath, fileName);
             Files.copy(file.getInputStream(), filePath);
+            logger.debug("文件保存成功: {}", filePath.toString());
             
-            // 计算文件哈希值用于完整性检查
-            String fileHash = SecurityUtils.calculateHash(new String(file.getBytes(), "UTF-8"));
+            // ==================== 第4步：文件哈希计算 ====================
             
-            // 保存图片信息到数据库
-            Image image = imageService.saveImage(
-                file.getOriginalFilename(),
+            // 使用DataIntegrityService计算文件哈希值用于完整性检查
+            logger.debug("计算文件哈希: {}", originalFilename);
+            byte[] fileBytes = file.getBytes();
+            String fileContent = new String(fileBytes, "UTF-8");
+            String fileHash = dataIntegrityService.calculateHash(fileContent);
+            logger.debug("文件哈希计算完成: hash={}", fileHash.substring(0, Math.min(fileHash.length(), 16)) + "...");
+            
+            // ==================== 第5步：数据库存储 ====================
+            
+            // 保存图片信息到数据库（包含文件哈希）
+            Image image = imageService.saveImageWithHash(
+                originalFilename,
                 fileName,
                 filePath.toString(),
                 file.getContentType(),
                 file.getSize(),
+                fileHash,
                 postId
             );
             
             // 返回基于ID的访问URL
             String fileUrl = "/blog/api/images/" + image.getId();
             
-            // 记录成功的操作日志
+            // ==================== 第6步：成功日志记录 ====================
+            
             long executionTime = System.currentTimeMillis() - startTime;
             String logMessage = LoggingUtils.formatOperationLog(
-                "UPLOAD_IMAGE", username, "FILE:" + image.getId(), "SUCCESS", 
-                "文件名: " + file.getOriginalFilename() + ", 大小: " + file.getSize() + " bytes", 
+                "UPLOAD_IMAGE_ENHANCED", username, "FILE:" + image.getId(), "SUCCESS", 
+                String.format("文件名: %s, 大小: %d bytes, 哈希: %s, 病毒扫描: %s", 
+                             originalFilename, file.getSize(), 
+                             fileHash.substring(0, Math.min(fileHash.length(), 8)),
+                             scanResult.getSummary()), 
                 executionTime);
             logger.info(logMessage);
             
+            logger.info("增强安全文件上传成功: user={}, filename={}, imageId={}, url={}, duration={}ms", 
+                       username, originalFilename, image.getId(), fileUrl, executionTime);
+            
             return fileUrl;
             
+        } catch (FileUploadException e) {
+            // 重新抛出文件上传异常
+            long executionTime = System.currentTimeMillis() - startTime;
+            String errorLog = LoggingUtils.formatErrorLog(
+                "FILE_UPLOAD_SECURITY_ERROR", e.getMessage(), username, 
+                null, "上传文件: " + originalFilename, null);
+            logger.error(errorLog);
+            throw e;
+            
         } catch (Exception e) {
-            // 记录其他异常
+            // 记录其他系统异常
             long executionTime = System.currentTimeMillis() - startTime;
             String errorLog = LoggingUtils.formatErrorLog(
                 "FILE_UPLOAD_SYSTEM_ERROR", e.getMessage(), username, 
-                null, "上传文件: " + (file != null ? file.getOriginalFilename() : "unknown"), null);
-            logger.error(errorLog);
-            throw new FileUploadException("文件上传失败: " + e.getMessage());
+                null, "上传文件: " + originalFilename, null);
+            logger.error(errorLog, e);
+            throw new FileUploadException("文件上传失败: " + e.getMessage(), e);
         }
     }
     
@@ -295,6 +385,149 @@ public class FileUploadService {
             return true;
         } catch (Exception e) {
             logger.debug("文件安全验证失败: {}", e.getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * 验证文件完整性
+     * 
+     * 在文件下载或访问时验证文件是否被篡改
+     * 
+     * @param imageId 图片ID
+     * @return 完整性验证结果
+     */
+    public boolean verifyFileIntegrity(Long imageId) {
+        try {
+            // 获取图片信息
+            var imageOpt = imageService.getImageById(imageId);
+            if (imageOpt.isEmpty()) {
+                logger.warn("文件完整性验证失败: 图片不存在, imageId={}", imageId);
+                return false;
+            }
+            
+            Image image = imageOpt.get();
+            String storedHash = image.getFileHash();
+            
+            // 如果没有存储哈希值，跳过验证
+            if (storedHash == null || storedHash.trim().isEmpty()) {
+                logger.debug("跳过文件完整性验证: 未存储哈希值, imageId={}", imageId);
+                return true;
+            }
+            
+            // 读取当前文件内容
+            Path filePath = Paths.get(image.getFilePath());
+            if (!Files.exists(filePath)) {
+                logger.warn("文件完整性验证失败: 文件不存在, path={}", filePath);
+                return false;
+            }
+            
+            // 读取文件内容并计算哈希
+            byte[] fileBytes = Files.readAllBytes(filePath);
+            String fileContent = new String(fileBytes, "UTF-8");
+            String currentHash = dataIntegrityService.calculateHash(fileContent);
+            
+            // 验证完整性
+            boolean isValid = dataIntegrityService.verifyIntegrity(fileContent, storedHash);
+            
+            if (!isValid) {
+                logger.warn("文件完整性验证失败: 哈希值不匹配, imageId={}, stored={}, current={}", 
+                           imageId, storedHash.substring(0, 8), currentHash.substring(0, 8));
+                
+                // 记录安全事件
+                String logMessage = LoggingUtils.formatErrorLog(
+                    "FILE_INTEGRITY_VIOLATION", 
+                    "文件完整性验证失败，可能已被篡改",
+                    PermissionUtils.getCurrentUsername(),
+                    null,
+                    "FILE:" + imageId,
+                    null
+                );
+                logger.error(logMessage);
+            } else {
+                logger.debug("文件完整性验证通过: imageId={}", imageId);
+            }
+            
+            return isValid;
+            
+        } catch (Exception e) {
+            logger.error("文件完整性验证异常: imageId={}, error={}", imageId, e.getMessage(), e);
+            return false;
+        }
+    }
+    
+    /**
+     * 批量验证文件完整性
+     * 
+     * @param imageIds 图片ID列表
+     * @return 验证结果映射（imageId -> 是否通过验证）
+     */
+    public java.util.Map<Long, Boolean> batchVerifyFileIntegrity(java.util.List<Long> imageIds) {
+        java.util.Map<Long, Boolean> results = new java.util.HashMap<>();
+        
+        for (Long imageId : imageIds) {
+            try {
+                boolean isValid = verifyFileIntegrity(imageId);
+                results.put(imageId, isValid);
+            } catch (Exception e) {
+                logger.error("批量文件完整性验证异常: imageId={}, error={}", imageId, e.getMessage());
+                results.put(imageId, false);
+            }
+        }
+        
+        return results;
+    }
+    
+    /**
+     * 重新计算并更新文件哈希
+     * 
+     * 用于修复或更新已存在文件的哈希值
+     * 
+     * @param imageId 图片ID
+     * @return 是否更新成功
+     */
+    public boolean recalculateFileHash(Long imageId) {
+        try {
+            // 获取图片信息
+            var imageOpt = imageService.getImageById(imageId);
+            if (imageOpt.isEmpty()) {
+                logger.warn("重新计算文件哈希失败: 图片不存在, imageId={}", imageId);
+                return false;
+            }
+            
+            Image image = imageOpt.get();
+            Path filePath = Paths.get(image.getFilePath());
+            
+            if (!Files.exists(filePath)) {
+                logger.warn("重新计算文件哈希失败: 文件不存在, path={}", filePath);
+                return false;
+            }
+            
+            // 读取文件内容并计算新哈希
+            byte[] fileBytes = Files.readAllBytes(filePath);
+            String fileContent = new String(fileBytes, "UTF-8");
+            String newHash = dataIntegrityService.calculateHash(fileContent);
+            
+            // 更新数据库中的哈希值
+            image.setFileHash(newHash);
+            image.setHashCalculatedAt(LocalDateTime.now());
+            imageService.saveImageWithHash(
+                image.getOriginalFilename(),
+                image.getStoredFilename(),
+                image.getFilePath(),
+                image.getContentType(),
+                image.getFileSize(),
+                newHash,
+                image.getPost() != null ? image.getPost().getId() : null
+            );
+            
+            logger.info("文件哈希重新计算成功: imageId={}, newHash={}", 
+                       imageId, newHash.substring(0, 8) + "...");
+            
+            return true;
+            
+        } catch (Exception e) {
+            logger.error("重新计算文件哈希异常: imageId={}, error={}", imageId, e.getMessage(), e);
             return false;
         }
     }

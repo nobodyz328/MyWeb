@@ -1,6 +1,6 @@
 package com.myweb.website_core.application.service.security;
 
-import com.myweb.website_core.application.service.security.audit.AuditLogServiceAdapter;
+import com.myweb.website_core.application.service.security.audit.AuditMessageService;
 import com.myweb.website_core.application.service.security.integeration.dataManage.BackupService;
 import com.myweb.website_core.application.service.security.integeration.dataManage.DataRecoveryService;
 import com.myweb.website_core.infrastructure.config.properties.BackupProperties;
@@ -46,7 +46,7 @@ class DataRecoveryServiceTest {
     private BackupService backupService;
     
     @Mock
-    private AuditLogServiceAdapter auditLogService;
+    private AuditMessageService auditLogService;
     
     private DataRecoveryService dataRecoveryService;
     
